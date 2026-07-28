@@ -1,8 +1,12 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 function Footer() {
+  const navigate = useNavigate();
+
   const handleScrollTo = (id) => {
     if (id === 'home') {
+      navigate('/');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -10,6 +14,7 @@ function Footer() {
     if (element) {
       const top = element.getBoundingClientRect().top + window.scrollY - 72;
       window.scrollTo({ top, behavior: 'smooth' });
+      navigate({ pathname: '/', hash: id }, { replace: true });
     }
   };
 
@@ -33,16 +38,16 @@ function Footer() {
             <h4 className="footer-col-title">Navigate</h4>
             <ul className="footer-ul-links">
               <li>
-                <a href="#home" onClick={(e) => { e.preventDefault(); handleScrollTo('home'); }}>Home</a>
+                <a href="/#home" onClick={(e) => { e.preventDefault(); handleScrollTo('home'); }}>Home</a>
               </li>
               <li>
-                <a href="#practices" onClick={(e) => { e.preventDefault(); handleScrollTo('practices'); }}>Practice Areas</a>
+                <a href="/#practices" onClick={(e) => { e.preventDefault(); handleScrollTo('practices'); }}>Practice Areas</a>
               </li>
               <li>
-                <a href="#about" onClick={(e) => { e.preventDefault(); handleScrollTo('about'); }}>About</a>
+                <a href="/#about" onClick={(e) => { e.preventDefault(); handleScrollTo('about'); }}>About</a>
               </li>
               <li>
-                <a href="#contact" onClick={(e) => { e.preventDefault(); handleScrollTo('contact'); }}>Contact</a>
+                <a href="/#contact" onClick={(e) => { e.preventDefault(); handleScrollTo('contact'); }}>Contact</a>
               </li>
             </ul>
           </div>
@@ -51,13 +56,13 @@ function Footer() {
             <h4 className="footer-col-title">Services</h4>
             <ul className="footer-ul-links">
               <li>
-                <a href="#practices" onClick={(e) => { e.preventDefault(); handleScrollTo('practices'); }}>Legal Consultation</a>
+                <a href="/#practices" onClick={(e) => { e.preventDefault(); handleScrollTo('practices'); }}>Legal Consultation</a>
               </li>
               <li>
-                <a href="#practices" onClick={(e) => { e.preventDefault(); handleScrollTo('practices'); }}>Hearing Representation</a>
+                <a href="/#practices" onClick={(e) => { e.preventDefault(); handleScrollTo('practices'); }}>Hearing Representation</a>
               </li>
               <li>
-                <a href="#practices" onClick={(e) => { e.preventDefault(); handleScrollTo('practices'); }}>Advisory Services</a>
+                <a href="/#practices" onClick={(e) => { e.preventDefault(); handleScrollTo('practices'); }}>Advisory Services</a>
               </li>
             </ul>
           </div>
@@ -68,7 +73,7 @@ function Footer() {
               <svg viewBox="0 0 24 24">
                 <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
               </svg>
-              <span>Thiruvananthapuram, Kerala, India</span>
+              <span>Kanjirappally, Kerala, India</span>
             </div>
             <div className="footer-contact-li">
               <svg viewBox="0 0 24 24">

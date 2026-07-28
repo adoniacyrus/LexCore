@@ -1,4 +1,6 @@
-import React, { createContext, useState, useContext, useCallback } from 'react';
+import React, { createContext, useContext, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from './AuthContext';
 
 const ModalContext = createContext(undefined);
 
@@ -11,16 +13,32 @@ function scrollToContact() {
 }
 
 export function ModalProvider({ children }) {
-  const [isPortalOpen, setIsPortalOpen] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { isAuthenticated } = useAuth();
 
-  const openPortal = () => setIsPortalOpen(true);
-  const closePortal = () => setIsPortalOpen(false);
-  const openConsultation = useCallback(() => scrollToContact(), []);
+  const openPortal = useCallback(() => {
+    navigate('/login');
+  }, [navigate]);
+
+  const closePortal = useCallback(() => {}, []);
+
+  const openConsultation = useCallback(() => {
+    if (isAuthenticated) {
+      if (location.pathname === '/') {
+        scrollToContact();
+      } else {
+        navigate({ pathname: '/', hash: 'contact' });
+      }
+      return;
+    }
+    navigate('/login?intent=consultation');
+  }, [isAuthenticated, location.pathname, navigate]);
 
   return (
     <ModalContext.Provider
       value={{
-        isPortalOpen,
+        isPortalOpen: false,
         openPortal,
         closePortal,
         openConsultation,

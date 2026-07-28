@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useModals } from '../context/ModalContext';
 
 function Navbar() {
   const { openPortal, openConsultation } = useModals();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -18,25 +21,38 @@ function Navbar() {
     return () => { document.body.style.overflow = ''; };
   }, [isMobileMenuOpen]);
 
-  const handleScrollTo = (id) => {
-    setIsMobileMenuOpen(false);
+  const scrollToSection = useCallback((id) => {
     if (id === 'home') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
     const element = document.getElementById(id);
-    if (element) {
-      const top = element.getBoundingClientRect().top + window.scrollY - 72;
-      window.scrollTo({ top, behavior: 'smooth' });
+    if (!element) return;
+    const top = element.getBoundingClientRect().top + window.scrollY - 72;
+    window.scrollTo({ top, behavior: 'smooth' });
+  }, []);
+
+  const handleNav = useCallback((id) => {
+    setIsMobileMenuOpen(false);
+
+    if (location.pathname !== '/') {
+      if (id === 'home') {
+        navigate('/');
+      } else {
+        navigate({ pathname: '/', hash: id });
+      }
+      return;
     }
-  };
+
+    scrollToSection(id);
+  }, [location.pathname, navigate, scrollToSection]);
 
   return (
     <header className={`header-nav ${isScrolled || isMobileMenuOpen ? 'is-scrolled' : ''}`}>
       <div className="container-custom nav-container">
         <a
-          href="#home"
-          onClick={(e) => { e.preventDefault(); handleScrollTo('home'); }}
+          href="/"
+          onClick={(e) => { e.preventDefault(); handleNav('home'); }}
           className="nav-logo-box"
         >
           <div className="nav-logo-icon-container">
@@ -53,22 +69,22 @@ function Navbar() {
         <nav aria-label="Primary">
           <ul className={`nav-menu ${isMobileMenuOpen ? 'active' : ''}`}>
             <li>
-              <a href="#home" className="nav-link-custom" onClick={(e) => { e.preventDefault(); handleScrollTo('home'); }}>
+              <a href="/#home" className="nav-link-custom" onClick={(e) => { e.preventDefault(); handleNav('home'); }}>
                 Home
               </a>
             </li>
             <li>
-              <a href="#practices" className="nav-link-custom" onClick={(e) => { e.preventDefault(); handleScrollTo('practices'); }}>
+              <a href="/#practices" className="nav-link-custom" onClick={(e) => { e.preventDefault(); handleNav('practices'); }}>
                 Practice Areas
               </a>
             </li>
             <li>
-              <a href="#about" className="nav-link-custom" onClick={(e) => { e.preventDefault(); handleScrollTo('about'); }}>
+              <a href="/#about" className="nav-link-custom" onClick={(e) => { e.preventDefault(); handleNav('about'); }}>
                 About
               </a>
             </li>
             <li>
-              <a href="#contact" className="nav-link-custom" onClick={(e) => { e.preventDefault(); handleScrollTo('contact'); }}>
+              <a href="/#contact" className="nav-link-custom" onClick={(e) => { e.preventDefault(); handleNav('contact'); }}>
                 Contact
               </a>
             </li>
@@ -91,7 +107,7 @@ function Navbar() {
                 className="btn btn-primary btn-nav-consult"
                 style={{ width: '100%' }}
               >
-                Book Consultation
+                Request Consultation
               </button>
             </li>
           </ul>
@@ -105,7 +121,7 @@ function Navbar() {
             aria-label="Login to secure portal"
           >
             <svg className="nav-lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
             </svg>
             Login
           </button>
@@ -114,7 +130,7 @@ function Navbar() {
             onClick={openConsultation}
             className="btn btn-primary btn-nav-consult"
           >
-            Book Consultation
+            Request Consultation
           </button>
         </div>
 
