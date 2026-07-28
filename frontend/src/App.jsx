@@ -1,7 +1,13 @@
-import './App.css'
+import './App.css';
+import AppRouter from './routes/AppRouter';
+import { ModalProvider } from './context/ModalContext';
 
 function App() {
-  return <div className="app-shell" />
+  return (
+    <ModalProvider>
+      <AppRouter />
+    </ModalProvider>
+  );
 }
 
-export default App
+export default App;
