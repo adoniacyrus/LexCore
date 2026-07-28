@@ -919,6 +919,7 @@ section {
   line-height: 1.25;
   letter-spacing: -0.02em;
   max-width: 14ch;
+  color: #FFFFFF;
 }
 
 .cta-band-quote em {
