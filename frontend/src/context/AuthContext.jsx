@@ -1,59 +1,146 @@
-import React, { createContext, useContext, useMemo, useState, useCallback } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import * as authService from '../services/authService';
+import { getErrorMessage } from '../services/authService';
 
-const AUTH_KEY = 'lexcore_client_session';
+const ACCESS_KEY = 'lexcore_access';
+const REFRESH_KEY = 'lexcore_refresh';
+const USER_KEY = 'lexcore_user';
+
 const AuthContext = createContext(undefined);
 
-function readSession() {
+function readStoredAuth() {
   try {
-    const raw = localStorage.getItem(AUTH_KEY);
-    return raw ? JSON.parse(raw) : null;
+    const access = localStorage.getItem(ACCESS_KEY);
+    const refresh = localStorage.getItem(REFRESH_KEY);
+    const rawUser = localStorage.getItem(USER_KEY);
+    const user = rawUser ? JSON.parse(rawUser) : null;
+    return { access, refresh, user };
   } catch {
-    return null;
+    return { access: null, refresh: null, user: null };
   }
 }
 
+function persistAuth({ access, refresh, user }) {
+  if (access) localStorage.setItem(ACCESS_KEY, access);
+  else localStorage.removeItem(ACCESS_KEY);
+
+  if (refresh) localStorage.setItem(REFRESH_KEY, refresh);
+  else localStorage.removeItem(REFRESH_KEY);
+
+  if (user) localStorage.setItem(USER_KEY, JSON.stringify(user));
+  else localStorage.removeItem(USER_KEY);
+}
+
+function clearPersistedAuth() {
+  localStorage.removeItem(ACCESS_KEY);
+  localStorage.removeItem(REFRESH_KEY);
+  localStorage.removeItem(USER_KEY);
+}
+
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => readSession());
+  const stored = readStoredAuth();
+  const [user, setUser] = useState(stored.user);
+  const [accessToken, setAccessToken] = useState(stored.access);
+  const [refreshToken, setRefreshToken] = useState(stored.refresh);
+  const [loading, setLoading] = useState(Boolean(stored.access));
 
-  const login = useCallback(({ email, name }) => {
-    const session = {
-      email: email.trim().toLowerCase(),
-      name: name?.trim() || email.split('@')[0],
-      role: 'client',
-      authenticatedAt: new Date().toISOString(),
+  useEffect(() => {
+    let cancelled = false;
+
+    async function hydrate() {
+      const access = localStorage.getItem(ACCESS_KEY);
+      const refresh = localStorage.getItem(REFRESH_KEY);
+
+      if (!access) {
+        if (!cancelled) {
+          setUser(null);
+          setAccessToken(null);
+          setRefreshToken(null);
+          setLoading(false);
+        }
+        return;
+      }
+
+      try {
+        const me = await authService.getCurrentUser(access);
+        if (cancelled) return;
+        setAccessToken(access);
+        setRefreshToken(refresh);
+        setUser(me);
+        persistAuth({ access, refresh, user: me });
+      } catch {
+        if (cancelled) return;
+        clearPersistedAuth();
+        setUser(null);
+        setAccessToken(null);
+        setRefreshToken(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    hydrate();
+    return () => {
+      cancelled = true;
     };
-    localStorage.setItem(AUTH_KEY, JSON.stringify(session));
-    setUser(session);
-    return session;
   }, []);
 
-  const register = useCallback(({ fullName, email, mobile }) => {
-    const session = {
-      email: email.trim().toLowerCase(),
-      name: fullName.trim(),
-      mobile: mobile.trim(),
-      role: 'client',
-      authenticatedAt: new Date().toISOString(),
-    };
-    localStorage.setItem(AUTH_KEY, JSON.stringify(session));
-    setUser(session);
-    return session;
+  const login = useCallback(async (email, password) => {
+    const tokens = await authService.login({ email, password });
+    const access = tokens.access;
+    const refresh = tokens.refresh;
+
+    try {
+      const me = await authService.getCurrentUser(access);
+      persistAuth({ access, refresh, user: me });
+      setAccessToken(access);
+      setRefreshToken(refresh);
+      setUser(me);
+      return me;
+    } catch (err) {
+      clearPersistedAuth();
+      setUser(null);
+      setAccessToken(null);
+      setRefreshToken(null);
+      throw err;
+    }
   }, []);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem(AUTH_KEY);
-    setUser(null);
+  const register = useCallback(async (payload) => {
+    return authService.register(payload);
   }, []);
+
+  const logout = useCallback(async () => {
+    const access = accessToken || localStorage.getItem(ACCESS_KEY);
+    const refresh = refreshToken || localStorage.getItem(REFRESH_KEY);
+
+    try {
+      if (access && refresh) {
+        await authService.logout({ access, refresh });
+      }
+    } catch {
+      // Always clear local session even if blacklist call fails.
+    } finally {
+      clearPersistedAuth();
+      setUser(null);
+      setAccessToken(null);
+      setRefreshToken(null);
+    }
+  }, [accessToken, refreshToken]);
 
   const value = useMemo(
     () => ({
       user,
-      isAuthenticated: Boolean(user),
+      accessToken,
+      refreshToken,
+      isAuthenticated: Boolean(user && accessToken),
+      loading,
       login,
       register,
       logout,
+      getErrorMessage,
     }),
-    [user, login, register, logout]
+    [user, accessToken, refreshToken, loading, login, register, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

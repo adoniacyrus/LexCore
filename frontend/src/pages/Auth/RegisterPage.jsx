@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { getDashboardPath } from '../../utils/roleRoutes';
 
 function RegisterPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const { register, isAuthenticated } = useAuth();
+  const { register, isAuthenticated, user, loading, getErrorMessage } = useAuth();
   const intent = params.get('intent');
 
   const [form, setForm] = useState({
@@ -18,6 +19,7 @@ function RegisterPage() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [entered, setEntered] = useState(false);
 
@@ -27,9 +29,9 @@ function RegisterPage() {
   }, []);
 
   useEffect(() => {
-    if (!isAuthenticated) return;
-    navigate(intent === 'consultation' ? { pathname: '/', hash: 'contact' } : '/', { replace: true });
-  }, [isAuthenticated, intent, navigate]);
+    if (loading || !isAuthenticated || !user) return;
+    navigate(getDashboardPath(user.role), { replace: true });
+  }, [isAuthenticated, user, loading, navigate]);
 
   const strength = useMemo(() => {
     const p = form.password;
@@ -48,6 +50,7 @@ function RegisterPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
     if (!form.fullName.trim() || !form.email.trim() || !form.mobile.trim()) {
       setError('Please complete all required fields.');
       return;
@@ -66,14 +69,25 @@ function RegisterPage() {
     }
 
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 550));
-    register({
-      fullName: form.fullName,
-      email: form.email,
-      mobile: form.mobile,
-    });
-    setSubmitting(false);
-    navigate(intent === 'consultation' ? { pathname: '/', hash: 'contact' } : '/', { replace: true });
+    try {
+      const data = await register({
+        full_name: form.fullName.trim(),
+        email: form.email.trim(),
+        phone_number: form.mobile.trim(),
+        password: form.password,
+        confirm_password: form.confirmPassword,
+      });
+      const message = data?.message || 'Registration successful.';
+      setSuccess(message);
+      navigate(intent === 'consultation' ? '/login?intent=consultation' : '/login', {
+        replace: true,
+        state: { success: message },
+      });
+    } catch (err) {
+      setError(getErrorMessage(err, 'Registration failed. Please try again.'));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const loginPath = intent === 'consultation' ? '/login?intent=consultation' : '/login';
@@ -200,9 +214,10 @@ function RegisterPage() {
           </span>
         </label>
 
+        {success ? <p className="auth-sheet-lede" role="status">{success}</p> : null}
         {error ? <p className="auth-error" role="alert">{error}</p> : null}
 
-        <button type="submit" className="btn btn-primary auth-submit" disabled={submitting}>
+        <button type="submit" className="btn btn-primary auth-submit" disabled={submitting || loading}>
           {submitting ? 'Creating Account…' : 'Create Client Account'}
         </button>
       </form>

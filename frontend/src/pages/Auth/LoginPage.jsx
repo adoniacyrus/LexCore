@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { getDashboardPath } from '../../utils/roleRoutes';
 
 function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [params] = useSearchParams();
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, user, loading, getErrorMessage } = useAuth();
   const intent = params.get('intent');
 
   const [email, setEmail] = useState('');
@@ -13,6 +15,7 @@ function LoginPage() {
   const [remember, setRemember] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(location.state?.success || '');
   const [submitting, setSubmitting] = useState(false);
   const [entered, setEntered] = useState(false);
 
@@ -22,22 +25,28 @@ function LoginPage() {
   }, []);
 
   useEffect(() => {
-    if (!isAuthenticated) return;
-    navigate(intent === 'consultation' ? { pathname: '/', hash: 'contact' } : '/', { replace: true });
-  }, [isAuthenticated, intent, navigate]);
+    if (loading || !isAuthenticated || !user) return;
+    navigate(getDashboardPath(user.role), { replace: true });
+  }, [isAuthenticated, user, loading, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
     if (!email.trim() || !password) {
       setError('Please enter your email and password.');
       return;
     }
+
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 500));
-    login({ email });
-    setSubmitting(false);
-    navigate(intent === 'consultation' ? { pathname: '/', hash: 'contact' } : '/', { replace: true });
+    try {
+      const me = await login(email.trim(), password);
+      navigate(getDashboardPath(me.role), { replace: true });
+    } catch (err) {
+      setError(getErrorMessage(err, 'Login failed. Please try again.'));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const registerPath = intent === 'consultation' ? '/register?intent=consultation' : '/register';
@@ -120,9 +129,10 @@ function LoginPage() {
           </button>
         </div>
 
+        {success ? <p className="auth-sheet-lede" role="status">{success}</p> : null}
         {error ? <p className="auth-error" role="alert">{error}</p> : null}
 
-        <button type="submit" className="btn btn-primary auth-submit" disabled={submitting}>
+        <button type="submit" className="btn btn-primary auth-submit" disabled={submitting || loading}>
           {submitting ? 'Verifying…' : 'Login'}
         </button>
       </form>
