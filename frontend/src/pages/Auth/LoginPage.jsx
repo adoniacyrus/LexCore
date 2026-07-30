@@ -2,6 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { getDashboardPath } from '../../utils/roleRoutes';
+import {
+  hasFieldErrors,
+  mapDjangoFieldErrors,
+  validateEmail,
+  validateLoginForm,
+  validateLoginPassword,
+} from '../../utils/validation';
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -14,6 +21,8 @@ function LoginPage() {
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({ email: '', password: '' });
+  const [touched, setTouched] = useState({ email: false, password: false });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(location.state?.success || '');
   const [submitting, setSubmitting] = useState(false);
@@ -29,12 +38,34 @@ function LoginPage() {
     navigate(getDashboardPath(user.role), { replace: true });
   }, [isAuthenticated, user, loading, navigate]);
 
+  const setFieldError = (name, message) => {
+    setFieldErrors((prev) => ({ ...prev, [name]: message }));
+  };
+
+  const handleEmailBlur = () => {
+    setTouched((prev) => ({ ...prev, email: true }));
+    setFieldError('email', validateEmail(email));
+  };
+
+  const handlePasswordChange = (value) => {
+    setPassword(value);
+    if (touched.password || value.length > 0) {
+      setTouched((prev) => ({ ...prev, password: true }));
+      setFieldError('password', validateLoginPassword(value));
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
-    if (!email.trim() || !password) {
-      setError('Please enter your email and password.');
+
+    const nextTouched = { email: true, password: true };
+    setTouched(nextTouched);
+
+    const errors = validateLoginForm({ email, password });
+    setFieldErrors(errors);
+    if (hasFieldErrors(errors)) {
       return;
     }
 
@@ -43,13 +74,21 @@ function LoginPage() {
       const me = await login(email.trim(), password);
       navigate(getDashboardPath(me.role), { replace: true });
     } catch (err) {
-      setError(getErrorMessage(err, 'Login failed. Please try again.'));
+      const mapped = mapDjangoFieldErrors(err);
+      if (hasFieldErrors(mapped.fields)) {
+        setFieldErrors((prev) => ({ ...prev, ...mapped.fields }));
+      }
+      setError(
+        mapped.formError ||
+          getErrorMessage(err, 'Login failed. Please try again.')
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
   const registerPath = intent === 'consultation' ? '/register?intent=consultation' : '/register';
+  const busy = submitting || loading;
 
   return (
     <div className={`auth-sheet ${entered ? 'is-entered' : ''}`}>
@@ -91,21 +130,32 @@ function LoginPage() {
             autoComplete="email"
             placeholder="name@email.com"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (touched.email) setFieldError('email', validateEmail(e.target.value));
+            }}
+            onBlur={handleEmailBlur}
+            className={fieldErrors.email ? 'is-invalid' : ''}
+            aria-invalid={Boolean(fieldErrors.email)}
             required
           />
+          {fieldErrors.email ? (
+            <div className="invalid-feedback d-block">{fieldErrors.email}</div>
+          ) : null}
         </label>
 
         <label className="auth-field">
           <span>Password</span>
-          <div className="auth-field-row">
+          <div className={`auth-field-row ${fieldErrors.password ? 'is-invalid' : ''}`}>
             <input
               type={showPassword ? 'text' : 'password'}
               name="password"
               autoComplete="current-password"
               placeholder="Enter your password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => handlePasswordChange(e.target.value)}
+              className={fieldErrors.password ? 'is-invalid' : ''}
+              aria-invalid={Boolean(fieldErrors.password)}
               required
             />
             <button
@@ -117,6 +167,9 @@ function LoginPage() {
               {showPassword ? 'Hide' : 'Show'}
             </button>
           </div>
+          {fieldErrors.password ? (
+            <div className="invalid-feedback d-block">{fieldErrors.password}</div>
+          ) : null}
         </label>
 
         <div className="auth-form-meta">
@@ -132,8 +185,15 @@ function LoginPage() {
         {success ? <p className="auth-sheet-lede" role="status">{success}</p> : null}
         {error ? <p className="auth-error" role="alert">{error}</p> : null}
 
-        <button type="submit" className="btn btn-primary auth-submit" disabled={submitting || loading}>
-          {submitting ? 'Verifying…' : 'Login'}
+        <button type="submit" className="btn btn-primary auth-submit" disabled={busy}>
+          {submitting ? (
+            <>
+              <span className="auth-btn-spinner" aria-hidden="true" />
+              Verifying…
+            </>
+          ) : (
+            'Login'
+          )}
         </button>
       </form>
 

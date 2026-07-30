@@ -1519,7 +1519,8 @@ section {
 .auth-form--grid .auth-field--full,
 .auth-form--grid .auth-check--block,
 .auth-form--grid .auth-error,
-.auth-form--grid .auth-submit {
+.auth-form--grid .auth-submit,
+.auth-form--grid .invalid-feedback {
   grid-column: 1 / -1;
 }
 
@@ -1557,6 +1558,30 @@ section {
 .auth-field input:focus {
   border-bottom-color: var(--color-primary);
   box-shadow: 0 1px 0 0 var(--color-primary);
+}
+
+.auth-field input.is-invalid,
+.auth-field input.is-invalid:focus {
+  border-bottom-color: #b42318;
+  box-shadow: 0 1px 0 0 #b42318;
+}
+
+.auth-field-row.is-invalid,
+.auth-field-row.is-invalid:focus-within {
+  border-bottom-color: #b42318;
+  box-shadow: 0 1px 0 0 #b42318;
+}
+
+.auth-field .invalid-feedback,
+.auth-check--block + .invalid-feedback {
+  margin: 0.15rem 0 0;
+  font-size: 0.7rem;
+  line-height: 1.3;
+  color: #b42318;
+}
+
+.auth-check--block.is-invalid {
+  color: #b42318;
 }
 
 .auth-field input::placeholder {
@@ -1609,6 +1634,58 @@ section {
 }
 
 .auth-strength span.is-on { background: var(--color-accent); }
+
+.auth-strength-checklist {
+  list-style: none;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.15rem;
+}
+
+.auth-strength-checklist li {
+  font-size: 0.68rem;
+  color: var(--color-text);
+  opacity: 0.75;
+  padding-left: 0.95rem;
+  position: relative;
+}
+
+.auth-strength-checklist li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.35em;
+  width: 0.4rem;
+  height: 0.4rem;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
+
+.auth-strength-checklist li.is-met {
+  color: var(--color-accent);
+  opacity: 1;
+}
+
+.auth-strength-checklist li.is-met::before {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.auth-btn-spinner {
+  width: 0.85rem;
+  height: 0.85rem;
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  display: inline-block;
+  animation: auth-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes auth-spin {
+  to { transform: rotate(360deg); }
+}
 
 .auth-form-meta {
   display: flex;

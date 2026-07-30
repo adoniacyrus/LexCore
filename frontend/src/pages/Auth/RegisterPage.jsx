@@ -2,6 +2,27 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { getDashboardPath } from '../../utils/roleRoutes';
+import {
+  getPasswordStrength,
+  hasFieldErrors,
+  mapDjangoFieldErrors,
+  validateConfirmPassword,
+  validateEmail,
+  validateFullName,
+  validateMobile,
+  validatePassword,
+  validateRegistrationForm,
+  validateTerms,
+} from '../../utils/validation';
+
+const EMPTY_ERRORS = {
+  fullName: '',
+  email: '',
+  mobile: '',
+  password: '',
+  confirmPassword: '',
+  terms: '',
+};
 
 function RegisterPage() {
   const navigate = useNavigate();
@@ -17,6 +38,8 @@ function RegisterPage() {
     confirmPassword: '',
     terms: false,
   });
+  const [fieldErrors, setFieldErrors] = useState(EMPTY_ERRORS);
+  const [touched, setTouched] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -33,38 +56,77 @@ function RegisterPage() {
     navigate(getDashboardPath(user.role), { replace: true });
   }, [isAuthenticated, user, loading, navigate]);
 
-  const strength = useMemo(() => {
-    const p = form.password;
-    let score = 0;
-    if (p.length >= 8) score += 1;
-    if (/[A-Z]/.test(p) && /[a-z]/.test(p)) score += 1;
-    if (/\d/.test(p) || /[^A-Za-z0-9]/.test(p)) score += 1;
-    return score;
-  }, [form.password]);
+  const strength = useMemo(() => getPasswordStrength(form.password), [form.password]);
+
+  const setFieldError = (name, message) => {
+    setFieldErrors((prev) => ({ ...prev, [name]: message }));
+  };
+
+  const markTouched = (name) => {
+    setTouched((prev) => ({ ...prev, [name]: true }));
+  };
+
+  const onBlurField = (name, validator) => {
+    markTouched(name);
+    setFieldError(name, validator());
+  };
 
   const onChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+    const nextValue = type === 'checkbox' ? checked : value;
+    const next = { ...form, [name]: nextValue };
+    setForm(next);
+
+    if (name === 'password') {
+      markTouched('password');
+      setFieldError('password', validatePassword(nextValue));
+      if (touched.confirmPassword || next.confirmPassword) {
+        setFieldError(
+          'confirmPassword',
+          validateConfirmPassword(nextValue, next.confirmPassword)
+        );
+      }
+      return;
+    }
+
+    if (name === 'confirmPassword') {
+      markTouched('confirmPassword');
+      setFieldError(
+        'confirmPassword',
+        validateConfirmPassword(next.password, nextValue)
+      );
+      return;
+    }
+
+    if (name === 'terms') {
+      markTouched('terms');
+      setFieldError('terms', validateTerms(nextValue));
+      return;
+    }
+
+    if (!touched[name]) return;
+    if (name === 'fullName') setFieldError(name, validateFullName(nextValue));
+    if (name === 'email') setFieldError(name, validateEmail(nextValue));
+    if (name === 'mobile') setFieldError(name, validateMobile(nextValue));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
-    if (!form.fullName.trim() || !form.email.trim() || !form.mobile.trim()) {
-      setError('Please complete all required fields.');
-      return;
-    }
-    if (form.password.length < 8) {
-      setError('Password must be at least 8 characters.');
-      return;
-    }
-    if (form.password !== form.confirmPassword) {
-      setError('Passwords do not match.');
-      return;
-    }
-    if (!form.terms) {
-      setError('Please accept the Terms & Privacy Policy.');
+
+    setTouched({
+      fullName: true,
+      email: true,
+      mobile: true,
+      password: true,
+      confirmPassword: true,
+      terms: true,
+    });
+
+    const errors = validateRegistrationForm(form);
+    setFieldErrors(errors);
+    if (hasFieldErrors(errors)) {
       return;
     }
 
@@ -84,13 +146,23 @@ function RegisterPage() {
         state: { success: message },
       });
     } catch (err) {
-      setError(getErrorMessage(err, 'Registration failed. Please try again.'));
+      const mapped = mapDjangoFieldErrors(err);
+      if (hasFieldErrors(mapped.fields)) {
+        setFieldErrors((prev) => ({ ...prev, ...mapped.fields }));
+      }
+      setError(
+        mapped.formError ||
+          (hasFieldErrors(mapped.fields)
+            ? ''
+            : getErrorMessage(err, 'Registration failed. Please try again.'))
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
   const loginPath = intent === 'consultation' ? '/login?intent=consultation' : '/login';
+  const busy = submitting || loading;
 
   return (
     <div className={`auth-sheet auth-sheet--register ${entered ? 'is-entered' : ''}`}>
@@ -128,8 +200,14 @@ function RegisterPage() {
             placeholder="Full legal name"
             value={form.fullName}
             onChange={onChange}
+            onBlur={(e) => onBlurField('fullName', () => validateFullName(e.target.value))}
+            className={fieldErrors.fullName ? 'is-invalid' : ''}
+            aria-invalid={Boolean(fieldErrors.fullName)}
             required
           />
+          {fieldErrors.fullName ? (
+            <div className="invalid-feedback d-block">{fieldErrors.fullName}</div>
+          ) : null}
         </label>
 
         <label className="auth-field">
@@ -141,8 +219,14 @@ function RegisterPage() {
             placeholder="name@email.com"
             value={form.email}
             onChange={onChange}
+            onBlur={(e) => onBlurField('email', () => validateEmail(e.target.value))}
+            className={fieldErrors.email ? 'is-invalid' : ''}
+            aria-invalid={Boolean(fieldErrors.email)}
             required
           />
+          {fieldErrors.email ? (
+            <div className="invalid-feedback d-block">{fieldErrors.email}</div>
+          ) : null}
         </label>
 
         <label className="auth-field">
@@ -154,13 +238,19 @@ function RegisterPage() {
             placeholder="+91 XXXXX XXXXX"
             value={form.mobile}
             onChange={onChange}
+            onBlur={(e) => onBlurField('mobile', () => validateMobile(e.target.value))}
+            className={fieldErrors.mobile ? 'is-invalid' : ''}
+            aria-invalid={Boolean(fieldErrors.mobile)}
             required
           />
+          {fieldErrors.mobile ? (
+            <div className="invalid-feedback d-block">{fieldErrors.mobile}</div>
+          ) : null}
         </label>
 
         <label className="auth-field">
           <span>Password</span>
-          <div className="auth-field-row">
+          <div className={`auth-field-row ${fieldErrors.password ? 'is-invalid' : ''}`}>
             <input
               type={showPassword ? 'text' : 'password'}
               name="password"
@@ -168,6 +258,8 @@ function RegisterPage() {
               placeholder="Min. 8 characters"
               value={form.password}
               onChange={onChange}
+              className={fieldErrors.password ? 'is-invalid' : ''}
+              aria-invalid={Boolean(fieldErrors.password)}
               required
             />
             <button
@@ -180,10 +272,20 @@ function RegisterPage() {
             </button>
           </div>
           <div className="auth-strength" aria-hidden="true">
-            <span className={strength >= 1 ? 'is-on' : ''} />
-            <span className={strength >= 2 ? 'is-on' : ''} />
-            <span className={strength >= 3 ? 'is-on' : ''} />
+            <span className={strength.score >= 1 ? 'is-on' : ''} />
+            <span className={strength.score >= 2 ? 'is-on' : ''} />
+            <span className={strength.score >= 3 ? 'is-on' : ''} />
           </div>
+          {form.password ? (
+            <ul className="auth-strength-checklist">
+              <li className={strength.checks.minLength ? 'is-met' : ''}>At least 8 characters</li>
+              <li className={strength.checks.mixedCase ? 'is-met' : ''}>Upper &amp; lowercase letters</li>
+              <li className={strength.checks.numberOrSymbol ? 'is-met' : ''}>A number or symbol</li>
+            </ul>
+          ) : null}
+          {fieldErrors.password ? (
+            <div className="invalid-feedback d-block">{fieldErrors.password}</div>
+          ) : null}
         </label>
 
         <label className="auth-field auth-field--full">
@@ -195,12 +297,23 @@ function RegisterPage() {
             placeholder="Re-enter password"
             value={form.confirmPassword}
             onChange={onChange}
+            className={fieldErrors.confirmPassword ? 'is-invalid' : ''}
+            aria-invalid={Boolean(fieldErrors.confirmPassword)}
             required
           />
+          {fieldErrors.confirmPassword ? (
+            <div className="invalid-feedback d-block">{fieldErrors.confirmPassword}</div>
+          ) : null}
         </label>
 
-        <label className="auth-check auth-check--block">
-          <input type="checkbox" name="terms" checked={form.terms} onChange={onChange} />
+        <label className={`auth-check auth-check--block ${fieldErrors.terms ? 'is-invalid' : ''}`}>
+          <input
+            type="checkbox"
+            name="terms"
+            checked={form.terms}
+            onChange={onChange}
+            aria-invalid={Boolean(fieldErrors.terms)}
+          />
           <span>
             I accept the{' '}
             <button type="button" className="auth-inline-link" onClick={() => alert('Terms of engagement available upon request.')}>
@@ -213,12 +326,22 @@ function RegisterPage() {
             .
           </span>
         </label>
+        {fieldErrors.terms ? (
+          <div className="invalid-feedback d-block auth-field--full">{fieldErrors.terms}</div>
+        ) : null}
 
         {success ? <p className="auth-sheet-lede" role="status">{success}</p> : null}
         {error ? <p className="auth-error" role="alert">{error}</p> : null}
 
-        <button type="submit" className="btn btn-primary auth-submit" disabled={submitting || loading}>
-          {submitting ? 'Creating Account…' : 'Create Client Account'}
+        <button type="submit" className="btn btn-primary auth-submit" disabled={busy}>
+          {submitting ? (
+            <>
+              <span className="auth-btn-spinner" aria-hidden="true" />
+              Creating Account…
+            </>
+          ) : (
+            'Create Client Account'
+          )}
         </button>
       </form>
 
