@@ -156,3 +156,6 @@ CORS_ALLOWED_ORIGINS = [
 # Custom user model — must be set before the first migration that creates auth tables.
 # Label is "accounts" (see apps.accounts.AppsConfig.label); model class is User.
 AUTH_USER_MODEL = "accounts.User"
+
+# Google Identity Services (OAuth client ID from Google Cloud Console)
+GOOGLE_OAUTH_CLIENT_ID = config("GOOGLE_OAUTH_CLIENT_ID", default="")

@@ -97,3 +97,16 @@ export async function getCurrentUser(access) {
   });
   return data;
 }
+
+/**
+ * Exchange a Google ID token for LexCore JWTs.
+ * intent: "login" | "register"
+ */
+export async function googleAuth({ id_token, intent }) {
+  const { data } = await api.post('/auth/google/', {
+    id_token,
+    credential: id_token,
+    intent,
+  });
+  return data;
+}

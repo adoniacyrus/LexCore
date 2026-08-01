@@ -110,6 +110,34 @@ export function AuthProvider({ children }) {
     return authService.register(payload);
   }, []);
 
+  /**
+   * Complete Google Sign-In / Sign-Up using a Google ID token.
+   * intent: "login" | "register"
+   */
+  const loginWithGoogle = useCallback(async (idToken, intent = 'login') => {
+    const tokens = await authService.googleAuth({
+      id_token: idToken,
+      intent,
+    });
+    const access = tokens.access;
+    const refresh = tokens.refresh;
+
+    try {
+      const me = await authService.getCurrentUser(access);
+      persistAuth({ access, refresh, user: me });
+      setAccessToken(access);
+      setRefreshToken(refresh);
+      setUser(me);
+      return me;
+    } catch (err) {
+      clearPersistedAuth();
+      setUser(null);
+      setAccessToken(null);
+      setRefreshToken(null);
+      throw err;
+    }
+  }, []);
+
   const logout = useCallback(async () => {
     const access = accessToken || localStorage.getItem(ACCESS_KEY);
     const refresh = refreshToken || localStorage.getItem(REFRESH_KEY);
@@ -137,10 +165,11 @@ export function AuthProvider({ children }) {
       loading,
       login,
       register,
+      loginWithGoogle,
       logout,
       getErrorMessage,
     }),
-    [user, accessToken, refreshToken, loading, login, register, logout]
+    [user, accessToken, refreshToken, loading, login, register, loginWithGoogle, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

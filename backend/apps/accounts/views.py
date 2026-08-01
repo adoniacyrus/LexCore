@@ -12,6 +12,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from .google_auth import GoogleAuthSerializer
 from .serializers import (
     LoginSerializer,
     LoginUserSerializer,
@@ -104,5 +105,31 @@ class LogoutView(APIView):
 
         return Response(
             {"message": "Logout successful."},
+            status=status.HTTP_200_OK,
+        )
+
+
+class GoogleAuthView(APIView):
+    """
+    POST /api/auth/google/
+
+    Body: {"id_token": "...", "intent": "login" | "register"}
+
+    - register → create CLIENT only (if email is new), return JWT
+    - login → authenticate existing user of any role, return JWT
+    """
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = GoogleAuthSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        tokens = _tokens_for_user(user)
+        return Response(
+            {
+                **tokens,
+                "user": LoginUserSerializer(user).data,
+            },
             status=status.HTTP_200_OK,
         )

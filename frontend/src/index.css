@@ -1520,6 +1520,7 @@ section {
 .auth-form--grid .auth-check--block,
 .auth-form--grid .auth-error,
 .auth-form--grid .auth-submit,
+.auth-form--grid .auth-google,
 .auth-form--grid .invalid-feedback {
   grid-column: 1 / -1;
 }
@@ -1743,6 +1744,38 @@ section {
 .auth-submit:disabled {
   opacity: 0.7;
   cursor: wait;
+}
+
+.auth-google {
+  width: 100%;
+  margin-top: 0.35rem;
+}
+
+.auth-google .auth-divider {
+  margin: 0.85rem 0 0.75rem;
+}
+
+.auth-google-host {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  min-height: 40px;
+}
+
+.auth-google-host > div {
+  width: 100% !important;
+}
+
+.auth-google-note {
+  font-size: 0.72rem;
+  color: var(--color-text);
+  text-align: center;
+  margin: 0;
+  opacity: 0.85;
+}
+
+.auth-google.is-disabled {
+  pointer-events: none;
 }
 
 .auth-divider {

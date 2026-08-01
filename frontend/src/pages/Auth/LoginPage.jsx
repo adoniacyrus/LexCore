@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import GoogleAuthButton from '../../components/GoogleAuthButton';
 import { useAuth } from '../../context/AuthContext';
 import { getDashboardPath } from '../../utils/roleRoutes';
 import {
@@ -14,7 +15,7 @@ function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [params] = useSearchParams();
-  const { login, isAuthenticated, user, loading, getErrorMessage } = useAuth();
+  const { login, loginWithGoogle, isAuthenticated, user, loading, getErrorMessage } = useAuth();
   const intent = params.get('intent');
 
   const [email, setEmail] = useState('');
@@ -82,6 +83,20 @@ function LoginPage() {
         mapped.formError ||
           getErrorMessage(err, 'Login failed. Please try again.')
       );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleGoogleCredential = async (idToken) => {
+    setError('');
+    setSuccess('');
+    setSubmitting(true);
+    try {
+      const me = await loginWithGoogle(idToken, 'login');
+      navigate(getDashboardPath(me.role), { replace: true });
+    } catch (err) {
+      setError(getErrorMessage(err, 'Google login failed. Please try again.'));
     } finally {
       setSubmitting(false);
     }
@@ -195,6 +210,14 @@ function LoginPage() {
             'Login'
           )}
         </button>
+
+        <GoogleAuthButton
+          intent="login"
+          disabled={busy}
+          label="Or continue with Google"
+          onCredential={handleGoogleCredential}
+          onError={setError}
+        />
       </form>
 
       <div className="auth-divider" role="separator">

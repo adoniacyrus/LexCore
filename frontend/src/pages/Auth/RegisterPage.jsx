@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import GoogleAuthButton from '../../components/GoogleAuthButton';
 import { useAuth } from '../../context/AuthContext';
 import { getDashboardPath } from '../../utils/roleRoutes';
 import {
@@ -27,7 +28,7 @@ const EMPTY_ERRORS = {
 function RegisterPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const { register, isAuthenticated, user, loading, getErrorMessage } = useAuth();
+  const { register, loginWithGoogle, isAuthenticated, user, loading, getErrorMessage } = useAuth();
   const intent = params.get('intent');
 
   const [form, setForm] = useState({
@@ -161,6 +162,27 @@ function RegisterPage() {
     }
   };
 
+  const handleGoogleCredential = async (idToken) => {
+    setError('');
+    setSuccess('');
+    if (!form.terms) {
+      setTouched((prev) => ({ ...prev, terms: true }));
+      setFieldError('terms', validateTerms(false));
+      setError('Please accept the Terms & Privacy Policy to continue with Google.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const me = await loginWithGoogle(idToken, 'register');
+      navigate(getDashboardPath(me.role), { replace: true });
+    } catch (err) {
+      setError(getErrorMessage(err, 'Google registration failed. Please try again.'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const loginPath = intent === 'consultation' ? '/login?intent=consultation' : '/login';
   const busy = submitting || loading;
 
@@ -229,7 +251,7 @@ function RegisterPage() {
           ) : null}
         </label>
 
-        <label className="auth-field">
+        <label className="auth-field auth-field--full">
           <span>Mobile Number</span>
           <input
             type="tel"
@@ -288,7 +310,7 @@ function RegisterPage() {
           ) : null}
         </label>
 
-        <label className="auth-field auth-field--full">
+        <label className="auth-field">
           <span>Confirm Password</span>
           <input
             type={showPassword ? 'text' : 'password'}
@@ -343,6 +365,14 @@ function RegisterPage() {
             'Create Client Account'
           )}
         </button>
+
+        <GoogleAuthButton
+          intent="register"
+          disabled={busy}
+          label="Or sign up with Google"
+          onCredential={handleGoogleCredential}
+          onError={setError}
+        />
       </form>
 
       <p className="auth-switch">
