@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light" />
+  <title>{% block title %}LexCore{% endblock %}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#F9F7F4;font-family:Georgia,'Times New Roman',serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F9F7F4;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background-color:#ffffff;border:1px solid #E7E1D7;">
+          <tr>
+            <td style="padding:28px 32px 20px;border-bottom:3px solid #6B1E2B;">
+              <p style="margin:0;font-family:Georgia,serif;font-size:22px;font-weight:700;color:#6B1E2B;letter-spacing:-0.02em;">
+                LexCore
+              </p>
+              <p style="margin:6px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#C8A75B;">
+                Chambers Portal
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:28px 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.65;color:#4A4450;">
+              {% block content %}{% endblock %}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:20px 32px 28px;border-top:1px solid #E7E1D7;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.55;color:#7A7480;">
+              {% block footer %}
+              <p style="margin:0 0 8px;">This is a transactional message from LexCore Chambers.</p>
+              <p style="margin:0;">If you were not expecting this email, you can ignore it safely.</p>
+              {% endblock %}
+            </td>
+          </tr>
+        </table>
+        <p style="margin:16px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#9A93A0;">
+          © LexCore · Advocates &amp; Legal Consultants
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

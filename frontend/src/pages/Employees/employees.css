@@ -1,0 +1,418 @@
+/* Employee management — uses LexCore theme tokens, no dashboard redesign */
+
+.emp-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--bg-warm-ivory);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  padding: 2.5rem 1.5rem 3rem;
+}
+
+/* Nested inside DashboardLayout workspace */
+.emp-page--embedded {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  padding: 0.15rem 0 0;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.emp-page-inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.emp-page--embedded .emp-page-inner {
+  max-width: none;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.emp-title {
+  font-family: var(--font-headings);
+  font-size: clamp(1.75rem, 3vw, 2.35rem);
+  font-weight: 600;
+  color: var(--color-dark);
+  letter-spacing: -0.02em;
+  margin-bottom: 0.4rem;
+}
+
+.emp-page--embedded .emp-title.section-headline {
+  margin-bottom: 0.65rem;
+}
+
+.emp-subtitle {
+  font-size: 0.95rem;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.emp-page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.25rem;
+  margin-bottom: 1.75rem;
+  flex-shrink: 0;
+}
+
+.emp-page-header--fixed {
+  margin-bottom: 1rem;
+}
+
+.emp-page--embedded .emp-page-header--fixed.lw-page-header {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.emp-page--embedded .emp-toolbar {
+  flex-shrink: 0;
+  margin-bottom: 0.85rem;
+}
+
+.emp-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.emp-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.emp-search,
+.emp-filter {
+  flex: 1;
+  min-width: 200px;
+}
+
+.emp-search input,
+.emp-filter select,
+.emp-field input,
+.emp-field select,
+.auth-field select {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  background: #fff;
+  color: var(--color-text-dark);
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  padding: 0.75rem 0.9rem;
+  outline: none;
+  border-radius: var(--border-radius-sm);
+  transition: border-color var(--transition-normal);
+}
+
+.emp-search input:focus,
+.emp-filter select:focus,
+.emp-field input:focus,
+.emp-field select:focus,
+.auth-field select:focus {
+  border-color: var(--color-primary);
+}
+
+.emp-search input::placeholder {
+  color: #A39EAB;
+}
+
+.emp-table-wrap {
+  border: 1px solid var(--color-border);
+  background: #fff;
+  overflow: auto;
+}
+
+.emp-page--embedded .emp-table-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.emp-page--embedded .emp-state {
+  min-height: 12rem;
+}
+
+.emp-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 920px;
+}
+
+.emp-page--embedded .emp-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #faf8f5;
+  box-shadow: 0 1px 0 var(--color-border);
+}
+
+.emp-actions-col {
+  width: 1%;
+  white-space: nowrap;
+  text-align: right !important;
+}
+
+.emp-row-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
+.emp-action-btn {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(107, 30, 43, 0.15);
+  background: #fff;
+  color: var(--color-primary);
+  cursor: pointer;
+  border-radius: var(--border-radius-sm);
+  transition: border-color var(--transition-normal), background-color var(--transition-normal),
+    color var(--transition-normal);
+}
+
+.emp-action-btn:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  background: rgba(107, 30, 43, 0.05);
+}
+
+.emp-action-btn--accent:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  color: #8a6a2f;
+  background: rgba(200, 167, 91, 0.12);
+}
+
+.emp-action-btn--danger {
+  color: #9b1c1c;
+  border-color: rgba(155, 28, 28, 0.2);
+}
+
+.emp-action-btn--danger:hover:not(:disabled) {
+  border-color: #9b1c1c;
+  background: rgba(180, 35, 24, 0.06);
+  color: #9b1c1c;
+}
+
+.emp-action-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.emp-btn-danger {
+  background: #9b1c1c;
+  color: #fff;
+  border: none;
+}
+
+.emp-btn-danger:hover:not(:disabled) {
+  background: #7f1616;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.emp-confirm {
+  width: min(420px, 100%);
+}
+
+.emp-confirm__message {
+  margin: 0 0 1.35rem;
+}
+
+.emp-table th,
+.emp-table td {
+  text-align: left;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.9rem;
+}
+
+.emp-table th {
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text);
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.emp-table tr:last-child td {
+  border-bottom: none;
+}
+
+.emp-status {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.emp-status.is-active {
+  color: var(--color-accent);
+}
+
+.emp-status.is-inactive {
+  color: #b42318;
+}
+
+.emp-state {
+  padding: 2.5rem 1.25rem;
+  text-align: center;
+  color: var(--color-text);
+  font-size: 0.95rem;
+}
+
+.emp-error {
+  background: rgba(180, 35, 24, 0.08);
+  border-left: 3px solid #b42318;
+  color: #b42318;
+  padding: 0.75rem 0.9rem;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.emp-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 31, 38, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  z-index: 80;
+}
+
+.emp-modal {
+  width: min(480px, 100%);
+  background: #fff;
+  border: 1px solid var(--color-border);
+  box-shadow: 0 4px 24px rgba(58, 28, 36, 0.1);
+  padding: 1.65rem 1.5rem;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: var(--border-radius-sm);
+}
+
+.emp-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.emp-modal-header .section-tag-gold {
+  margin-bottom: 0.4rem;
+}
+
+.emp-modal-header h2 {
+  font-family: var(--font-headings);
+  font-size: 1.55rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--color-dark);
+  margin: 0;
+}
+
+.emp-modal-close {
+  border: none;
+  background: transparent;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.emp-form {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.emp-field {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.emp-field > span {
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.emp-form-note {
+  font-size: 0.8rem;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.emp-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  margin-top: 0.35rem;
+}
+
+.emp-toast {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  max-width: min(360px, calc(100vw - 2rem));
+  padding: 0.85rem 1rem;
+  font-size: 0.85rem;
+  z-index: 90;
+  border: 1px solid var(--color-border);
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(26, 31, 38, 0.12);
+}
+
+.emp-toast--success {
+  border-left: 3px solid var(--color-accent);
+}
+
+.emp-toast--error {
+  border-left: 3px solid #b42318;
+  color: #b42318;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 720px) {
+  .emp-page-header {
+    align-items: stretch;
+  }
+
+  .emp-header-actions {
+    width: 100%;
+  }
+
+  .emp-header-actions .btn {
+    flex: 1;
+  }
+}

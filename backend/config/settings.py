@@ -67,14 +67,14 @@ ROOT_URLCONF = 'config.urls'
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [BASE_DIR / "templates"],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
@@ -164,8 +164,13 @@ AUTH_USER_MODEL = "accounts.User"
 GOOGLE_OAUTH_CLIENT_ID = config("GOOGLE_OAUTH_CLIENT_ID", default="")
 
 # ---------------------------------------------------------------------------
-# Email (Gmail SMTP) — used by forgot-password reset links
+# Email (Gmail SMTP) — transactional mail (welcome, password reset)
 # Prefer an App Password (spaces are stripped automatically).
+#
+# Deliverability notes:
+# - From address should match EMAIL_HOST_USER (Gmail rejects / spam-filters spoofing).
+# - Personal Gmail SMTP can still land in Spam for new/low-volume senders.
+# - Production: use a custom domain + SPF/DKIM/DMARC (Google Workspace / SES / etc.).
 # ---------------------------------------------------------------------------
 EMAIL_BACKEND = config(
     "EMAIL_BACKEND",
@@ -176,5 +181,11 @@ EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
 EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
 EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="").replace(" ", "")
-DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default=EMAIL_HOST_USER or "noreply@lexcore.local")
+EMAIL_FROM_NAME = config("EMAIL_FROM_NAME", default="LexCore Chambers")
+# Address only — display name is applied in apps.accounts.emails
+DEFAULT_FROM_EMAIL = config(
+    "DEFAULT_FROM_EMAIL",
+    default=EMAIL_HOST_USER or "noreply@lexcore.local",
+)
+EMAIL_REPLY_TO = config("EMAIL_REPLY_TO", default=EMAIL_HOST_USER or "")
 FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:5173")

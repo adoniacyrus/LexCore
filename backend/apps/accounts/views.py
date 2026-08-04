@@ -7,7 +7,6 @@ request → serializer → response and JWT token issuance / blacklist.
 
 from django.conf import settings
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from django.core.mail import send_mail
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from rest_framework import status
@@ -17,6 +16,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from .emails import send_password_reset_email
 from .google_auth import GoogleAuthSerializer
 from .models import User
 from .serializers import (
@@ -170,34 +170,7 @@ class ForgotPasswordView(APIView):
                 settings, "FRONTEND_URL", "http://localhost:5173"
             ).rstrip("/")
             reset_link = f"{frontend_url}/reset-password/{uid}/{token}"
-            from_email = getattr(
-                settings, "DEFAULT_FROM_EMAIL", "noreply@lexcore.local"
-            )
-
-            # Keep plain-text parts short so console/quoted-printable output
-            # does not soft-wrap the token mid-string.
-            plain_message = (
-                "You requested a password reset for your LexCore account.\n\n"
-                "Open this link to set a new password:\n"
-                f"{frontend_url}/reset-password/{uid}/{token}\n\n"
-                f"UID:\n{uid}\n\n"
-                f"Token:\n{token}\n\n"
-                "If you did not request this, you can ignore this email."
-            )
-            html_message = (
-                "<p>You requested a password reset for your LexCore account.</p>"
-                f'<p><a href="{reset_link}">Reset your password</a></p>'
-                "<p>If you did not request this, you can ignore this email.</p>"
-            )
-
-            send_mail(
-                subject="LexCore password reset",
-                message=plain_message,
-                from_email=from_email,
-                recipient_list=[user.email],
-                fail_silently=False,
-                html_message=html_message,
-            )
+            send_password_reset_email(user=user, reset_url=reset_link)
 
         return Response({"message": GENERIC_FORGOT_MESSAGE}, status=status.HTTP_200_OK)
 

@@ -1,0 +1,12 @@
+Welcome to LexCore, {{ employee_name }}
+
+An administrator has created your employee account.
+
+Employee name: {{ employee_name }}
+Email: {{ employee_email }}
+Temporary password: {{ temporary_password }}
+Login: {{ login_url }}
+
+Please sign in and change this temporary password after your first login.
+
+— LexCore Chambers

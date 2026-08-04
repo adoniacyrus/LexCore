@@ -192,6 +192,48 @@ section {
   }
 }
 
+/* Shared LexCore brand mark (landing · auth · dashboard) */
+.lex-brand-mark {
+  flex-shrink: 0;
+  background: var(--color-primary);
+  border: 1px solid var(--color-accent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lex-brand-mark svg {
+  fill: var(--color-accent);
+  display: block;
+}
+
+.lex-brand-mark--sm {
+  width: 28px;
+  height: 28px;
+}
+.lex-brand-mark--sm svg {
+  width: 14px;
+  height: 14px;
+}
+
+.lex-brand-mark--md {
+  width: 36px;
+  height: 36px;
+}
+.lex-brand-mark--md svg {
+  width: 18px;
+  height: 18px;
+}
+
+.lex-brand-mark--lg {
+  width: 42px;
+  height: 42px;
+}
+.lex-brand-mark--lg svg {
+  width: 22px;
+  height: 22px;
+}
+
 /* â€"â€"â€" Typography helpers â€"â€"â€" */
 .section-tag-gold {
   font-family: var(--font-sans);

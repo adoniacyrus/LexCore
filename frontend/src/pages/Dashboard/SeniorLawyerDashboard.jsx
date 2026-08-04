@@ -1,12 +1,18 @@
-import React from 'react';
-import DashboardHomeView from './DashboardHomeView';
+import React, { useRef } from 'react';
+import DashboardLayout from '../../layouts/DashboardLayout';
+import WorkspaceHome from './WorkspaceHome';
 
 function SeniorLawyerDashboard() {
+  const quickActionsRef = useRef(null);
+
   return (
-    <DashboardHomeView
-      userName="Adv. Rohan Nair"
-      roleLabel="Senior Advocate"
-    />
+    <DashboardLayout
+      onQuickActions={() =>
+        quickActionsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+    >
+      <WorkspaceHome quickActionsRef={quickActionsRef} />
+    </DashboardLayout>
   );
 }
 

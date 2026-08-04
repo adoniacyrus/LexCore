@@ -14,7 +14,9 @@ import SeniorLawyerDashboard from '../pages/Dashboard/SeniorLawyerDashboard';
 import JuniorLawyerDashboard from '../pages/Dashboard/JuniorLawyerDashboard';
 import ParalegalDashboard from '../pages/Dashboard/ParalegalDashboard';
 import ClientDashboard from '../pages/Dashboard/ClientDashboard';
+import EmployeeListPage from '../pages/Employees/EmployeeListPage';
 import ProtectedRoute from './ProtectedRoute';
+import RoleProtectedRoute from './RoleProtectedRoute';
 
 function AppRouter() {
   return (
@@ -39,6 +41,14 @@ function AppRouter() {
                 <ProtectedRoute>
                   <AdminDashboard />
                 </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/admin/employees"
+              element={
+                <RoleProtectedRoute roles={['ADMIN']}>
+                  <EmployeeListPage />
+                </RoleProtectedRoute>
               }
             />
             <Route
