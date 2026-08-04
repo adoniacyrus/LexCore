@@ -7,6 +7,8 @@ import AuthLayout from '../layouts/AuthLayout';
 import LandingPage from '../pages/Landing/LandingPage';
 import LoginPage from '../pages/Auth/LoginPage';
 import RegisterPage from '../pages/Auth/RegisterPage';
+import ForgotPasswordPage from '../pages/Auth/ForgotPasswordPage';
+import ResetPasswordPage from '../pages/Auth/ResetPasswordPage';
 import AdminDashboard from '../pages/Dashboard/AdminDashboard';
 import SeniorLawyerDashboard from '../pages/Dashboard/SeniorLawyerDashboard';
 import JuniorLawyerDashboard from '../pages/Dashboard/JuniorLawyerDashboard';
@@ -27,6 +29,8 @@ function AppRouter() {
             <Route element={<AuthLayout />}>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password/:uid/:token" element={<ResetPasswordPage />} />
             </Route>
 
             <Route

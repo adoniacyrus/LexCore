@@ -192,9 +192,9 @@ function LoginPage() {
             <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
             <span>Remember Me</span>
           </label>
-          <button type="button" className="auth-text-link" onClick={() => alert('Password reset will be emailed to registered clients.')}>
+          <Link to="/forgot-password" className="auth-text-link">
             Forgot Password
-          </button>
+          </Link>
         </div>
 
         {success ? <p className="auth-sheet-lede" role="status">{success}</p> : null}

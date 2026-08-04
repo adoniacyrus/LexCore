@@ -301,8 +301,10 @@ function RegisterPage() {
           {form.password ? (
             <ul className="auth-strength-checklist">
               <li className={strength.checks.minLength ? 'is-met' : ''}>At least 8 characters</li>
-              <li className={strength.checks.mixedCase ? 'is-met' : ''}>Upper &amp; lowercase letters</li>
-              <li className={strength.checks.numberOrSymbol ? 'is-met' : ''}>A number or symbol</li>
+              <li className={strength.checks.hasUpper ? 'is-met' : ''}>Uppercase letter</li>
+              <li className={strength.checks.hasLower ? 'is-met' : ''}>Lowercase letter</li>
+              <li className={strength.checks.hasNumber ? 'is-met' : ''}>A number</li>
+              <li className={strength.checks.hasSpecial ? 'is-met' : ''}>A special character</li>
             </ul>
           ) : null}
           {fieldErrors.password ? (

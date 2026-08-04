@@ -110,3 +110,18 @@ export async function googleAuth({ id_token, intent }) {
   });
   return data;
 }
+
+export async function forgotPassword({ email }) {
+  const { data } = await api.post('/auth/forgot-password/', { email });
+  return data;
+}
+
+export async function resetPassword({ uid, token, password, confirm_password }) {
+  const { data } = await api.post('/auth/reset-password/', {
+    uid,
+    token,
+    password,
+    confirm_password,
+  });
+  return data;
+}

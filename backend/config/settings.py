@@ -13,10 +13,14 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 from datetime import timedelta
 from pathlib import Path
 
-from decouple import config
+from decouple import Config, RepositoryEnv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Always load backend/.env explicitly (avoids cwd / AutoConfig surprises).
+_env_path = BASE_DIR / ".env"
+config = Config(RepositoryEnv(str(_env_path))) if _env_path.exists() else __import__("decouple").config
 
 
 # Quick-start development settings - unsuitable for production
@@ -102,7 +106,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
@@ -159,3 +162,19 @@ AUTH_USER_MODEL = "accounts.User"
 
 # Google Identity Services (OAuth client ID from Google Cloud Console)
 GOOGLE_OAUTH_CLIENT_ID = config("GOOGLE_OAUTH_CLIENT_ID", default="")
+
+# ---------------------------------------------------------------------------
+# Email (Gmail SMTP) — used by forgot-password reset links
+# Prefer an App Password (spaces are stripped automatically).
+# ---------------------------------------------------------------------------
+EMAIL_BACKEND = config(
+    "EMAIL_BACKEND",
+    default="django.core.mail.backends.smtp.EmailBackend",
+)
+EMAIL_HOST = config("EMAIL_HOST", default="smtp.gmail.com")
+EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
+EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
+EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="").replace(" ", "")
+DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default=EMAIL_HOST_USER or "noreply@lexcore.local")
+FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:5173")

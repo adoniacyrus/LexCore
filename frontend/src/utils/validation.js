@@ -34,6 +34,10 @@ export function validatePassword(value) {
   const password = String(value ?? '');
   if (!password) return 'Password is required.';
   if (password.length < 8) return 'Password must be at least 8 characters.';
+  if (!/[A-Z]/.test(password)) return 'Password must include an uppercase letter.';
+  if (!/[a-z]/.test(password)) return 'Password must include a lowercase letter.';
+  if (!/\d/.test(password)) return 'Password must include a number.';
+  if (!/[^A-Za-z0-9]/.test(password)) return 'Password must include a special character.';
   return '';
 }
 
@@ -61,16 +65,30 @@ export function getPasswordStrength(password) {
   const value = String(password ?? '');
   const checks = {
     minLength: value.length >= 8,
-    mixedCase: /[a-z]/.test(value) && /[A-Z]/.test(value),
-    numberOrSymbol: /\d/.test(value) || /[^A-Za-z0-9]/.test(value),
+    hasUpper: /[A-Z]/.test(value),
+    hasLower: /[a-z]/.test(value),
+    hasNumber: /\d/.test(value),
+    hasSpecial: /[^A-Za-z0-9]/.test(value),
   };
 
-  let score = 0;
-  if (checks.minLength) score += 1;
-  if (checks.mixedCase) score += 1;
-  if (checks.numberOrSymbol) score += 1;
+  const met = Object.values(checks).filter(Boolean).length;
+  // Map 0–5 rule hits onto the existing 3-segment strength bar.
+  const score = met <= 0 ? 0 : met <= 2 ? 1 : met <= 4 ? 2 : 3;
 
   return { score, checks };
+}
+
+export function validateResetPasswordForm({ password, confirmPassword }) {
+  return {
+    password: validatePassword(password),
+    confirmPassword: validateConfirmPassword(password, confirmPassword),
+  };
+}
+
+export function validateForgotPasswordForm({ email }) {
+  return {
+    email: validateEmail(email),
+  };
 }
 
 export function validateRegistrationForm(form) {
