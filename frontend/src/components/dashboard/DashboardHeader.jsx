@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { getRoleLabel } from '../../data/dashboard/roleWorkspaces';
 import NotificationPanel from './NotificationPanel';
@@ -144,15 +144,6 @@ function DashboardHeader({
           {profileOpen ? (
             <div className="lw-profile-menu" role="menu">
               <p className="lw-profile-menu__email">{user?.email}</p>
-              {user?.role === 'CLIENT' ? (
-                <Link
-                  to="/dashboard/client/account"
-                  role="menuitem"
-                  onClick={() => setProfileOpen(false)}
-                >
-                  Account
-                </Link>
-              ) : null}
               <button type="button" role="menuitem" onClick={handleLogout}>
                 Sign out
               </button>
