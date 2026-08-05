@@ -55,9 +55,14 @@ function AdminWorkspace() {
             Provision accounts, review roles, and manage chamber access.
           </p>
         </div>
-        <Link to="/dashboard/admin/employees" className="btn btn-primary">
-          Manage Users
-        </Link>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.65rem' }}>
+          <Link to="/dashboard/admin/consultations" className="btn btn-ghost-dark">
+            Consultations
+          </Link>
+          <Link to="/dashboard/admin/employees" className="btn btn-primary">
+            Manage Users
+          </Link>
+        </div>
       </header>
 
       {error ? (

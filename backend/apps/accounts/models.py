@@ -157,6 +157,12 @@ class User(AbstractBaseUser, PermissionsMixin):
         db_index=True,
         help_text="Chambers access role.",
     )
+    practice_areas = models.ManyToManyField(
+        "consultations.PracticeArea",
+        blank=True,
+        related_name="lawyers",
+        help_text="Practice areas this lawyer specializes in.",
+    )
 
     # Flags used by Django Admin / ModelBackend permission checks
     is_active = models.BooleanField(

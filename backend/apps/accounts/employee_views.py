@@ -28,7 +28,9 @@ logger = logging.getLogger(__name__)
 
 
 def _employee_queryset():
-    return User.objects.exclude(role=UserRole.CLIENT)
+    return User.objects.exclude(role=UserRole.CLIENT).prefetch_related(
+        "practice_areas"
+    )
 
 
 def _get_employee(pk):

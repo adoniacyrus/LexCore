@@ -85,6 +85,18 @@ export function validateResetPasswordForm({ password, confirmPassword }) {
   };
 }
 
+export function validateChangePasswordForm({
+  currentPassword,
+  newPassword,
+  confirmPassword,
+}) {
+  return {
+    currentPassword: validateLoginPassword(currentPassword),
+    newPassword: validatePassword(newPassword),
+    confirmPassword: validateConfirmPassword(newPassword, confirmPassword),
+  };
+}
+
 export function validateForgotPasswordForm({ email }) {
   return {
     email: validateEmail(email),

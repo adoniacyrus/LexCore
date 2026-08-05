@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { createConsultation, getErrorMessage } from '../../services/consultationService';
 import {
-  CONSULTATION_MODES,
-  PRACTICE_AREAS,
-  todayInputValue,
-} from './consultationConstants';
+  createConsultation,
+  getErrorMessage,
+  listPracticeAreas,
+} from '../../services/consultationService';
+import { CONSULTATION_MODES, todayInputValue } from './consultationConstants';
 import './consultations.css';
 
 const EMPTY = {
@@ -21,6 +21,7 @@ const EMPTY = {
 function BookConsultationModal({ open, onClose, onSubmitted }) {
   const { accessToken } = useAuth();
   const [form, setForm] = useState(EMPTY);
+  const [practiceAreas, setPracticeAreas] = useState([]);
   const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -34,6 +35,22 @@ function BookConsultationModal({ open, onClose, onSubmitted }) {
     setSubmitting(false);
     backdropPointerDown.current = false;
   }, [open]);
+
+  useEffect(() => {
+    if (!open || !accessToken) return undefined;
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await listPracticeAreas(accessToken);
+        if (!cancelled) setPracticeAreas(Array.isArray(data) ? data : []);
+      } catch {
+        if (!cancelled) setPracticeAreas([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, accessToken]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -89,7 +106,7 @@ function BookConsultationModal({ open, onClose, onSubmitted }) {
     try {
       const created = await createConsultation(accessToken, {
         knows_practice_area: form.knowsPracticeArea,
-        practice_area: form.knowsPracticeArea ? form.practice_area : null,
+        practice_area: form.knowsPracticeArea ? Number(form.practice_area) : null,
         subject: form.subject.trim(),
         preferred_date: form.preferred_date,
         preferred_time: form.preferred_time,
@@ -184,9 +201,9 @@ function BookConsultationModal({ open, onClose, onSubmitted }) {
               <span>Practice Area</span>
               <select name="practice_area" value={form.practice_area} onChange={onChange}>
                 <option value="">Select a practice area</option>
-                {PRACTICE_AREAS.map((area) => (
-                  <option key={area.value} value={area.value}>
-                    {area.label}
+                {practiceAreas.map((area) => (
+                  <option key={area.id} value={area.id}>
+                    {area.name}
                   </option>
                 ))}
               </select>

@@ -9,6 +9,8 @@ import string
 
 from rest_framework import serializers
 
+from apps.consultations.models import PracticeArea
+
 from .models import User, UserRole
 
 EMPLOYEE_ROLES = (
@@ -17,6 +19,8 @@ EMPLOYEE_ROLES = (
     UserRole.JUNIOR_LAWYER,
     UserRole.PARALEGAL,
 )
+
+LAWYER_ROLES = (UserRole.SENIOR_LAWYER, UserRole.JUNIOR_LAWYER)
 
 
 def generate_temporary_password(length: int = 12) -> str:
@@ -38,8 +42,33 @@ def generate_temporary_password(length: int = 12) -> str:
             return password
 
 
+class PracticeAreaBriefSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PracticeArea
+        fields = ("id", "name")
+        read_only_fields = fields
+
+
+def _validate_practice_area_ids(role, practice_area_ids):
+    if practice_area_ids is None:
+        return None
+    if role not in LAWYER_ROLES:
+        return []
+    ids = list(practice_area_ids)
+    if not ids:
+        return []
+    found = list(PracticeArea.objects.filter(id__in=ids, is_active=True))
+    if len(found) != len(set(ids)):
+        raise serializers.ValidationError(
+            "One or more practice areas are invalid or inactive."
+        )
+    return found
+
+
 class EmployeeSerializer(serializers.ModelSerializer):
     """Read serializer for the employee directory."""
+
+    practice_areas = PracticeAreaBriefSerializer(many=True, read_only=True)
 
     class Meta:
         model = User
@@ -51,6 +80,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
             "role",
             "is_active",
             "created_at",
+            "practice_areas",
         )
         read_only_fields = fields
 
@@ -67,6 +97,11 @@ class EmployeeCreateSerializer(serializers.Serializer):
         default="",
     )
     role = serializers.ChoiceField(choices=[(r.value, r.label) for r in EMPLOYEE_ROLES])
+    practice_area_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        allow_empty=True,
+    )
 
     def validate_email(self, value: str) -> str:
         email = User.objects.normalize_email(value).strip().lower()
@@ -91,10 +126,20 @@ class EmployeeCreateSerializer(serializers.Serializer):
             raise serializers.ValidationError("Invalid employee role.")
         return value
 
+    def validate(self, attrs):
+        areas = _validate_practice_area_ids(
+            attrs.get("role"),
+            attrs.get("practice_area_ids"),
+        )
+        attrs["practice_areas"] = areas
+        return attrs
+
     def create(self, validated_data):
         temporary_password = generate_temporary_password()
         role = validated_data["role"]
         phone = (validated_data.get("phone_number") or "").strip()
+        practice_areas = validated_data.pop("practice_areas", None)
+        validated_data.pop("practice_area_ids", None)
 
         user = User.objects.create_user(
             email=validated_data["email"],
@@ -106,6 +151,8 @@ class EmployeeCreateSerializer(serializers.Serializer):
             is_superuser=(role == UserRole.ADMIN),
             is_active=True,
         )
+        if practice_areas is not None:
+            user.practice_areas.set(practice_areas)
         # Attach plaintext temp password for the view to email (never persisted).
         user._temporary_password = temporary_password  # noqa: SLF001
         return user
@@ -123,6 +170,11 @@ class EmployeeUpdateSerializer(serializers.Serializer):
         default="",
     )
     role = serializers.ChoiceField(choices=[(r.value, r.label) for r in EMPLOYEE_ROLES])
+    practice_area_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        allow_empty=True,
+    )
 
     def validate_full_name(self, value: str) -> str:
         name = value.strip()
@@ -146,6 +198,15 @@ class EmployeeUpdateSerializer(serializers.Serializer):
             raise serializers.ValidationError("Invalid employee role.")
         return value
 
+    def validate(self, attrs):
+        if "practice_area_ids" in self.initial_data:
+            areas = _validate_practice_area_ids(
+                attrs.get("role"),
+                attrs.get("practice_area_ids"),
+            )
+            attrs["practice_areas"] = areas
+        return attrs
+
     def update(self, instance, validated_data):
         role = validated_data["role"]
         instance.full_name = validated_data["full_name"]
@@ -164,5 +225,9 @@ class EmployeeUpdateSerializer(serializers.Serializer):
                 "is_superuser",
             ]
         )
+        if "practice_areas" in validated_data:
+            instance.practice_areas.set(validated_data["practice_areas"] or [])
+        elif role not in LAWYER_ROLES:
+            instance.practice_areas.clear()
         return instance
 

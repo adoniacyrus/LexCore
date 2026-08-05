@@ -4,6 +4,7 @@ import {
   getErrorMessage,
   updateEmployee,
 } from '../../services/employeeService';
+import { listPracticeAreas } from '../../services/consultationService';
 
 const EMPLOYEE_ROLES = [
   { value: 'ADMIN', label: 'Firm Administrator' },
@@ -12,16 +13,20 @@ const EMPLOYEE_ROLES = [
   { value: 'PARALEGAL', label: 'Paralegal' },
 ];
 
+const LAWYER_ROLES = new Set(['SENIOR_LAWYER', 'JUNIOR_LAWYER']);
+
 const EMPTY_FORM = {
   full_name: '',
   email: '',
   phone_number: '',
   role: 'PARALEGAL',
+  practice_area_ids: [],
 };
 
 function EmployeeFormModal({ open, mode = 'create', employee = null, accessToken, onClose, onSaved }) {
   const isEdit = mode === 'edit';
   const [form, setForm] = useState(EMPTY_FORM);
+  const [practiceAreas, setPracticeAreas] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const backdropPointerDown = useRef(false);
@@ -34,6 +39,9 @@ function EmployeeFormModal({ open, mode = 'create', employee = null, accessToken
         email: employee.email || '',
         phone_number: employee.phone_number || '',
         role: employee.role || 'PARALEGAL',
+        practice_area_ids: Array.isArray(employee.practice_areas)
+          ? employee.practice_areas.map((a) => a.id)
+          : [],
       });
     } else {
       setForm(EMPTY_FORM);
@@ -43,11 +51,45 @@ function EmployeeFormModal({ open, mode = 'create', employee = null, accessToken
     backdropPointerDown.current = false;
   }, [open, isEdit, employee]);
 
+  useEffect(() => {
+    if (!open || !accessToken) return undefined;
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await listPracticeAreas(accessToken);
+        if (!cancelled) setPracticeAreas(Array.isArray(data) ? data.filter((a) => a.is_active) : []);
+      } catch {
+        if (!cancelled) setPracticeAreas([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, accessToken]);
+
   if (!open) return null;
+
+  const isLawyer = LAWYER_ROLES.has(form.role);
 
   const onChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+      ...(name === 'role' && !LAWYER_ROLES.has(value) ? { practice_area_ids: [] } : null),
+    }));
+  };
+
+  const togglePracticeArea = (id) => {
+    setForm((prev) => {
+      const has = prev.practice_area_ids.includes(id);
+      return {
+        ...prev,
+        practice_area_ids: has
+          ? prev.practice_area_ids.filter((x) => x !== id)
+          : [...prev.practice_area_ids, id],
+      };
+    });
   };
 
   const handleBackdropPointerDown = (e) => {
@@ -75,6 +117,7 @@ function EmployeeFormModal({ open, mode = 'create', employee = null, accessToken
       email: form.email.trim(),
       phone_number: form.phone_number.trim(),
       role: form.role,
+      practice_area_ids: isLawyer ? form.practice_area_ids : [],
     };
 
     setSubmitting(true);
@@ -162,6 +205,27 @@ function EmployeeFormModal({ open, mode = 'create', employee = null, accessToken
               ))}
             </select>
           </label>
+
+          {isLawyer ? (
+            <fieldset className="emp-practice-areas">
+              <legend>Practice Area Specializations</legend>
+              <p className="emp-form-note auth-sheet-lede">
+                Select one or more practice areas. Include General Consultation for intake matters.
+              </p>
+              <div className="emp-practice-areas__list">
+                {practiceAreas.map((area) => (
+                  <label key={area.id} className="emp-practice-areas__item">
+                    <input
+                      type="checkbox"
+                      checked={form.practice_area_ids.includes(area.id)}
+                      onChange={() => togglePracticeArea(area.id)}
+                    />
+                    {area.name}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          ) : null}
 
           {!isEdit ? (
             <p className="emp-form-note auth-sheet-lede">

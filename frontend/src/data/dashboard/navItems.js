@@ -12,6 +12,18 @@ export const PORTAL_NAV_BY_ROLE = {
       icon: 'users',
       route: '/dashboard/admin/employees',
     },
+    {
+      id: 'consultations',
+      label: 'Consultations',
+      icon: 'consultations',
+      route: '/dashboard/admin/consultations',
+    },
+    {
+      id: 'practice-areas',
+      label: 'Practice Areas',
+      icon: 'cases',
+      route: '/dashboard/admin/practice-areas',
+    },
   ],
   CLIENT: [
     { id: 'dashboard', label: 'Dashboard', icon: 'home' },
@@ -28,8 +40,24 @@ export const PORTAL_NAV_BY_ROLE = {
       route: '/dashboard/client/account',
     },
   ],
-  SENIOR_LAWYER: [{ id: 'dashboard', label: 'Dashboard', icon: 'home' }],
-  JUNIOR_LAWYER: [{ id: 'dashboard', label: 'Dashboard', icon: 'home' }],
+  SENIOR_LAWYER: [
+    { id: 'dashboard', label: 'Dashboard', icon: 'home' },
+    {
+      id: 'assigned-consultations',
+      label: 'Assigned Consultations',
+      icon: 'consultations',
+      route: '/dashboard/senior/consultations',
+    },
+  ],
+  JUNIOR_LAWYER: [
+    { id: 'dashboard', label: 'Dashboard', icon: 'home' },
+    {
+      id: 'assigned-consultations',
+      label: 'Assigned Consultations',
+      icon: 'consultations',
+      route: '/dashboard/junior/consultations',
+    },
+  ],
   PARALEGAL: [{ id: 'dashboard', label: 'Dashboard', icon: 'home' }],
 };
 
@@ -58,7 +86,12 @@ export const PORTAL_NAV_ITEMS = [
 
 export const MODULE_META = {
   users: { title: 'Users', summary: 'Provision and manage internal staff accounts.' },
-  consultations: { title: 'My Consultations', summary: 'Track and book consultation requests.' },
+  consultations: { title: 'Consultations', summary: 'Track, assign, and manage consultation requests.' },
+  'practice-areas': { title: 'Practice Areas', summary: 'Firm practice area master list.' },
+  'assigned-consultations': {
+    title: 'Assigned Consultations',
+    summary: 'Consultations assigned to you.',
+  },
   account: { title: 'Account', summary: 'Your LexCore client account details.' },
   clients: { title: 'Clients', summary: 'Client registry, intake, and relationship history.' },
   cases: { title: 'Cases', summary: 'Matter files, parties, and case lifecycle.' },

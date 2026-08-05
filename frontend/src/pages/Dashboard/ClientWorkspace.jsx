@@ -7,32 +7,29 @@ import {
   listMyConsultations,
 } from '../../services/consultationService';
 import BookConsultationModal from '../Consultations/BookConsultationModal';
+import ConsultationDetailModal from '../Consultations/ConsultationDetailModal';
 import {
+  assignedLawyerLabel,
   formatPreferredDate,
+  formatPreferredTime,
+  practiceAreaLabel,
   STATUS_LABELS,
 } from '../Consultations/consultationConstants';
 import '../Consultations/consultations.css';
 import './clientWorkspace.css';
 
-function getGreeting() {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'Good Morning';
-  if (hour < 17) return 'Good Afternoon';
-  return 'Good Evening';
-}
-
 /**
- * Client home — consultation requests only (live module).
+ * Client home — full-width consultation overview (live module only).
  */
 function ClientWorkspace() {
-  const { user, accessToken } = useAuth();
+  const { accessToken } = useAuth();
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [allItems, setAllItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [bookOpen, setBookOpen] = useState(false);
-  const firstName = (user?.full_name || 'Client').split(' ')[0];
+  const [selected, setSelected] = useState(null);
 
   const load = useCallback(async () => {
     if (!accessToken) return;
@@ -42,7 +39,7 @@ function ClientWorkspace() {
       const data = await listMyConsultations(accessToken);
       const list = Array.isArray(data) ? data : [];
       setAllItems(list);
-      setItems(list.slice(0, 5));
+      setItems(list.slice(0, 6));
     } catch (err) {
       setError(getErrorMessage(err, 'Unable to load consultation requests.'));
       setAllItems([]);
@@ -58,11 +55,15 @@ function ClientWorkspace() {
 
   const stats = useMemo(() => {
     const pending = allItems.filter((item) => item.status === 'PENDING').length;
-    const approved = allItems.filter((item) => item.status === 'APPROVED').length;
+    const accepted = allItems.filter(
+      (item) => item.status === 'APPROVED' || item.status === 'ACCEPTED'
+    ).length;
+    const completed = allItems.filter((item) => item.status === 'COMPLETED').length;
     return {
       total: allItems.length,
       pending,
-      approved,
+      accepted,
+      completed,
     };
   }, [allItems]);
 
@@ -79,21 +80,21 @@ function ClientWorkspace() {
       <header className="client-home__header">
         <div>
           <p className="section-tag-gold">Client Chambers</p>
-          <h1 className="client-home__title">
-            {getGreeting()}, <em>{firstName}</em>
-          </h1>
-          <p className="client-home__desc">
-            Review and manage your consultation requests with LexCore.
-          </p>
+          <h1 className="client-home__title">Consultation Overview</h1>
         </div>
-        <button type="button" className="btn btn-primary" onClick={() => setBookOpen(true)}>
-          Book Consultation
-        </button>
+        <div className="client-home__actions">
+          <Link to="/dashboard/client/consultations" className="btn btn-ghost-dark">
+            My Consultations
+          </Link>
+          <button type="button" className="btn btn-primary" onClick={() => setBookOpen(true)}>
+            Book Consultation
+          </button>
+        </div>
       </header>
 
       <section className="client-home__stats" aria-label="Consultation overview">
         {loading ? (
-          <p className="lw-muted">Loading overview…</p>
+          <p className="lw-muted client-home__stats-loading">Loading overview…</p>
         ) : (
           <>
             <article className="client-stat">
@@ -105,8 +106,12 @@ function ClientWorkspace() {
               <p className="client-stat__label">Pending</p>
             </article>
             <article className="client-stat">
-              <p className="client-stat__value">{stats.approved}</p>
-              <p className="client-stat__label">Approved</p>
+              <p className="client-stat__value">{stats.accepted}</p>
+              <p className="client-stat__label">Accepted</p>
+            </article>
+            <article className="client-stat">
+              <p className="client-stat__value">{stats.completed}</p>
+              <p className="client-stat__label">Completed</p>
             </article>
           </>
         )}
@@ -116,11 +121,7 @@ function ClientWorkspace() {
         <div className="client-home__panel-head">
           <div>
             <h2 id="recent-consultations-heading">Recent Consultations</h2>
-            <p>
-              {items.length
-                ? 'Your most recent consultation requests.'
-                : 'Submit a request to speak with our legal team.'}
-            </p>
+            <p>Select a row to view full booking details.</p>
           </div>
           {items.length ? (
             <Link to="/dashboard/client/consultations" className="btn btn-ghost-dark">
@@ -129,68 +130,89 @@ function ClientWorkspace() {
           ) : null}
         </div>
 
-        {loading ? (
-          <p className="lw-muted client-home__panel-pad">Loading requests…</p>
-        ) : error ? (
-          <p className="cons-error client-home__panel-pad" role="alert">
-            {error}
-          </p>
-        ) : items.length === 0 ? (
-          <div className="client-home__panel-pad">
-            <EmptyState
-              compact
-              eyebrow="Consultations"
-              title="No consultations yet"
-              description="Book your first consultation to get started. Our team will review your request and follow up."
-              action={
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={() => setBookOpen(true)}
-                >
-                  Book your first consultation
-                </button>
-              }
-            />
-          </div>
-        ) : (
-          <div className="client-home__table-wrap">
-            <table className="client-home__table">
-              <thead>
-                <tr>
-                  <th>Reference</th>
-                  <th>Mode</th>
-                  <th>Practice Area</th>
-                  <th>Requested Date</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item) => (
-                  <tr key={item.id}>
-                    <td className="client-home__ref">{item.consultation_id}</td>
-                    <td>{item.consultation_mode_label || item.consultation_mode || '—'}</td>
-                    <td>{item.practice_area_label || '—'}</td>
-                    <td>{formatPreferredDate(item.preferred_date)}</td>
-                    <td>
-                      <span
-                        className={`cons-status is-${String(item.status).toLowerCase()}`}
-                      >
-                        {item.status_label || STATUS_LABELS[item.status] || item.status}
-                      </span>
-                    </td>
+        <div className="client-home__panel-body">
+          {loading ? (
+            <p className="lw-muted client-home__panel-pad">Loading requests…</p>
+          ) : error ? (
+            <p className="cons-error client-home__panel-pad" role="alert">
+              {error}
+            </p>
+          ) : items.length === 0 ? (
+            <div className="client-home__panel-pad">
+              <EmptyState
+                compact
+                eyebrow="Consultations"
+                title="No consultations yet"
+                description="Book your first consultation to get started."
+                action={
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => setBookOpen(true)}
+                  >
+                    Book Consultation
+                  </button>
+                }
+              />
+            </div>
+          ) : (
+            <div className="client-home__table-wrap">
+              <table className="client-home__table">
+                <thead>
+                  <tr>
+                    <th>Reference</th>
+                    <th>Status</th>
+                    <th>Lawyer</th>
+                    <th>Practice Area</th>
+                    <th>Mode</th>
+                    <th>Date</th>
+                    <th>Time</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                </thead>
+                <tbody>
+                  {items.map((item) => (
+                    <tr
+                      key={item.id}
+                      className="client-home__row"
+                      tabIndex={0}
+                      onClick={() => setSelected(item)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setSelected(item);
+                        }
+                      }}
+                    >
+                      <td className="client-home__ref">{item.consultation_id}</td>
+                      <td>
+                        <span className={`cons-status is-${String(item.status).toLowerCase()}`}>
+                          {item.status_label || STATUS_LABELS[item.status] || item.status}
+                        </span>
+                      </td>
+                      <td>{assignedLawyerLabel(item)}</td>
+                      <td>{practiceAreaLabel(item)}</td>
+                      <td>{item.consultation_mode_label || item.consultation_mode || '—'}</td>
+                      <td>{formatPreferredDate(item.preferred_date)}</td>
+                      <td>{formatPreferredTime(item.preferred_time)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </section>
 
       <BookConsultationModal
         open={bookOpen}
         onClose={() => setBookOpen(false)}
         onSubmitted={handleSubmitted}
+      />
+
+      <ConsultationDetailModal
+        open={Boolean(selected)}
+        consultation={selected}
+        onClose={() => setSelected(null)}
       />
     </div>
   );

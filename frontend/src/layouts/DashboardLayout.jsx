@@ -7,6 +7,10 @@ import './dashboardLayout.css';
 
 function resolveActiveModule(pathname) {
   if (pathname.includes('/employees')) return 'users';
+  if (pathname.includes('/practice-areas')) return 'practice-areas';
+  if (pathname.includes('/senior/consultations') || pathname.includes('/junior/consultations')) {
+    return 'assigned-consultations';
+  }
   if (pathname.includes('/consultations')) return 'consultations';
   if (pathname.includes('/account')) return 'account';
   return 'dashboard';

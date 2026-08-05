@@ -125,3 +125,20 @@ export async function resetPassword({ uid, token, password, confirm_password }) 
   });
   return data;
 }
+
+export async function changePassword(access, {
+  current_password,
+  new_password,
+  confirm_password,
+}) {
+  const { data } = await api.post(
+    '/auth/change-password/',
+    { current_password, new_password, confirm_password },
+    {
+      headers: {
+        Authorization: `Bearer ${access}`,
+      },
+    }
+  );
+  return data;
+}

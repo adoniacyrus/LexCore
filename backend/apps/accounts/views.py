@@ -20,6 +20,7 @@ from .emails import send_password_reset_email
 from .google_auth import GoogleAuthSerializer
 from .models import User
 from .serializers import (
+    ChangePasswordSerializer,
     ForgotPasswordSerializer,
     LoginSerializer,
     LoginUserSerializer,
@@ -192,5 +193,31 @@ class ResetPasswordView(APIView):
         user.save(update_fields=["password"])
         return Response(
             {"message": "Password has been reset successfully."},
+            status=status.HTTP_200_OK,
+        )
+
+
+class ChangePasswordView(APIView):
+    """
+    POST /api/auth/change-password/
+
+    Body: {
+      "current_password": "...",
+      "new_password": "...",
+      "confirm_password": "..."
+    }
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = ChangePasswordSerializer(
+            data=request.data,
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(
+            {"message": "Password updated successfully."},
             status=status.HTTP_200_OK,
         )

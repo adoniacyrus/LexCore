@@ -1,8 +1,8 @@
 """
-Consultation request model.
+Consultation workflow models.
 
-consultation_id (e.g. CONS-2026-0001) is the durable business reference used for
-search, reporting, and future conversion into a legal case.
+PracticeArea is the firm master list. Lawyers specialize via M2M on User.
+Consultation references client, optional practice area, and optional assigned lawyer.
 """
 
 from django.conf import settings
@@ -10,13 +10,26 @@ from django.db import models, transaction
 from django.utils import timezone
 
 
-class PracticeArea(models.TextChoices):
-    CIVIL = "CIVIL", "Civil Law"
-    CORPORATE = "CORPORATE", "Corporate Law"
-    CRIMINAL = "CRIMINAL", "Criminal Law"
-    FAMILY = "FAMILY", "Family Law"
-    PROPERTY = "PROPERTY", "Property Law"
-    TAX = "TAX", "Tax & Compliance"
+class PracticeArea(models.Model):
+    """Firm practice-area master (admin-managed)."""
+
+    name = models.CharField(max_length=120, unique=True)
+    description = models.TextField(blank=True, default="")
+    is_active = models.BooleanField(default=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name = "practice area"
+        verbose_name_plural = "practice areas"
+
+    def __str__(self) -> str:
+        return self.name
+
+    @property
+    def is_general(self) -> bool:
+        return self.name.strip().lower() == "general consultation"
 
 
 class ConsultationMode(models.TextChoices):
@@ -29,13 +42,17 @@ class ConsultationStatus(models.TextChoices):
     PENDING = "PENDING", "Pending"
     UNDER_REVIEW = "UNDER_REVIEW", "Under Review"
     APPROVED = "APPROVED", "Approved"
+    ACCEPTED = "ACCEPTED", "Accepted"
     REJECTED = "REJECTED", "Rejected"
     CANCELLED = "CANCELLED", "Cancelled"
     COMPLETED = "COMPLETED", "Completed"
 
 
+LAWYER_ROLES = ("SENIOR_LAWYER", "JUNIOR_LAWYER")
+
+
 class Consultation(models.Model):
-    """Client-submitted consultation request."""
+    """Client-submitted consultation request with optional firm assignment."""
 
     consultation_id = models.CharField(
         max_length=32,
@@ -49,11 +66,20 @@ class Consultation(models.Model):
         on_delete=models.CASCADE,
         related_name="consultations",
     )
-    practice_area = models.CharField(
-        max_length=32,
-        choices=PracticeArea.choices,
-        blank=True,
+    practice_area = models.ForeignKey(
+        PracticeArea,
+        on_delete=models.SET_NULL,
         null=True,
+        blank=True,
+        related_name="consultations",
+    )
+    assigned_lawyer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="assigned_consultations",
+        limit_choices_to={"role__in": LAWYER_ROLES},
     )
     consultation_mode = models.CharField(
         max_length=16,
@@ -77,6 +103,7 @@ class Consultation(models.Model):
         indexes = [
             models.Index(fields=["client", "-created_at"]),
             models.Index(fields=["status", "-created_at"]),
+            models.Index(fields=["assigned_lawyer", "-created_at"]),
         ]
 
     def __str__(self):

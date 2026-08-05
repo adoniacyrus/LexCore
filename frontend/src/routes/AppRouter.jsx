@@ -17,6 +17,9 @@ import ClientDashboard from '../pages/Dashboard/ClientDashboard';
 import EmployeeListPage from '../pages/Employees/EmployeeListPage';
 import BookConsultationPage from '../pages/Consultations/BookConsultationPage';
 import MyConsultationsPage from '../pages/Consultations/MyConsultationsPage';
+import AdminConsultationQueuePage from '../pages/Consultations/AdminConsultationQueuePage';
+import AdminPracticeAreasPage from '../pages/Consultations/AdminPracticeAreasPage';
+import LawyerAssignedPage from '../pages/Consultations/LawyerAssignedPage';
 import ClientAccountPage from '../pages/Account/ClientAccountPage';
 import ProtectedRoute from './ProtectedRoute';
 import RoleProtectedRoute from './RoleProtectedRoute';
@@ -55,6 +58,22 @@ function AppRouter() {
               }
             />
             <Route
+              path="/dashboard/admin/consultations"
+              element={
+                <RoleProtectedRoute roles={['ADMIN']}>
+                  <AdminConsultationQueuePage />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/admin/practice-areas"
+              element={
+                <RoleProtectedRoute roles={['ADMIN']}>
+                  <AdminPracticeAreasPage />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
               path="/dashboard/senior"
               element={
                 <ProtectedRoute>
@@ -63,11 +82,27 @@ function AppRouter() {
               }
             />
             <Route
+              path="/dashboard/senior/consultations"
+              element={
+                <RoleProtectedRoute roles={['SENIOR_LAWYER']}>
+                  <LawyerAssignedPage />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
               path="/dashboard/junior"
               element={
                 <ProtectedRoute>
                   <JuniorLawyerDashboard />
                 </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/junior/consultations"
+              element={
+                <RoleProtectedRoute roles={['JUNIOR_LAWYER']}>
+                  <LawyerAssignedPage />
+                </RoleProtectedRoute>
               }
             />
             <Route

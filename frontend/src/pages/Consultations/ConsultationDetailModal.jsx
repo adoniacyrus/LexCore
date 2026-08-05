@@ -1,7 +1,9 @@
 import React, { useEffect, useRef } from 'react';
 import {
+  assignedLawyerLabel,
   formatPreferredDate,
   formatPreferredTime,
+  practiceAreaLabel,
   STATUS_LABELS,
 } from './consultationConstants';
 import './consultations.css';
@@ -38,7 +40,8 @@ function ConsultationDetailModal({ open, consultation, onClose }) {
     consultation.status;
   const modeLabel =
     consultation.consultation_mode_label || consultation.consultation_mode || '—';
-  const practiceLabel = consultation.practice_area_label || 'To be assigned';
+  const practiceLabel = practiceAreaLabel(consultation);
+  const lawyerLabel = assignedLawyerLabel(consultation);
   const submittedAt = consultation.created_at
     ? new Date(consultation.created_at).toLocaleString(undefined, {
         day: 'numeric',
@@ -98,9 +101,7 @@ function ConsultationDetailModal({ open, consultation, onClose }) {
             <DetailField label="Subject">{consultation.subject || '—'}</DetailField>
             <DetailField label="Mode">{modeLabel}</DetailField>
             <DetailField label="Practice Area">{practiceLabel}</DetailField>
-            <DetailField label="Assigned Lawyer">
-              {consultation.assigned_lawyer || 'Not Assigned'}
-            </DetailField>
+            <DetailField label="Assigned Lawyer">{lawyerLabel}</DetailField>
             <DetailField label="Preferred Date">
               {formatPreferredDate(consultation.preferred_date)}
             </DetailField>

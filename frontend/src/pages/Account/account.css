@@ -1,64 +1,63 @@
-/* Client Account — premium read-only profile */
+/* Client Account — compact profile + change-password modal */
 
 .acct-page {
   display: flex;
   flex-direction: column;
-  gap: 1.15rem;
-  max-width: 960px;
-  padding-bottom: 0.5rem;
-}
-
-.acct-page__header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 0.75rem 1rem;
+  gap: 0.75rem;
+  max-width: 880px;
+  padding-bottom: 0.25rem;
 }
 
 .acct-page__header .section-tag-gold {
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.2rem;
 }
 
 .acct-page__title {
   font-family: var(--font-headings);
-  font-size: clamp(1.55rem, 2.2vw, 1.9rem);
+  font-size: clamp(1.4rem, 2vw, 1.7rem);
   font-weight: 600;
   letter-spacing: -0.02em;
   color: var(--color-dark);
-  margin: 0 0 0.3rem;
+  margin: 0;
   line-height: 1.15;
 }
 
-.acct-page__desc {
+.acct-success {
   margin: 0;
-  font-size: 0.9rem;
-  color: var(--color-text);
-  max-width: 48ch;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.85rem;
+  background: rgba(47, 107, 58, 0.08);
+  border-left: 3px solid #2f6b3a;
+  color: #2f6b3a;
+}
+
+.acct-panel {
+  background: #fff;
+  border: 1px solid var(--color-border);
+  box-shadow: 0 4px 24px rgba(58, 28, 36, 0.05);
+  overflow: hidden;
 }
 
 .acct-hero {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.9rem 1.1rem;
-  padding: 1rem 1.15rem;
-  background: #fff;
-  border: 1px solid var(--color-border);
-  box-shadow: 0 4px 24px rgba(58, 28, 36, 0.05);
+  gap: 0.7rem 0.9rem;
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .acct-hero__avatar {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 3rem;
-  height: 3rem;
+  width: 2.5rem;
+  height: 2.5rem;
   flex-shrink: 0;
   background: var(--color-primary);
   color: #fff;
   font-family: var(--font-headings);
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 600;
   letter-spacing: 0.04em;
 }
@@ -69,9 +68,9 @@
 }
 
 .acct-hero__name {
-  margin: 0 0 0.2rem;
+  margin: 0 0 0.15rem;
   font-family: var(--font-headings);
-  font-size: 1.2rem;
+  font-size: 1.05rem;
   font-weight: 600;
   color: var(--color-dark);
   letter-spacing: -0.01em;
@@ -80,14 +79,14 @@
 
 .acct-hero__email {
   margin: 0;
-  font-size: 0.88rem;
+  font-size: 0.82rem;
   color: var(--color-text);
   word-break: break-word;
 }
 
 .acct-status {
   margin-left: auto;
-  font-size: 0.68rem;
+  font-size: 0.66rem;
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -97,41 +96,13 @@
   color: var(--color-accent);
 }
 
-.acct-section {
-  background: #fff;
-  border: 1px solid var(--color-border);
-  box-shadow: 0 4px 24px rgba(58, 28, 36, 0.05);
-  overflow: hidden;
-}
-
-.acct-section__head {
-  padding: 0.9rem 1.1rem;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.acct-section__head h2 {
-  font-family: var(--font-headings);
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--color-dark);
-  margin: 0 0 0.2rem;
-  letter-spacing: -0.01em;
-}
-
-.acct-section__head p {
-  margin: 0;
-  font-size: 0.82rem;
-  color: var(--color-text);
-}
-
 .acct-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0;
 }
 
 .acct-info-card {
-  padding: 0.95rem 1.1rem;
+  padding: 0.7rem 1rem;
   border-right: 1px solid var(--color-border);
   border-bottom: 1px solid var(--color-border);
   min-width: 0;
@@ -142,8 +113,8 @@
 }
 
 .acct-info-card__label {
-  margin: 0 0 0.35rem;
-  font-size: 0.65rem;
+  margin: 0 0 0.25rem;
+  font-size: 0.62rem;
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -152,16 +123,16 @@
 
 .acct-info-card__value {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 500;
   color: var(--color-dark);
   word-break: break-word;
-  line-height: 1.35;
+  line-height: 1.3;
 }
 
 .acct-info-card__value.is-active {
   color: var(--color-accent);
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -172,14 +143,14 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0.85rem 1rem;
-  padding: 1rem 1.1rem 1.1rem;
+  gap: 0.65rem 1rem;
+  padding: 0.75rem 1rem;
 }
 
 .acct-security__title {
-  margin: 0 0 0.25rem;
+  margin: 0 0 0.15rem;
   font-family: var(--font-headings);
-  font-size: 1.05rem;
+  font-size: 0.98rem;
   font-weight: 600;
   color: var(--color-dark);
   letter-spacing: -0.01em;
@@ -187,13 +158,115 @@
 
 .acct-security__desc {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--color-text);
-  max-width: 42ch;
+  max-width: 40ch;
 }
 
 .acct-security .btn {
   flex-shrink: 0;
+  padding: 0.55rem 1rem;
+  font-size: 0.85rem;
+}
+
+/* Change password modal */
+.acct-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(58, 28, 36, 0.42);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 80;
+}
+
+.acct-modal {
+  width: min(420px, 100%);
+  max-height: min(88vh, 560px);
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  box-shadow: 0 12px 40px rgba(58, 28, 36, 0.14);
+  border-radius: var(--border-radius-sm);
+  padding: 0.85rem 1rem 0.9rem;
+  animation: lw-fade-up 220ms var(--ease-out-soft);
+}
+
+.acct-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.7rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.acct-modal__header .section-tag-gold {
+  margin-bottom: 0.15rem;
+  font-size: 0.62rem;
+}
+
+.acct-modal__header h2 {
+  font-family: var(--font-headings);
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--color-dark);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.acct-modal__close {
+  border: none;
+  background: transparent;
+  font-size: 1.35rem;
+  line-height: 1;
+  color: var(--color-text);
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0.1rem;
+}
+
+.acct-modal__form {
+  gap: 0.55rem;
+}
+
+.acct-modal__form .auth-field {
+  gap: 0.2rem;
+}
+
+.acct-modal__form .auth-field > span {
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+}
+
+.acct-modal__form .auth-field input {
+  padding: 0.55rem 0.7rem;
+  font-size: 0.88rem;
+}
+
+.acct-form-error {
+  margin: 0;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.82rem;
+  background: rgba(180, 35, 24, 0.08);
+  border-left: 3px solid #b42318;
+  color: #b42318;
+}
+
+.acct-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  margin-top: 0.25rem;
+  padding-top: 0.55rem;
+}
+
+.acct-modal__actions .btn {
+  padding: 0.55rem 1rem;
+  font-size: 0.85rem;
 }
 
 @media (max-width: 840px) {
@@ -211,23 +284,12 @@
 }
 
 @media (max-width: 560px) {
-  .acct-hero {
-    align-items: flex-start;
-  }
-
   .acct-status {
     margin-left: 0;
-    width: 100%;
   }
 
   .acct-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .acct-info-card,
-  .acct-info-card:nth-child(2n),
-  .acct-info-card:nth-child(3n) {
-    border-right: none;
+    grid-template-columns: 1fr 1fr;
   }
 
   .acct-security {
@@ -235,6 +297,15 @@
   }
 
   .acct-security .btn {
+    width: 100%;
+  }
+
+  .acct-modal-overlay {
+    padding: 0.65rem;
+    align-items: flex-end;
+  }
+
+  .acct-modal {
     width: 100%;
   }
 }

@@ -1,7 +1,7 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import DashboardLayout from '../../layouts/DashboardLayout';
+import ChangePasswordModal from './ChangePasswordModal';
 import './account.css';
 
 function formatClientId(id) {
@@ -21,22 +21,26 @@ function formatMemberSince(value) {
 }
 
 /**
- * Read-only client Account page — details from AuthContext /me payload only.
+ * Compact read-only client Account page with in-portal password change.
  */
 function ClientAccountPage() {
-  const { user } = useAuth();
+  const { user, accessToken } = useAuth();
+  const [passwordOpen, setPasswordOpen] = useState(false);
+  const [success, setSuccess] = useState('');
+
+  useEffect(() => {
+    if (!success) return undefined;
+    const id = setTimeout(() => setSuccess(''), 4000);
+    return () => clearTimeout(id);
+  }, [success]);
 
   const fields = [
     { label: 'Full Name', value: user?.full_name },
     { label: 'Email Address', value: user?.email },
-    { label: 'Phone Number', value: user?.phone_number?.trim() || null, optional: true },
+    { label: 'Phone Number', value: user?.phone_number?.trim() || null },
     { label: 'Client ID', value: formatClientId(user?.id) },
-    { label: 'Member Since', value: formatMemberSince(user?.created_at), optional: true },
-    {
-      label: 'Account Status',
-      value: 'Active',
-      tone: 'active',
-    },
+    { label: 'Member Since', value: formatMemberSince(user?.created_at) },
+    { label: 'Account Status', value: 'Active', tone: 'active' },
   ].filter((field) => field.value);
 
   const initials = (user?.full_name || 'C')
@@ -53,28 +57,27 @@ function ClientAccountPage() {
           <div>
             <p className="section-tag-gold">Client Portal</p>
             <h1 className="acct-page__title">Account</h1>
-            <p className="acct-page__desc">
-              Your LexCore chambers profile and security controls.
-            </p>
           </div>
         </header>
 
-        <section className="acct-hero" aria-label="Account summary">
-          <span className="acct-hero__avatar" aria-hidden="true">
-            {initials}
-          </span>
-          <div className="acct-hero__meta">
-            <h2 className="acct-hero__name">{user?.full_name || 'Client'}</h2>
-            <p className="acct-hero__email">{user?.email}</p>
-          </div>
-          <span className="acct-status is-active">Active</span>
-        </section>
+        {success ? (
+          <p className="acct-success" role="status">
+            {success}
+          </p>
+        ) : null}
 
-        <section className="acct-section" aria-labelledby="acct-details-heading">
-          <div className="acct-section__head">
-            <h2 id="acct-details-heading">Account Details</h2>
-            <p>Information on file with LexCore Chambers.</p>
+        <section className="acct-panel" aria-label="Account">
+          <div className="acct-hero">
+            <span className="acct-hero__avatar" aria-hidden="true">
+              {initials}
+            </span>
+            <div className="acct-hero__meta">
+              <h2 className="acct-hero__name">{user?.full_name || 'Client'}</h2>
+              <p className="acct-hero__email">{user?.email}</p>
+            </div>
+            <span className="acct-status is-active">Active</span>
           </div>
+
           <div className="acct-grid">
             {fields.map((field) => (
               <article key={field.label} className="acct-info-card">
@@ -89,26 +92,31 @@ function ClientAccountPage() {
               </article>
             ))}
           </div>
-        </section>
 
-        <section className="acct-section" aria-labelledby="acct-security-heading">
-          <div className="acct-section__head">
-            <h2 id="acct-security-heading">Security</h2>
-            <p>Manage how you sign in to the client portal.</p>
-          </div>
           <div className="acct-security">
             <div className="acct-security__copy">
               <p className="acct-security__title">Change Password</p>
               <p className="acct-security__desc">
-                Request a secure reset link for {user?.email || 'your account'}.
+                Update your sign-in password for this account.
               </p>
             </div>
-            <Link to="/forgot-password" className="btn btn-primary">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => setPasswordOpen(true)}
+            >
               Change Password
-            </Link>
+            </button>
           </div>
         </section>
       </div>
+
+      <ChangePasswordModal
+        open={passwordOpen}
+        accessToken={accessToken}
+        onClose={() => setPasswordOpen(false)}
+        onSuccess={(message) => setSuccess(message)}
+      />
     </DashboardLayout>
   );
 }

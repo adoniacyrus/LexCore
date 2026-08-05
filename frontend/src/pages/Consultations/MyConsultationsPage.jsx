@@ -8,8 +8,10 @@ import { getErrorMessage, listMyConsultations } from '../../services/consultatio
 import BookConsultationModal from './BookConsultationModal';
 import ConsultationDetailModal from './ConsultationDetailModal';
 import {
+  assignedLawyerLabel,
   formatPreferredDate,
   formatPreferredTime,
+  practiceAreaLabel,
   STATUS_LABELS,
 } from './consultationConstants';
 import './consultations.css';
@@ -153,8 +155,8 @@ function MyConsultationsPage() {
                     </td>
                     <td>{formatPreferredDate(item.preferred_date)}</td>
                     <td>{formatPreferredTime(item.preferred_time)}</td>
-                    <td>{item.practice_area_label || 'To be assigned'}</td>
-                    <td>{item.assigned_lawyer || 'Not Assigned'}</td>
+                    <td>{practiceAreaLabel(item)}</td>
+                    <td>{assignedLawyerLabel(item)}</td>
                   </tr>
                 ))}
               </tbody>
