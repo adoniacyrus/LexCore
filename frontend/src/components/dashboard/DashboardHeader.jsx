@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { getRoleLabel } from '../../data/dashboard/roleWorkspaces';
 import NotificationPanel from './NotificationPanel';
@@ -25,7 +25,9 @@ function DashboardHeader({
   notifications = [],
   onMenuToggle,
   onQuickActions,
-  showQuickActions = true,
+  showQuickActions = false,
+  showSearch = false,
+  showNotifications = false,
 }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -79,16 +81,20 @@ function DashboardHeader({
         </div>
       </div>
 
-      <div className="lw-header__search">
-        <NavIcon name="search" />
-        <input
-          type="search"
-          placeholder="Search matters, clients, documents…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          aria-label="Global search"
-        />
-      </div>
+      {showSearch ? (
+        <div className="lw-header__search">
+          <NavIcon name="search" />
+          <input
+            type="search"
+            placeholder="Search…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            aria-label="Global search"
+          />
+        </div>
+      ) : (
+        <div className="lw-header__spacer" aria-hidden="true" />
+      )}
 
       <div className="lw-header__right">
         {showQuickActions ? (
@@ -97,23 +103,25 @@ function DashboardHeader({
           </button>
         ) : null}
 
-        <div className="lw-header__notif" ref={notifRef}>
-          <button
-            type="button"
-            className="lw-icon-btn"
-            aria-label="Notifications"
-            onClick={() => {
-              setNotifOpen((v) => !v);
-              setProfileOpen(false);
-            }}
-          >
-            <NavIcon name="bell" />
-            {unread > 0 ? <span className="lw-header__dot">{unread}</span> : null}
-          </button>
-          {notifOpen ? (
-            <NotificationPanel items={notifications} onClose={() => setNotifOpen(false)} />
-          ) : null}
-        </div>
+        {showNotifications ? (
+          <div className="lw-header__notif" ref={notifRef}>
+            <button
+              type="button"
+              className="lw-icon-btn"
+              aria-label="Notifications"
+              onClick={() => {
+                setNotifOpen((v) => !v);
+                setProfileOpen(false);
+              }}
+            >
+              <NavIcon name="bell" />
+              {unread > 0 ? <span className="lw-header__dot">{unread}</span> : null}
+            </button>
+            {notifOpen ? (
+              <NotificationPanel items={notifications} onClose={() => setNotifOpen(false)} />
+            ) : null}
+          </div>
+        ) : null}
 
         <div className="lw-header__profile" ref={profileRef}>
           <button
@@ -136,6 +144,15 @@ function DashboardHeader({
           {profileOpen ? (
             <div className="lw-profile-menu" role="menu">
               <p className="lw-profile-menu__email">{user?.email}</p>
+              {user?.role === 'CLIENT' ? (
+                <Link
+                  to="/dashboard/client/account"
+                  role="menuitem"
+                  onClick={() => setProfileOpen(false)}
+                >
+                  Account
+                </Link>
+              ) : null}
               <button type="button" role="menuitem" onClick={handleLogout}>
                 Sign out
               </button>

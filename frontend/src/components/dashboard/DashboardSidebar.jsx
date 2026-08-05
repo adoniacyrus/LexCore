@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import BrandMark from '../BrandMark';
-import { PORTAL_NAV_ITEMS } from '../../data/dashboard/navItems';
+import { getNavItemsForRole } from '../../data/dashboard/navItems';
+import { useAuth } from '../../context/AuthContext';
 import { getDashboardPath } from '../../utils/roleRoutes';
 import { NavIcon } from './icons';
 
@@ -13,22 +14,14 @@ function DashboardSidebar({
   onNavigate,
 }) {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const homePath = getDashboardPath(role);
+  const items = getNavItemsForRole(role);
 
-  const handleItem = (item) => {
+  const handleLogout = async () => {
     onNavigate?.();
-
-    if (item.id === 'dashboard') {
-      navigate(homePath);
-      return;
-    }
-
-    if (item.route && (!item.roles || item.roles.includes(role))) {
-      navigate(item.route);
-      return;
-    }
-
-    navigate({ pathname: homePath, search: `?module=${item.id}` });
+    await logout();
+    navigate('/login', { replace: true });
   };
 
   return (
@@ -45,17 +38,17 @@ function DashboardSidebar({
       </Link>
 
       <nav className="lw-sidebar__nav">
-        {PORTAL_NAV_ITEMS.map((item) => {
-          const isUsersLive = item.id === 'users' && role === 'ADMIN';
+        {items.map((item) => {
           const isActive = activeModule === item.id;
 
-          if (isUsersLive) {
+          if (item.id === 'dashboard') {
             return (
               <NavLink
                 key={item.id}
-                to={item.route}
+                to={homePath}
+                end
                 className={({ isActive: routeActive }) =>
-                  `lw-sidebar__link ${routeActive || activeModule === 'users' ? 'is-active' : ''}`
+                  `lw-sidebar__link ${routeActive || isActive ? 'is-active' : ''}`
                 }
                 onClick={() => onNavigate?.()}
               >
@@ -65,19 +58,32 @@ function DashboardSidebar({
             );
           }
 
-          return (
-            <button
-              key={item.id}
-              type="button"
-              className={`lw-sidebar__link ${isActive ? 'is-active' : ''}`}
-              onClick={() => handleItem(item)}
-            >
-              <NavIcon name={item.icon} />
-              <span>{item.label}</span>
-            </button>
-          );
+          if (item.route) {
+            return (
+              <NavLink
+                key={item.id}
+                to={item.route}
+                className={({ isActive: routeActive }) =>
+                  `lw-sidebar__link ${routeActive || isActive ? 'is-active' : ''}`
+                }
+                onClick={() => onNavigate?.()}
+              >
+                <NavIcon name={item.icon} />
+                <span>{item.label}</span>
+              </NavLink>
+            );
+          }
+
+          return null;
         })}
       </nav>
+
+      <div className="lw-sidebar__footer">
+        <button type="button" className="lw-sidebar__link lw-sidebar__logout" onClick={handleLogout}>
+          <NavIcon name="logout" />
+          <span>Logout</span>
+        </button>
+      </div>
     </aside>
   );
 }

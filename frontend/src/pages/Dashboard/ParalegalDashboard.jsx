@@ -1,17 +1,11 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import DashboardLayout from '../../layouts/DashboardLayout';
-import WorkspaceHome from './WorkspaceHome';
+import StaffWorkspace from './StaffWorkspace';
 
 function ParalegalDashboard() {
-  const quickActionsRef = useRef(null);
-
   return (
-    <DashboardLayout
-      onQuickActions={() =>
-        quickActionsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }
-    >
-      <WorkspaceHome quickActionsRef={quickActionsRef} />
+    <DashboardLayout showContext={false}>
+      <StaffWorkspace />
     </DashboardLayout>
   );
 }

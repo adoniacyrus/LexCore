@@ -15,6 +15,9 @@ import JuniorLawyerDashboard from '../pages/Dashboard/JuniorLawyerDashboard';
 import ParalegalDashboard from '../pages/Dashboard/ParalegalDashboard';
 import ClientDashboard from '../pages/Dashboard/ClientDashboard';
 import EmployeeListPage from '../pages/Employees/EmployeeListPage';
+import BookConsultationPage from '../pages/Consultations/BookConsultationPage';
+import MyConsultationsPage from '../pages/Consultations/MyConsultationsPage';
+import ClientAccountPage from '../pages/Account/ClientAccountPage';
 import ProtectedRoute from './ProtectedRoute';
 import RoleProtectedRoute from './RoleProtectedRoute';
 
@@ -82,6 +85,38 @@ function AppRouter() {
                   <ClientDashboard />
                 </ProtectedRoute>
               }
+            />
+            <Route
+              path="/dashboard/client/consultations"
+              element={
+                <RoleProtectedRoute roles={['CLIENT']}>
+                  <MyConsultationsPage />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/client/consultations/book"
+              element={
+                <RoleProtectedRoute roles={['CLIENT']}>
+                  <BookConsultationPage />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/client/account"
+              element={
+                <RoleProtectedRoute roles={['CLIENT']}>
+                  <ClientAccountPage />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/client/profile"
+              element={<Navigate to="/dashboard/client/account" replace />}
+            />
+            <Route
+              path="/dashboard/client/settings"
+              element={<Navigate to="/dashboard/client/account" replace />}
             />
 
             <Route path="*" element={<Navigate to="/" replace />} />

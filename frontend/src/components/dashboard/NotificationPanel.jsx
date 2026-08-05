@@ -1,4 +1,5 @@
 import React from 'react';
+import EmptyState from './EmptyState';
 
 function NotificationPanel({ items = [], onClose }) {
   return (
@@ -12,7 +13,13 @@ function NotificationPanel({ items = [], onClose }) {
         ) : null}
       </div>
       {items.length === 0 ? (
-        <p className="lw-muted lw-notif-panel__empty">You are caught up.</p>
+        <div className="lw-notif-panel__empty">
+          <EmptyState
+            compact
+            title="No notifications"
+            description="You're all caught up. New alerts will appear here when available."
+          />
+        </div>
       ) : (
         <ul className="lw-notif-panel__list">
           {items.map((item) => (

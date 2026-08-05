@@ -1,26 +1,24 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import ContextPanel from '../components/dashboard/ContextPanel';
 import DashboardHeader from '../components/dashboard/DashboardHeader';
 import DashboardSidebar from '../components/dashboard/DashboardSidebar';
 import { useAuth } from '../context/AuthContext';
-import { getWorkspaceContent } from '../data/dashboard/roleWorkspaces';
 import './dashboardLayout.css';
 
-function resolveActiveModule(pathname, search) {
+function resolveActiveModule(pathname) {
   if (pathname.includes('/employees')) return 'users';
-  const params = new URLSearchParams(search);
-  return params.get('module') || 'dashboard';
+  if (pathname.includes('/consultations')) return 'consultations';
+  if (pathname.includes('/account')) return 'account';
+  return 'dashboard';
 }
 
 /**
  * Authenticated legal workspace shell.
- * Pages opt in by wrapping content — AppRouter paths stay unchanged.
+ * Context rail and mock notifications are off until those modules exist.
  */
 function DashboardLayout({
   children,
-  showContext = true,
-  contextOverride = null,
+  showContext = false,
   activeModule: activeModuleProp,
   onQuickActions,
   fillHeight = false,
@@ -31,10 +29,8 @@ function DashboardLayout({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const role = user?.role || 'CLIENT';
-  const workspace = useMemo(() => getWorkspaceContent(role), [role]);
   const activeModule =
-    activeModuleProp || resolveActiveModule(location.pathname, location.search);
-  const context = contextOverride || workspace.context;
+    activeModuleProp || resolveActiveModule(location.pathname);
 
   useEffect(() => {
     setMobileNav(false);
@@ -81,25 +77,18 @@ function DashboardLayout({
 
       <div className="lw-shell__main">
         <DashboardHeader
-          notifications={context.notifications}
+          notifications={[]}
           onMenuToggle={handleMenuToggle}
           onQuickActions={onQuickActions}
           showQuickActions={typeof onQuickActions === 'function'}
+          showSearch={false}
+          showNotifications={false}
         />
 
         <div className={`lw-shell__body ${showContext ? 'has-context' : ''}`.trim()}>
           <main className="lw-shell__workspace" id="workspace-main">
             {children}
           </main>
-
-          {showContext ? (
-            <ContextPanel
-              hearings={context.hearings}
-              deadlines={context.deadlines}
-              notifications={context.notifications}
-              pinned={context.pinned}
-            />
-          ) : null}
         </div>
       </div>
     </div>

@@ -133,6 +133,14 @@ export function NavIcon({ name, className = '' }) {
           <path d="M6 6l12 12M18 6 6 18" />
         </svg>
       );
+    case 'logout':
+      return (
+        <svg {...props}>
+          <path d="M10 4H5.5A1.5 1.5 0 0 0 4 5.5v13A1.5 1.5 0 0 0 5.5 20H10" />
+          <path d="M14 12H8" />
+          <path d="M16 8l4 4-4 4" />
+        </svg>
+      );
     case 'chevron':
       return (
         <svg {...props}>

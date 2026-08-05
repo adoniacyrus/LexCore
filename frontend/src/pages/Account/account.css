@@ -1,0 +1,240 @@
+/* Client Account — premium read-only profile */
+
+.acct-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  max-width: 960px;
+  padding-bottom: 0.5rem;
+}
+
+.acct-page__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+}
+
+.acct-page__header .section-tag-gold {
+  margin-bottom: 0.3rem;
+}
+
+.acct-page__title {
+  font-family: var(--font-headings);
+  font-size: clamp(1.55rem, 2.2vw, 1.9rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--color-dark);
+  margin: 0 0 0.3rem;
+  line-height: 1.15;
+}
+
+.acct-page__desc {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-text);
+  max-width: 48ch;
+}
+
+.acct-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.9rem 1.1rem;
+  padding: 1rem 1.15rem;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  box-shadow: 0 4px 24px rgba(58, 28, 36, 0.05);
+}
+
+.acct-hero__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  flex-shrink: 0;
+  background: var(--color-primary);
+  color: #fff;
+  font-family: var(--font-headings);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.acct-hero__meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.acct-hero__name {
+  margin: 0 0 0.2rem;
+  font-family: var(--font-headings);
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--color-dark);
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.acct-hero__email {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--color-text);
+  word-break: break-word;
+}
+
+.acct-status {
+  margin-left: auto;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.acct-status.is-active {
+  color: var(--color-accent);
+}
+
+.acct-section {
+  background: #fff;
+  border: 1px solid var(--color-border);
+  box-shadow: 0 4px 24px rgba(58, 28, 36, 0.05);
+  overflow: hidden;
+}
+
+.acct-section__head {
+  padding: 0.9rem 1.1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.acct-section__head h2 {
+  font-family: var(--font-headings);
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-dark);
+  margin: 0 0 0.2rem;
+  letter-spacing: -0.01em;
+}
+
+.acct-section__head p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--color-text);
+}
+
+.acct-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+}
+
+.acct-info-card {
+  padding: 0.95rem 1.1rem;
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  min-width: 0;
+}
+
+.acct-info-card:nth-child(3n) {
+  border-right: none;
+}
+
+.acct-info-card__label {
+  margin: 0 0 0.35rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text);
+}
+
+.acct-info-card__value {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--color-dark);
+  word-break: break-word;
+  line-height: 1.35;
+}
+
+.acct-info-card__value.is-active {
+  color: var(--color-accent);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.acct-security {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem 1rem;
+  padding: 1rem 1.1rem 1.1rem;
+}
+
+.acct-security__title {
+  margin: 0 0 0.25rem;
+  font-family: var(--font-headings);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--color-dark);
+  letter-spacing: -0.01em;
+}
+
+.acct-security__desc {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text);
+  max-width: 42ch;
+}
+
+.acct-security .btn {
+  flex-shrink: 0;
+}
+
+@media (max-width: 840px) {
+  .acct-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .acct-info-card:nth-child(3n) {
+    border-right: 1px solid var(--color-border);
+  }
+
+  .acct-info-card:nth-child(2n) {
+    border-right: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .acct-hero {
+    align-items: flex-start;
+  }
+
+  .acct-status {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .acct-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .acct-info-card,
+  .acct-info-card:nth-child(2n),
+  .acct-info-card:nth-child(3n) {
+    border-right: none;
+  }
+
+  .acct-security {
+    align-items: stretch;
+  }
+
+  .acct-security .btn {
+    width: 100%;
+  }
+}
