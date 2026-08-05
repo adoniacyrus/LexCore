@@ -1,0 +1,12 @@
+Welcome to LexCore, {{ client_name }}
+
+An administrator has created your client portal account.
+
+Client name: {{ client_name }}
+Email: {{ client_email }}
+Temporary password: {{ temporary_password }}
+Login: {{ login_url }}
+
+Please sign in and change this temporary password after your first login.
+
+— LexCore Chambers

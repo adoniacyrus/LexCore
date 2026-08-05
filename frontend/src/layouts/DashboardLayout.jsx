@@ -4,9 +4,11 @@ import DashboardHeader from '../components/dashboard/DashboardHeader';
 import DashboardSidebar from '../components/dashboard/DashboardSidebar';
 import { useAuth } from '../context/AuthContext';
 import './dashboardLayout.css';
+import './directory.css';
 
 function resolveActiveModule(pathname) {
   if (pathname.includes('/employees')) return 'users';
+  if (pathname.includes('/clients')) return 'clients';
   if (pathname.includes('/practice-areas')) return 'practice-areas';
   if (pathname.includes('/senior/consultations') || pathname.includes('/junior/consultations')) {
     return 'assigned-consultations';

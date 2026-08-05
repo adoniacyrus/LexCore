@@ -114,6 +114,15 @@ export function validateRegistrationForm(form) {
   };
 }
 
+/** Admin Add Client — same identity fields as public registration (no password/terms). */
+export function validateAdminClientForm(form) {
+  return {
+    fullName: validateFullName(form.fullName),
+    email: validateEmail(form.email),
+    mobile: validateMobile(form.mobile),
+  };
+}
+
 export function validateLoginForm({ email, password }) {
   return {
     email: validateEmail(email),

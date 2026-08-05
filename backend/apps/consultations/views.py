@@ -74,7 +74,10 @@ class PracticeAreaListCreateView(APIView):
 
 
 class PracticeAreaDetailView(APIView):
-    """PATCH /api/consultations/practice-areas/<id>/ — admin update."""
+    """
+    PATCH  /api/consultations/practice-areas/<id>/ — admin update
+    DELETE /api/consultations/practice-areas/<id>/ — admin delete
+    """
 
     permission_classes = [IsAdminRole]
 
@@ -87,7 +90,32 @@ class PracticeAreaDetailView(APIView):
         )
         serializer.is_valid(raise_exception=True)
         area = serializer.save()
-        return Response(PracticeAreaSerializer(area).data, status=status.HTTP_200_OK)
+        return Response(
+            {
+                **PracticeAreaSerializer(area).data,
+                "message": "Practice area updated successfully.",
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    def delete(self, request, pk):
+        area = get_object_or_404(PracticeArea, pk=pk)
+        if area.is_general:
+            return Response(
+                {
+                    "detail": (
+                        "General Consultation cannot be deleted. "
+                        "Deactivate it instead if it must be hidden."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        name = area.name
+        area.delete()
+        return Response(
+            {"message": f'Practice area "{name}" deleted successfully.'},
+            status=status.HTTP_200_OK,
+        )
 
 
 # ---------------------------------------------------------------------------

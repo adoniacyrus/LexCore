@@ -70,6 +70,7 @@ function EmployeeFormModal({ open, mode = 'create', employee = null, accessToken
   if (!open) return null;
 
   const isLawyer = LAWYER_ROLES.has(form.role);
+  const selectedCount = form.practice_area_ids.length;
 
   const onChange = (e) => {
     const { name, value } = e.target;
@@ -144,7 +145,7 @@ function EmployeeFormModal({ open, mode = 'create', employee = null, accessToken
       onClick={handleBackdropClick}
     >
       <div
-        className="emp-modal"
+        className={`emp-modal ${isLawyer ? 'emp-modal--lawyer' : ''}`.trim()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="emp-form-title"
@@ -159,85 +160,97 @@ function EmployeeFormModal({ open, mode = 'create', employee = null, accessToken
           </button>
         </header>
 
-        <form className="emp-form auth-form" onSubmit={handleSubmit} noValidate>
-          <label className="auth-field emp-field">
-            <span>Full Name</span>
-            <input
-              name="full_name"
-              type="text"
-              value={form.full_name}
-              onChange={onChange}
-              placeholder="Full legal name"
-              required
-            />
-          </label>
+        <form className="emp-form" onSubmit={handleSubmit} noValidate>
+          <div className="emp-form__body">
+            <div className="emp-form__grid">
+              <label className="auth-field emp-field emp-field--full">
+                <span>Full Name</span>
+                <input
+                  name="full_name"
+                  type="text"
+                  value={form.full_name}
+                  onChange={onChange}
+                  placeholder="Full legal name"
+                  required
+                />
+              </label>
 
-          <label className="auth-field emp-field">
-            <span>Email</span>
-            <input
-              name="email"
-              type="email"
-              value={form.email}
-              onChange={onChange}
-              placeholder="name@lexcore.com"
-              required
-            />
-          </label>
+              <label className="auth-field emp-field">
+                <span>Email</span>
+                <input
+                  name="email"
+                  type="email"
+                  value={form.email}
+                  onChange={onChange}
+                  placeholder="name@lexcore.com"
+                  required
+                />
+              </label>
 
-          <label className="auth-field emp-field">
-            <span>Phone Number</span>
-            <input
-              name="phone_number"
-              type="tel"
-              value={form.phone_number}
-              onChange={onChange}
-              placeholder="+91 XXXXX XXXXX"
-            />
-          </label>
+              <label className="auth-field emp-field">
+                <span>Phone Number</span>
+                <input
+                  name="phone_number"
+                  type="tel"
+                  value={form.phone_number}
+                  onChange={onChange}
+                  placeholder="+91 XXXXX XXXXX"
+                />
+              </label>
 
-          <label className="auth-field emp-field">
-            <span>Role</span>
-            <select name="role" value={form.role} onChange={onChange} required>
-              {EMPLOYEE_ROLES.map((role) => (
-                <option key={role.value} value={role.value}>
-                  {role.label}
-                </option>
-              ))}
-            </select>
-          </label>
+              <label className="auth-field emp-field emp-field--full">
+                <span>Role</span>
+                <select name="role" value={form.role} onChange={onChange} required>
+                  {EMPLOYEE_ROLES.map((role) => (
+                    <option key={role.value} value={role.value}>
+                      {role.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
 
-          {isLawyer ? (
-            <fieldset className="emp-practice-areas">
-              <legend>Practice Area Specializations</legend>
-              <p className="emp-form-note auth-sheet-lede">
-                Select one or more practice areas. Include General Consultation for intake matters.
+            {isLawyer ? (
+              <fieldset className="emp-practice-areas">
+                <legend>
+                  Practice Area Specializations
+                  {selectedCount > 0 ? (
+                    <span className="emp-practice-areas__count">{selectedCount} selected</span>
+                  ) : null}
+                </legend>
+                <div className="emp-practice-areas__list" role="group" aria-label="Practice areas">
+                  {practiceAreas.map((area) => {
+                    const checked = form.practice_area_ids.includes(area.id);
+                    return (
+                      <label
+                        key={area.id}
+                        className={`emp-practice-chip ${checked ? 'is-selected' : ''}`.trim()}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => togglePracticeArea(area.id)}
+                        />
+                        <span>{area.name}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </fieldset>
+            ) : null}
+
+            <p className="emp-form-note">
+              {!isEdit
+                ? 'A secure temporary password will be generated and emailed to the employee.'
+                : 'Profile changes apply immediately. Use Force Reset Password to issue a new temporary password.'}
+            </p>
+
+            {error ? (
+              <p className="emp-error" role="alert">
+                {error}
               </p>
-              <div className="emp-practice-areas__list">
-                {practiceAreas.map((area) => (
-                  <label key={area.id} className="emp-practice-areas__item">
-                    <input
-                      type="checkbox"
-                      checked={form.practice_area_ids.includes(area.id)}
-                      onChange={() => togglePracticeArea(area.id)}
-                    />
-                    {area.name}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-          ) : null}
-
-          {!isEdit ? (
-            <p className="emp-form-note auth-sheet-lede">
-              A secure temporary password will be generated and emailed to the employee.
-            </p>
-          ) : (
-            <p className="emp-form-note auth-sheet-lede">
-              Profile changes apply immediately. Use Force Reset Password to issue a new temporary password.
-            </p>
-          )}
-
-          {error ? <p className="emp-error" role="alert">{error}</p> : null}
+            ) : null}
+          </div>
 
           <div className="emp-modal-actions">
             <button type="button" className="btn btn-ghost-dark" onClick={onClose} disabled={submitting}>

@@ -4,7 +4,7 @@ import AdminWorkspace from './AdminWorkspace';
 
 function AdminDashboard() {
   return (
-    <DashboardLayout showContext={false}>
+    <DashboardLayout showContext={false} fillHeight>
       <AdminWorkspace />
     </DashboardLayout>
   );

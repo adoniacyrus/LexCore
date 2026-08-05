@@ -1,4 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import EmptyState from '../../components/dashboard/EmptyState';
+import PageHeader from '../../components/dashboard/PageHeader';
 import { useAuth } from '../../context/AuthContext';
 import DashboardLayout from '../../layouts/DashboardLayout';
 import {
@@ -26,6 +28,16 @@ const ROLE_FILTERS = [
   { value: 'JUNIOR_LAWYER', label: 'Junior Advocate' },
   { value: 'PARALEGAL', label: 'Paralegal' },
 ];
+
+const LAWYER_ROLES = new Set(['SENIOR_LAWYER', 'JUNIOR_LAWYER']);
+const PAGE_SIZE = 10;
+
+function formatPracticeAreas(employee) {
+  if (!LAWYER_ROLES.has(employee.role)) return '—';
+  const areas = Array.isArray(employee.practice_areas) ? employee.practice_areas : [];
+  if (areas.length === 0) return '—';
+  return areas.map((area) => area.name).filter(Boolean).join(', ');
+}
 
 function ActionIcon({ name }) {
   const common = {
@@ -90,6 +102,7 @@ function EmployeeListPage() {
   const [toast, setToast] = useState(null);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
+  const [page, setPage] = useState(1);
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState('create');
   const [selected, setSelected] = useState(null);
@@ -127,15 +140,40 @@ function EmployeeListPage() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return employees.filter((emp) => {
-      if (roleFilter && emp.role !== roleFilter) return false;
-      if (!q) return true;
-      return (
-        emp.full_name?.toLowerCase().includes(q) ||
-        emp.email?.toLowerCase().includes(q)
-      );
-    });
+    return employees
+      .filter((emp) => {
+        if (roleFilter && emp.role !== roleFilter) return false;
+        if (!q) return true;
+        return (
+          emp.full_name?.toLowerCase().includes(q) ||
+          emp.email?.toLowerCase().includes(q)
+        );
+      })
+      .slice()
+      .sort((a, b) => {
+        // Active staff first; inactive staff sink to the bottom.
+        if (Boolean(a.is_active) === Boolean(b.is_active)) return 0;
+        return a.is_active ? -1 : 1;
+      });
   }, [employees, search, roleFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, roleFilter]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  const pageItems = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }, [filtered, page]);
+
+  const rangeStart = filtered.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const rangeEnd = Math.min(page * PAGE_SIZE, filtered.length);
 
   const openCreate = () => {
     setFormMode('create');
@@ -188,187 +226,232 @@ function EmployeeListPage() {
 
   return (
     <DashboardLayout showContext={false} activeModule="users" fillHeight>
-      <div className="emp-page emp-page--embedded lw-fade-in">
-        <div className="emp-page-inner">
-          <header className="emp-page-header lw-page-header emp-page-header--fixed">
-            <div className="lw-page-header__copy">
-              <p className="section-tag-gold">Employee Management</p>
-              <h1 className="emp-title section-headline">Users</h1>
-              <p className="emp-subtitle auth-sheet-lede">
-                Provision and review internal staff accounts
-                {user?.full_name ? ` · ${user.full_name}` : ''}.
-              </p>
-            </div>
-            <div className="emp-header-actions">
-              <button type="button" className="btn btn-primary" onClick={openCreate}>
-                Add Employee
-              </button>
-            </div>
-          </header>
+      <div className="lw-directory lw-fade-in">
+        <PageHeader
+          eyebrow="Firm Administration"
+          title="Staff"
+          description="Provision and review internal staff accounts."
+          actions={
+            <button type="button" className="btn btn-primary" onClick={openCreate}>
+              Add Employee
+            </button>
+          }
+        />
 
-          <div className="emp-toolbar">
-            <label className="emp-search">
-              <span className="visually-hidden">Search</span>
-              <input
-                type="search"
-                placeholder="Search by name or email"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </label>
-            <label className="emp-filter">
-              <span className="visually-hidden">Filter by role</span>
-              <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
-                {ROLE_FILTERS.map((opt) => (
-                  <option key={opt.value || 'all'} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
+        <div className="lw-directory__toolbar">
+          <label className="lw-directory__search">
+            <span className="visually-hidden">Search</span>
+            <input
+              type="search"
+              placeholder="Search by name or email"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </label>
+          <select
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+            aria-label="Filter by role"
+          >
+            {ROLE_FILTERS.map((opt) => (
+              <option key={opt.value || 'all'} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
 
-          {error ? <p className="emp-error" role="alert">{error}</p> : null}
+        {error ? (
+          <p className="lw-directory__error" role="alert">
+            {error}
+          </p>
+        ) : null}
 
-          <div className="emp-table-wrap">
-            {loading ? (
-              <div className="emp-state">Loading employees…</div>
-            ) : filtered.length === 0 ? (
-              <div className="emp-state">
-                {employees.length === 0
-                  ? 'No employees yet. Add your first staff member to get started.'
-                  : 'No employees match your search or filter.'}
-              </div>
-            ) : (
-              <table className="emp-table">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Phone</th>
-                    <th>Role</th>
-                    <th>Status</th>
-                    <th>Joined</th>
-                    <th className="emp-actions-col">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((emp) => {
-                    const selfRow = isSelf(emp);
-                    return (
-                      <tr key={emp.id}>
-                        <td>{emp.full_name}</td>
-                        <td>{emp.email}</td>
-                        <td>{emp.phone_number || '—'}</td>
-                        <td>{ROLE_LABELS[emp.role] || emp.role}</td>
-                        <td>
-                          <span className={`emp-status ${emp.is_active ? 'is-active' : 'is-inactive'}`}>
-                            {emp.is_active ? 'Active' : 'Inactive'}
-                          </span>
-                        </td>
-                        <td>
-                          {emp.created_at
-                            ? new Date(emp.created_at).toLocaleDateString()
-                            : '—'}
-                        </td>
-                        <td className="emp-actions-col">
-                          <div className="emp-row-actions">
+        <div className="lw-directory__table-wrap">
+          {loading ? (
+            <div className="emp-state">Loading employees…</div>
+          ) : filtered.length === 0 ? (
+            <EmptyState
+              eyebrow="Staff"
+              title="No employees found"
+              description={
+                employees.length === 0
+                  ? 'Add your first staff member to get started.'
+                  : 'No employees match your search or filter.'
+              }
+              action={
+                employees.length === 0 ? (
+                  <button type="button" className="btn btn-primary" onClick={openCreate}>
+                    Add Employee
+                  </button>
+                ) : null
+              }
+            />
+          ) : (
+            <table className="lw-directory__table emp-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Role</th>
+                  <th>Practice Areas</th>
+                  <th>Joined</th>
+                  <th className="lw-directory__actions-col">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pageItems.map((emp) => {
+                  const selfRow = isSelf(emp);
+                  return (
+                    <tr
+                      key={emp.id}
+                      className={emp.is_active ? undefined : 'emp-row--inactive'}
+                    >
+                      <td>{emp.full_name}</td>
+                      <td>{emp.email}</td>
+                      <td>{emp.phone_number || '—'}</td>
+                      <td>{ROLE_LABELS[emp.role] || emp.role}</td>
+                      <td className="emp-practice-cell">{formatPracticeAreas(emp)}</td>
+                      <td>
+                        {emp.created_at
+                          ? new Date(emp.created_at).toLocaleDateString()
+                          : '—'}
+                      </td>
+                      <td className="lw-directory__actions-col">
+                        <div className="lw-directory__row-actions">
+                          <button
+                            type="button"
+                            className="lw-directory__action-btn"
+                            title="Edit user"
+                            aria-label={`Edit ${emp.full_name}`}
+                            onClick={() => openEdit(emp)}
+                          >
+                            <ActionIcon name="edit" />
+                          </button>
+                          {emp.is_active ? (
                             <button
                               type="button"
-                              className="emp-action-btn"
-                              title="Edit user"
-                              aria-label={`Edit ${emp.full_name}`}
-                              onClick={() => openEdit(emp)}
-                            >
-                              <ActionIcon name="edit" />
-                            </button>
-                            {emp.is_active ? (
-                              <button
-                                type="button"
-                                className="emp-action-btn"
-                                title="Deactivate user"
-                                aria-label={`Deactivate ${emp.full_name}`}
-                                disabled={selfRow}
-                                onClick={() =>
-                                  setConfirm({
-                                    type: 'deactivate',
-                                    employee: emp,
-                                    title: 'Deactivate employee',
-                                    message: `Deactivate ${emp.full_name}? They will be unable to sign in until reactivated.`,
-                                    confirmLabel: 'Deactivate',
-                                    tone: 'danger',
-                                  })
-                                }
-                              >
-                                <ActionIcon name="deactivate" />
-                              </button>
-                            ) : (
-                              <button
-                                type="button"
-                                className="emp-action-btn emp-action-btn--accent"
-                                title="Activate user"
-                                aria-label={`Activate ${emp.full_name}`}
-                                onClick={() =>
-                                  setConfirm({
-                                    type: 'activate',
-                                    employee: emp,
-                                    title: 'Activate employee',
-                                    message: `Reactivate ${emp.full_name}? They will regain portal access.`,
-                                    confirmLabel: 'Activate',
-                                    tone: 'primary',
-                                  })
-                                }
-                              >
-                                <ActionIcon name="activate" />
-                              </button>
-                            )}
-                            <button
-                              type="button"
-                              className="emp-action-btn"
-                              title="Force reset password"
-                              aria-label={`Force reset password for ${emp.full_name}`}
-                              onClick={() =>
-                                setConfirm({
-                                  type: 'reset',
-                                  employee: emp,
-                                  title: 'Force reset password',
-                                  message: `Reset password for ${emp.full_name}? A new temporary password will be emailed to ${emp.email}.`,
-                                  confirmLabel: 'Reset Password',
-                                  tone: 'primary',
-                                })
-                              }
-                            >
-                              <ActionIcon name="reset" />
-                            </button>
-                            <button
-                              type="button"
-                              className="emp-action-btn emp-action-btn--danger"
-                              title="Delete user"
-                              aria-label={`Delete ${emp.full_name}`}
+                              className="lw-directory__action-btn"
+                              title="Deactivate user"
+                              aria-label={`Deactivate ${emp.full_name}`}
                               disabled={selfRow}
                               onClick={() =>
                                 setConfirm({
-                                  type: 'delete',
+                                  type: 'deactivate',
                                   employee: emp,
-                                  title: 'Delete employee',
-                                  message: `Permanently delete ${emp.full_name}? This cannot be undone.`,
-                                  confirmLabel: 'Delete',
+                                  title: 'Deactivate employee',
+                                  message: `Deactivate ${emp.full_name}? They will be unable to sign in until reactivated.`,
+                                  confirmLabel: 'Deactivate',
                                   tone: 'danger',
                                 })
                               }
                             >
-                              <ActionIcon name="delete" />
+                              <ActionIcon name="deactivate" />
                             </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
-          </div>
+                          ) : (
+                            <button
+                              type="button"
+                              className="lw-directory__action-btn lw-directory__action-btn--accent"
+                              title="Activate user"
+                              aria-label={`Activate ${emp.full_name}`}
+                              onClick={() =>
+                                setConfirm({
+                                  type: 'activate',
+                                  employee: emp,
+                                  title: 'Activate employee',
+                                  message: `Reactivate ${emp.full_name}? They will regain portal access.`,
+                                  confirmLabel: 'Activate',
+                                  tone: 'primary',
+                                })
+                              }
+                            >
+                              <ActionIcon name="activate" />
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            className="lw-directory__action-btn"
+                            title="Force reset password"
+                            aria-label={`Force reset password for ${emp.full_name}`}
+                            onClick={() =>
+                              setConfirm({
+                                type: 'reset',
+                                employee: emp,
+                                title: 'Force reset password',
+                                message: `Reset password for ${emp.full_name}? A new temporary password will be emailed to ${emp.email}.`,
+                                confirmLabel: 'Reset Password',
+                                tone: 'primary',
+                              })
+                            }
+                          >
+                            <ActionIcon name="reset" />
+                          </button>
+                          <button
+                            type="button"
+                            className="lw-directory__action-btn lw-directory__action-btn--danger"
+                            title="Delete user"
+                            aria-label={`Delete ${emp.full_name}`}
+                            disabled={selfRow}
+                            onClick={() =>
+                              setConfirm({
+                                type: 'delete',
+                                employee: emp,
+                                title: 'Delete employee',
+                                message: `Permanently delete ${emp.full_name}? This cannot be undone.`,
+                                confirmLabel: 'Delete',
+                                tone: 'danger',
+                              })
+                            }
+                          >
+                            <ActionIcon name="delete" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
         </div>
+
+        {!loading && filtered.length > 0 ? (
+          <nav className="lw-directory__pagination" aria-label="Employee list pages">
+            <p className="lw-directory__pagination-meta">
+              Showing {rangeStart}–{rangeEnd} of {filtered.length}
+            </p>
+            <div className="lw-directory__pagination-controls">
+              <button
+                type="button"
+                className="lw-directory__page-btn"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                Previous
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                <button
+                  key={pageNum}
+                  type="button"
+                  className={`lw-directory__page-btn lw-directory__page-btn--num ${pageNum === page ? 'is-active' : ''}`.trim()}
+                  aria-current={pageNum === page ? 'page' : undefined}
+                  onClick={() => setPage(pageNum)}
+                >
+                  {pageNum}
+                </button>
+              ))}
+              <button
+                type="button"
+                className="lw-directory__page-btn"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              >
+                Next
+              </button>
+            </div>
+          </nav>
+        ) : null}
 
         <EmployeeFormModal
           open={formOpen}

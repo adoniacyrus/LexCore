@@ -32,6 +32,13 @@ class UserRole(models.TextChoices):
     CLIENT = "CLIENT", "Client"
 
 
+class RegistrationMethod(models.TextChoices):
+    """How a CLIENT account was created."""
+
+    SELF = "SELF", "Self Registered"
+    ADMIN = "ADMIN", "Admin Registered"
+
+
 # ---------------------------------------------------------------------------
 # Manager
 # ---------------------------------------------------------------------------
@@ -162,6 +169,14 @@ class User(AbstractBaseUser, PermissionsMixin):
         blank=True,
         related_name="lawyers",
         help_text="Practice areas this lawyer specializes in.",
+    )
+    registration_method = models.CharField(
+        "registration method",
+        max_length=16,
+        choices=RegistrationMethod.choices,
+        default=RegistrationMethod.SELF,
+        db_index=True,
+        help_text="How this account was created (self-service or admin).",
     )
 
     # Flags used by Django Admin / ModelBackend permission checks

@@ -84,11 +84,14 @@ class GoogleAuthSerializer(serializers.Serializer):
                 raise serializers.ValidationError(
                     "An account with this email already exists. Please login instead."
                 )
+            from .models import RegistrationMethod
+
             user = User.objects.create_user(
                 email=email,
                 full_name=full_name,
                 password=None,
                 role=UserRole.CLIENT,
+                registration_method=RegistrationMethod.SELF,
                 is_staff=False,
                 is_superuser=False,
             )

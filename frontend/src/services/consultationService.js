@@ -34,6 +34,23 @@ export async function updatePracticeArea(access, id, payload) {
   return data;
 }
 
+export async function setPracticeAreaActive(access, id, isActive) {
+  const { data } = await api.patch(
+    `/consultations/practice-areas/${id}/`,
+    { is_active: isActive },
+    authHeaders(access)
+  );
+  return data;
+}
+
+export async function deletePracticeArea(access, id) {
+  const { data } = await api.delete(
+    `/consultations/practice-areas/${id}/`,
+    authHeaders(access)
+  );
+  return data;
+}
+
 /* ---- Client ---- */
 
 export async function createConsultation(access, payload) {

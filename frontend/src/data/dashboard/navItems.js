@@ -8,9 +8,15 @@ export const PORTAL_NAV_BY_ROLE = {
     { id: 'dashboard', label: 'Dashboard', icon: 'home' },
     {
       id: 'users',
-      label: 'Users',
+      label: 'Staff',
       icon: 'users',
       route: '/dashboard/admin/employees',
+    },
+    {
+      id: 'clients',
+      label: 'Clients',
+      icon: 'clients',
+      route: '/dashboard/admin/clients',
     },
     {
       id: 'consultations',
@@ -63,7 +69,6 @@ export const PORTAL_NAV_BY_ROLE = {
 
 /** Reserved for future modules — do not render until implemented. */
 export const FUTURE_NAV_REGISTRY = [
-  { id: 'clients', label: 'Clients', icon: 'clients' },
   { id: 'cases', label: 'Cases', icon: 'cases' },
   { id: 'hearings', label: 'Hearings', icon: 'hearings' },
   { id: 'documents', label: 'Documents', icon: 'documents' },
@@ -85,7 +90,8 @@ export const PORTAL_NAV_ITEMS = [
 ];
 
 export const MODULE_META = {
-  users: { title: 'Users', summary: 'Provision and manage internal staff accounts.' },
+  users: { title: 'Staff', summary: 'Provision and manage internal staff accounts.' },
+  clients: { title: 'Clients', summary: 'Register and review client portal accounts.' },
   consultations: { title: 'Consultations', summary: 'Track, assign, and manage consultation requests.' },
   'practice-areas': { title: 'Practice Areas', summary: 'Firm practice area master list.' },
   'assigned-consultations': {

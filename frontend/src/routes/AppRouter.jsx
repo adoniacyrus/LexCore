@@ -15,6 +15,8 @@ import JuniorLawyerDashboard from '../pages/Dashboard/JuniorLawyerDashboard';
 import ParalegalDashboard from '../pages/Dashboard/ParalegalDashboard';
 import ClientDashboard from '../pages/Dashboard/ClientDashboard';
 import EmployeeListPage from '../pages/Employees/EmployeeListPage';
+import ClientListPage from '../pages/Clients/ClientListPage';
+import ClientDetailPage from '../pages/Clients/ClientDetailPage';
 import BookConsultationPage from '../pages/Consultations/BookConsultationPage';
 import MyConsultationsPage from '../pages/Consultations/MyConsultationsPage';
 import AdminConsultationQueuePage from '../pages/Consultations/AdminConsultationQueuePage';
@@ -54,6 +56,22 @@ function AppRouter() {
               element={
                 <RoleProtectedRoute roles={['ADMIN']}>
                   <EmployeeListPage />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/admin/clients"
+              element={
+                <RoleProtectedRoute roles={['ADMIN']}>
+                  <ClientListPage />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/admin/clients/:id"
+              element={
+                <RoleProtectedRoute roles={['ADMIN']}>
+                  <ClientDetailPage />
                 </RoleProtectedRoute>
               }
             />

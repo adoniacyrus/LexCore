@@ -111,6 +111,23 @@ def send_employee_welcome_email(*, user, temporary_password):
     )
 
 
+def send_client_welcome_email(*, user, temporary_password):
+    """Welcome email for clients provisioned by an administrator."""
+    login_url = f"{_frontend_url()}/login"
+    context = {
+        "client_name": user.full_name,
+        "client_email": user.email,
+        "temporary_password": temporary_password,
+        "login_url": login_url,
+    }
+    return send_lexcore_email(
+        subject="Welcome to LexCore — your client portal account",
+        to_email=user.email,
+        template_name="emails/client_welcome.html",
+        context=context,
+    )
+
+
 def send_password_reset_email(*, user, reset_url: str):
     """Password-reset email with branded template."""
     context = {

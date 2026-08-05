@@ -10,6 +10,7 @@
 }
 
 .cons-page--fill {
+  /* Admin directories use .lw-directory; keep for non-directory cons pages */
   height: 100%;
   overflow: hidden;
   padding-bottom: 0;
@@ -305,31 +306,13 @@
   min-height: 0;
 }
 
-.cons-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  min-width: 720px;
+.lw-directory .cons-table {
+  min-width: 0;
 }
 
-.cons-table th,
-.cons-table td {
-  text-align: left;
-  padding: 0.85rem 1rem;
-  border-bottom: 1px solid var(--color-border);
-  font-size: 0.9rem;
-}
-
-.cons-table th {
-  font-size: 0.68rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--color-text);
-  font-weight: 600;
-  background: #faf8f5;
-  position: sticky;
-  top: 0;
-  z-index: 1;
+.cons-table__action {
+  padding: 0.28rem 0.55rem;
+  font-size: 0.76rem;
 }
 
 .cons-ref {
@@ -435,12 +418,14 @@
 }
 
 .cons-status {
-  display: inline-flex;
+  display: inline-block;
   font-size: 0.72rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   font-weight: 600;
   color: var(--color-accent);
+  line-height: 1.2;
+  vertical-align: middle;
 }
 
 .cons-status.is-pending { color: #8a6a2f; }
@@ -481,15 +466,179 @@
   min-width: 160px;
 }
 
-.cons-table__action {
-  padding: 0.35rem 0.7rem;
-  font-size: 0.8rem;
-}
-
 .cons-inline-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
+}
+
+.cons-actions-col {
+  width: 1%;
+  white-space: nowrap;
+  text-align: right !important;
+}
+
+.cons-row-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
+.cons-action-btn {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(107, 30, 43, 0.15);
+  background: #fff;
+  color: var(--color-primary);
+  cursor: pointer;
+  border-radius: var(--border-radius-sm);
+  transition: border-color 140ms ease, background-color 140ms ease, color 140ms ease;
+}
+
+.cons-action-btn:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  background: rgba(107, 30, 43, 0.05);
+}
+
+.cons-action-btn--accent:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  color: #8a6a2f;
+  background: rgba(200, 167, 91, 0.12);
+}
+
+.cons-action-btn--danger {
+  color: #9b1c1c;
+  border-color: rgba(155, 28, 28, 0.2);
+}
+
+.cons-action-btn--danger:hover:not(:disabled) {
+  border-color: #9b1c1c;
+  background: rgba(180, 35, 24, 0.06);
+  color: #9b1c1c;
+}
+
+.cons-action-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.cons-table tbody tr.cons-row--inactive td {
+  color: #9a8f93;
+  background: rgba(58, 28, 36, 0.03);
+}
+
+.cons-table tbody tr.cons-row--inactive .cons-ref {
+  color: #9a8f93;
+}
+
+.cons-table tbody tr.cons-row--inactive .cons-action-btn {
+  opacity: 0.72;
+  border-color: rgba(154, 143, 147, 0.45);
+  color: #8a7f83;
+}
+
+.cons-btn-danger {
+  background: #9b1c1c;
+  color: #fff;
+  border: none;
+}
+
+.cons-btn-danger:hover:not(:disabled) {
+  background: #7f1616;
+  color: #fff;
+}
+
+.cons-confirm {
+  width: min(420px, 100%);
+}
+
+.cons-confirm__message {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  color: var(--color-text);
+  line-height: 1.45;
+}
+
+.cons-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.cons-pagination__meta {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-text);
+}
+
+.cons-pagination__controls {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.cons-page-btn {
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 0.7rem;
+  border: 1px solid var(--color-border);
+  background: #fff;
+  color: var(--color-dark);
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.cons-page-btn--num {
+  min-width: 2rem;
+  padding: 0;
+}
+
+.cons-page-btn:hover:not(:disabled) {
+  border-color: rgba(107, 30, 43, 0.35);
+  color: var(--color-primary);
+}
+
+.cons-page-btn.is-active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.cons-page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.cons-toast {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  max-width: min(360px, calc(100vw - 2rem));
+  padding: 0.85rem 1rem;
+  font-size: 0.85rem;
+  z-index: 90;
+  border: 1px solid var(--color-border);
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(26, 31, 38, 0.12);
+}
+
+.cons-toast--success {
+  border-left: 3px solid var(--color-accent);
+}
+
+.cons-toast--error {
+  border-left: 3px solid #b42318;
+  color: #b42318;
 }
 
 .cons-empty {

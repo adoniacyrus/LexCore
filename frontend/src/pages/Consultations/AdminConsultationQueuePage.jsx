@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import PageHeader from '../../components/dashboard/PageHeader';
 import EmptyState from '../../components/dashboard/EmptyState';
 import { useAuth } from '../../context/AuthContext';
@@ -20,6 +20,8 @@ import {
   STATUS_LABELS,
 } from './consultationConstants';
 import './consultations.css';
+
+const PAGE_SIZE = 10;
 
 function AdminManageModal({ open, item, practiceAreas, accessToken, onClose, onSaved }) {
   const [practiceAreaId, setPracticeAreaId] = useState('');
@@ -151,7 +153,7 @@ function AdminManageModal({ open, item, practiceAreas, accessToken, onClose, onS
               <span className="cons-detail__submitted">Loading eligible lawyers…</span>
             ) : lawyers.length === 0 ? (
               <span className="cons-detail__submitted">
-                No eligible lawyers for this practice area. Assign specializations on the Users page.
+                No eligible lawyers for this practice area. Assign specializations on the Staff page.
               </span>
             ) : null}
           </label>
@@ -197,6 +199,7 @@ function AdminConsultationQueuePage() {
   const [q, setQ] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [areaFilter, setAreaFilter] = useState('');
+  const [page, setPage] = useState(1);
   const [selected, setSelected] = useState(null);
 
   const load = useCallback(async () => {
@@ -226,17 +229,35 @@ function AdminConsultationQueuePage() {
     load();
   }, [load]);
 
+  const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+
+  useEffect(() => {
+    setPage(1);
+  }, [q, statusFilter, areaFilter]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  const pageItems = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return items.slice(start, start + PAGE_SIZE);
+  }, [items, page]);
+
+  const rangeStart = items.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const rangeEnd = Math.min(page * PAGE_SIZE, items.length);
+
   return (
     <DashboardLayout showContext={false} activeModule="consultations" fillHeight>
-      <div className="cons-page cons-page--fill lw-fade-in">
+      <div className="lw-directory lw-fade-in">
         <PageHeader
           eyebrow="Firm Administration"
           title="Consultations"
           description="Review requests, assign practice areas and lawyers, and manage consultation status."
         />
 
-        <div className="cons-toolbar">
-          <label className="cons-toolbar__search">
+        <div className="lw-directory__toolbar">
+          <label className="lw-directory__search">
             <span className="lw-sr-only">Search</span>
             <input
               type="search"
@@ -273,12 +294,12 @@ function AdminConsultationQueuePage() {
         </div>
 
         {error ? (
-          <p className="cons-error" role="alert">
+          <p className="lw-directory__error" role="alert">
             {error}
           </p>
         ) : null}
 
-        <div className="cons-table-wrap">
+        <div className="lw-directory__table-wrap">
           {loading ? (
             <div className="cons-empty">Loading consultations…</div>
           ) : items.length === 0 ? (
@@ -288,7 +309,7 @@ function AdminConsultationQueuePage() {
               description="New client requests will appear here for assignment and review."
             />
           ) : (
-            <table className="cons-table">
+            <table className="lw-directory__table cons-table">
               <thead>
                 <tr>
                   <th>Reference</th>
@@ -299,11 +320,11 @@ function AdminConsultationQueuePage() {
                   <th>Preferred Time</th>
                   <th>Assigned Lawyer</th>
                   <th>Created</th>
-                  <th>Actions</th>
+                  <th className="lw-directory__actions-col">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {items.map((item) => (
+                {pageItems.map((item) => (
                   <tr key={item.id}>
                     <td className="cons-ref">{item.consultation_id}</td>
                     <td>{item.client?.full_name || '—'}</td>
@@ -317,7 +338,7 @@ function AdminConsultationQueuePage() {
                     <td>{formatPreferredTime(item.preferred_time)}</td>
                     <td>{assignedLawyerLabel(item)}</td>
                     <td>{formatCreatedDate(item.created_at)}</td>
-                    <td>
+                    <td className="lw-directory__actions-col">
                       <button
                         type="button"
                         className="btn btn-ghost-dark cons-table__action"
@@ -332,6 +353,43 @@ function AdminConsultationQueuePage() {
             </table>
           )}
         </div>
+
+        {!loading && items.length > 0 ? (
+          <nav className="lw-directory__pagination" aria-label="Consultation list pages">
+            <p className="lw-directory__pagination-meta">
+              Showing {rangeStart}–{rangeEnd} of {items.length}
+            </p>
+            <div className="lw-directory__pagination-controls">
+              <button
+                type="button"
+                className="lw-directory__page-btn"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                Previous
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                <button
+                  key={pageNum}
+                  type="button"
+                  className={`lw-directory__page-btn lw-directory__page-btn--num ${pageNum === page ? 'is-active' : ''}`.trim()}
+                  aria-current={pageNum === page ? 'page' : undefined}
+                  onClick={() => setPage(pageNum)}
+                >
+                  {pageNum}
+                </button>
+              ))}
+              <button
+                type="button"
+                className="lw-directory__page-btn"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              >
+                Next
+              </button>
+            </div>
+          </nav>
+        ) : null}
       </div>
 
       <AdminManageModal
