@@ -86,24 +86,24 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = useCallback(async (email, password) => {
-    const tokens = await authService.login({ email, password });
-    const access = tokens.access;
-    const refresh = tokens.refresh;
-
-    try {
-      const me = await authService.getCurrentUser(access);
-      persistAuth({ access, refresh, user: me });
-      setAccessToken(access);
-      setRefreshToken(refresh);
-      setUser(me);
-      return me;
-    } catch (err) {
-      clearPersistedAuth();
-      setUser(null);
-      setAccessToken(null);
-      setRefreshToken(null);
-      throw err;
+    const data = await authService.login({ email, password });
+    const access = data.access;
+    const refresh = data.refresh;
+    if (!access || !refresh) {
+      throw new Error('Login succeeded but no session tokens were returned.');
     }
+
+    // Prefer user from login response; /me is only a fallback.
+    const me =
+      data.user?.id && data.user?.role
+        ? data.user
+        : await authService.getCurrentUser(access);
+
+    persistAuth({ access, refresh, user: me });
+    setAccessToken(access);
+    setRefreshToken(refresh);
+    setUser(me);
+    return me;
   }, []);
 
   const register = useCallback(async (payload) => {

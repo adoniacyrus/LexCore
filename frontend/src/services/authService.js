@@ -5,7 +5,7 @@ import api from './api';
  */
 export function getErrorMessage(error, fallback = 'Something went wrong. Please try again.') {
   if (!error.response) {
-    return 'Unable to reach the server. Please try again.';
+    return 'Unable to reach the LexCore API. Use http://localhost:5173 and keep Django on port 8000.';
   }
 
   const { status, data } = error.response;
@@ -14,13 +14,24 @@ export function getErrorMessage(error, fallback = 'Something went wrong. Please 
     return 'Server error. Please try again later.';
   }
 
+  // Status 0 / empty body usually means CORS or blocked localhost↔127.0.0.1.
+  if (!status || status === 0) {
+    return 'Browser blocked the API request. Use VITE_API_BASE_URL=/api with the Vite proxy.';
+  }
+
   if (typeof data === 'string' && data.trim()) {
+    if (data.trim().startsWith('<')) {
+      return status === 404
+        ? 'Auth API not reached (404). Is Vite proxying /api to Django?'
+        : fallback;
+    }
     return data;
   }
 
   if (!data || typeof data !== 'object') {
     if (status === 401) return 'Invalid credentials or session expired.';
     if (status === 400) return 'Invalid request. Please check your details.';
+    if (status === 404) return 'Auth API not reached (404). Is Vite proxying /api to Django?';
     return fallback;
   }
 
