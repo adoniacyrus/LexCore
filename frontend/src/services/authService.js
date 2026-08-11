@@ -110,6 +110,15 @@ export async function getCurrentUser(access) {
 }
 
 /**
+ * Exchange a refresh token for a new access token (and rotated refresh when enabled).
+ * Prefer the Axios 401 interceptor for normal session continuity; this is for explicit calls.
+ */
+export async function refreshTokens(refresh) {
+  const { data } = await api.post('/auth/token/refresh/', { refresh });
+  return data;
+}
+
+/**
  * Exchange a Google ID token for LexCore JWTs.
  * intent: "login" | "register"
  */

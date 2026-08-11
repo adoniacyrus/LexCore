@@ -1,10 +1,13 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  ACCESS_KEY,
+  AUTH_CLEARED_EVENT,
+  REFRESH_KEY,
+  TOKENS_UPDATED_EVENT,
+  USER_KEY,
+} from '../services/api';
 import * as authService from '../services/authService';
 import { getErrorMessage } from '../services/authService';
-
-const ACCESS_KEY = 'lexcore_access';
-const REFRESH_KEY = 'lexcore_refresh';
-const USER_KEY = 'lexcore_user';
 
 const AuthContext = createContext(undefined);
 
@@ -44,6 +47,29 @@ export function AuthProvider({ children }) {
   const [refreshToken, setRefreshToken] = useState(stored.refresh);
   const [loading, setLoading] = useState(Boolean(stored.access));
 
+  // Keep React auth state aligned with Axios refresh / forced logout.
+  useEffect(() => {
+    const onTokensUpdated = (event) => {
+      const nextAccess = event.detail?.access;
+      const nextRefresh = event.detail?.refresh;
+      if (nextAccess) setAccessToken(nextAccess);
+      if (nextRefresh) setRefreshToken(nextRefresh);
+    };
+
+    const onAuthCleared = () => {
+      setUser(null);
+      setAccessToken(null);
+      setRefreshToken(null);
+    };
+
+    window.addEventListener(TOKENS_UPDATED_EVENT, onTokensUpdated);
+    window.addEventListener(AUTH_CLEARED_EVENT, onAuthCleared);
+    return () => {
+      window.removeEventListener(TOKENS_UPDATED_EVENT, onTokensUpdated);
+      window.removeEventListener(AUTH_CLEARED_EVENT, onAuthCleared);
+    };
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -62,12 +88,15 @@ export function AuthProvider({ children }) {
       }
 
       try {
+        // Shared `api` client — expired access triggers a single refresh via interceptor.
         const me = await authService.getCurrentUser(access);
         if (cancelled) return;
-        setAccessToken(access);
-        setRefreshToken(refresh);
+        const latestAccess = localStorage.getItem(ACCESS_KEY) || access;
+        const latestRefresh = localStorage.getItem(REFRESH_KEY) || refresh;
+        setAccessToken(latestAccess);
+        setRefreshToken(latestRefresh);
         setUser(me);
-        persistAuth({ access, refresh, user: me });
+        persistAuth({ access: latestAccess, refresh: latestRefresh, user: me });
       } catch {
         if (cancelled) return;
         clearPersistedAuth();

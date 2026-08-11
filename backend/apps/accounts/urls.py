@@ -1,6 +1,7 @@
 """Authentication URL routes — mounted at /api/auth/."""
 
 from django.urls import path
+from rest_framework_simplejwt.views import TokenRefreshView
 
 from .views import (
     ChangePasswordView,
@@ -22,4 +23,10 @@ urlpatterns = [
     path("change-password/", ChangePasswordView.as_view(), name="auth-change-password"),
     path("logout/", LogoutView.as_view(), name="auth-logout"),
     path("me/", MeView.as_view(), name="auth-me"),
+    # SimpleJWT refresh — uses project SIMPLE_JWT settings (rotation + blacklist).
+    path(
+        "token/refresh/",
+        TokenRefreshView.as_view(),
+        name="auth-token-refresh",
+    ),
 ]
