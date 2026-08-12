@@ -25,6 +25,10 @@ import LawyerAssignedPage from '../pages/Consultations/LawyerAssignedPage';
 import ClientAccountPage from '../pages/Account/ClientAccountPage';
 import ProtectedRoute from './ProtectedRoute';
 import RoleProtectedRoute from './RoleProtectedRoute';
+import CaseListPage from '../pages/Cases/CaseListPage';
+import CaseDetailPage from '../pages/Cases/CaseDetailPage';
+import CaseConvertPage from '../pages/Cases/CaseConvertPage';
+import CaseEditPage from '../pages/Cases/CaseEditPage';
 
 function AppRouter() {
   return (
@@ -92,6 +96,22 @@ function AppRouter() {
               }
             />
             <Route
+              path="/dashboard/admin/cases"
+              element={
+                <RoleProtectedRoute roles={['ADMIN']}>
+                  <CaseListPage />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/admin/cases/:id"
+              element={
+                <RoleProtectedRoute roles={['ADMIN']}>
+                  <CaseDetailPage />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
               path="/dashboard/senior"
               element={
                 <ProtectedRoute>
@@ -104,6 +124,38 @@ function AppRouter() {
               element={
                 <RoleProtectedRoute roles={['SENIOR_LAWYER']}>
                   <LawyerAssignedPage />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/senior/cases"
+              element={
+                <RoleProtectedRoute roles={['SENIOR_LAWYER']}>
+                  <CaseListPage />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/senior/cases/:id"
+              element={
+                <RoleProtectedRoute roles={['SENIOR_LAWYER']}>
+                  <CaseDetailPage />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/senior/cases/convert/:consultationId"
+              element={
+                <RoleProtectedRoute roles={['SENIOR_LAWYER']}>
+                  <CaseConvertPage />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/senior/cases/edit/:id"
+              element={
+                <RoleProtectedRoute roles={['SENIOR_LAWYER']}>
+                  <CaseEditPage />
                 </RoleProtectedRoute>
               }
             />
@@ -124,11 +176,59 @@ function AppRouter() {
               }
             />
             <Route
+              path="/dashboard/junior/cases"
+              element={
+                <RoleProtectedRoute roles={['JUNIOR_LAWYER']}>
+                  <CaseListPage />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/junior/cases/:id"
+              element={
+                <RoleProtectedRoute roles={['JUNIOR_LAWYER']}>
+                  <CaseDetailPage />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/junior/cases/convert/:consultationId"
+              element={
+                <RoleProtectedRoute roles={['JUNIOR_LAWYER']}>
+                  <CaseConvertPage />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/junior/cases/edit/:id"
+              element={
+                <RoleProtectedRoute roles={['JUNIOR_LAWYER']}>
+                  <CaseEditPage />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
               path="/dashboard/paralegal"
               element={
                 <ProtectedRoute>
                   <ParalegalDashboard />
                 </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/paralegal/cases"
+              element={
+                <RoleProtectedRoute roles={['PARALEGAL']}>
+                  <CaseListPage />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/paralegal/cases/:id"
+              element={
+                <RoleProtectedRoute roles={['PARALEGAL']}>
+                  <CaseDetailPage />
+                </RoleProtectedRoute>
               }
             />
             <Route
@@ -160,6 +260,22 @@ function AppRouter() {
               element={
                 <RoleProtectedRoute roles={['CLIENT']}>
                   <ClientAccountPage />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/client/cases"
+              element={
+                <RoleProtectedRoute roles={['CLIENT']}>
+                  <CaseListPage />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/client/cases/:id"
+              element={
+                <RoleProtectedRoute roles={['CLIENT']}>
+                  <CaseDetailPage />
                 </RoleProtectedRoute>
               }
             />

@@ -85,6 +85,8 @@ class ConsultationSerializer(serializers.ModelSerializer):
     client = ClientBriefSerializer(read_only=True)
     assigned_lawyer = LawyerBriefSerializer(read_only=True)
     assigned_lawyer_name = serializers.SerializerMethodField()
+    case_id = serializers.SerializerMethodField()
+    case_reference = serializers.SerializerMethodField()
 
     class Meta:
         model = Consultation
@@ -105,6 +107,8 @@ class ConsultationSerializer(serializers.ModelSerializer):
             "issue_summary",
             "status",
             "status_label",
+            "case_id",
+            "case_reference",
             "created_at",
             "updated_at",
         )
@@ -119,6 +123,22 @@ class ConsultationSerializer(serializers.ModelSerializer):
         if obj.assigned_lawyer_id and obj.assigned_lawyer:
             return obj.assigned_lawyer.full_name
         return "Not Assigned"
+
+    def get_case_id(self, obj):
+        try:
+            if hasattr(obj, "case") and obj.case:
+                return obj.case.id
+        except Exception:
+            pass
+        return None
+
+    def get_case_reference(self, obj):
+        try:
+            if hasattr(obj, "case") and obj.case:
+                return obj.case.case_reference
+        except Exception:
+            pass
+        return None
 
 
 class ConsultationCreateSerializer(serializers.Serializer):

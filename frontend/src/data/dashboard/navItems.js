@@ -30,6 +30,12 @@ export const PORTAL_NAV_BY_ROLE = {
       icon: 'cases',
       route: '/dashboard/admin/practice-areas',
     },
+    {
+      id: 'cases',
+      label: 'Cases',
+      icon: 'cases',
+      route: '/dashboard/admin/cases',
+    },
   ],
   CLIENT: [
     { id: 'dashboard', label: 'Dashboard', icon: 'home' },
@@ -38,6 +44,12 @@ export const PORTAL_NAV_BY_ROLE = {
       label: 'My Consultations',
       icon: 'consultations',
       route: '/dashboard/client/consultations',
+    },
+    {
+      id: 'cases',
+      label: 'My Cases',
+      icon: 'cases',
+      route: '/dashboard/client/cases',
     },
     {
       id: 'account',
@@ -54,6 +66,12 @@ export const PORTAL_NAV_BY_ROLE = {
       icon: 'consultations',
       route: '/dashboard/senior/consultations',
     },
+    {
+      id: 'cases',
+      label: 'My Cases',
+      icon: 'cases',
+      route: '/dashboard/senior/cases',
+    },
   ],
   JUNIOR_LAWYER: [
     { id: 'dashboard', label: 'Dashboard', icon: 'home' },
@@ -63,8 +81,22 @@ export const PORTAL_NAV_BY_ROLE = {
       icon: 'consultations',
       route: '/dashboard/junior/consultations',
     },
+    {
+      id: 'cases',
+      label: 'My Cases',
+      icon: 'cases',
+      route: '/dashboard/junior/cases',
+    },
   ],
-  PARALEGAL: [{ id: 'dashboard', label: 'Dashboard', icon: 'home' }],
+  PARALEGAL: [
+    { id: 'dashboard', label: 'Dashboard', icon: 'home' },
+    {
+      id: 'cases',
+      label: 'Supporting Cases',
+      icon: 'cases',
+      route: '/dashboard/paralegal/cases',
+    },
+  ],
 };
 
 /** Reserved for future modules — do not render until implemented. */

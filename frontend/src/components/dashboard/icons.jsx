@@ -141,6 +141,25 @@ export function NavIcon({ name, className = '' }) {
           <path d="M16 8l4 4-4 4" />
         </svg>
       );
+    case 'eye':
+      return (
+        <svg {...props}>
+          <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      );
+    case 'check':
+      return (
+        <svg {...props}>
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      );
+    case 'edit':
+      return (
+        <svg {...props}>
+          <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+        </svg>
+      );
     case 'chevron':
       return (
         <svg {...props}>
