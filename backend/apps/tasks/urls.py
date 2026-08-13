@@ -7,6 +7,6 @@ from .views import (
 
 urlpatterns = [
     path("", CaseTaskListCreateView.as_view(), name="task-list-create"),
-    path("<int:pk>/", CaseTaskDetailView.as_view(), name="task-detail"),
-    path("<int:pk>/documents/", TaskDocumentsView.as_view(), name="task-documents"),
+    path("<str:pk>/", CaseTaskDetailView.as_view(), name="task-detail"),
+    path("<str:pk>/documents/", TaskDocumentsView.as_view(), name="task-documents"),
 ]

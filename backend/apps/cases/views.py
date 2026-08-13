@@ -89,6 +89,13 @@ class CaseListView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+def _get_case_or_404(queryset, pk_or_ref):
+    """Lookup a Case by numeric PK or case_reference (e.g. CASE-2026-0001)."""
+    if str(pk_or_ref).isdigit():
+        return get_object_or_404(queryset, pk=int(pk_or_ref))
+    return get_object_or_404(queryset, case_reference=pk_or_ref)
+
+
 class CaseDetailView(APIView):
     """
     GET /api/cases/<pk>/
@@ -107,7 +114,7 @@ class CaseDetailView(APIView):
             "supporting_paralegal",
             "originating_consultation",
         ).prefetch_related("assistant_lawyers")
-        case_obj = get_object_or_404(queryset, pk=pk)
+        case_obj = _get_case_or_404(queryset, pk)
         self.check_object_permissions(request, case_obj)
 
         serializer = CaseSerializer(case_obj)
@@ -121,7 +128,7 @@ class CaseDetailView(APIView):
             "supporting_paralegal",
             "originating_consultation",
         ).prefetch_related("assistant_lawyers")
-        case_obj = get_object_or_404(queryset, pk=pk)
+        case_obj = _get_case_or_404(queryset, pk)
         self.check_object_permissions(request, case_obj)
 
         user = request.user
@@ -228,7 +235,7 @@ class CaseTeamUpdateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def patch(self, request, pk):
-        case_obj = get_object_or_404(Case, pk=pk)
+        case_obj = _get_case_or_404(Case, pk)
         user = request.user
 
         is_admin = user.role == UserRole.ADMIN

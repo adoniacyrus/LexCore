@@ -62,7 +62,7 @@ function LawyerConsultationDetailModal({ open, consultation, userRole, onClose, 
       onConvert(consultation);
     } else {
       onClose?.();
-      navigate(`${dashboardPath}/cases/convert/${consultation.id}`, {
+      navigate(`${dashboardPath}/cases/convert/${consultation.consultation_id}`, {
         state: { consultation },
       });
     }
@@ -70,7 +70,7 @@ function LawyerConsultationDetailModal({ open, consultation, userRole, onClose, 
 
   const handleCaseLinkClick = () => {
     onClose?.();
-    navigate(`${dashboardPath}/cases/${consultation.case_id}`);
+    navigate(`${dashboardPath}/cases/${consultation.case_reference || consultation.case_id}`);
   };
 
   return (

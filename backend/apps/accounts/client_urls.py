@@ -11,14 +11,14 @@ from .client_views import (
 
 urlpatterns = [
     path("", ClientListCreateView.as_view(), name="client-list-create"),
-    path("<int:pk>/", ClientDetailView.as_view(), name="client-detail"),
+    path("<str:pk>/", ClientDetailView.as_view(), name="client-detail"),
     path(
-        "<int:pk>/set-active/",
+        "<str:pk>/set-active/",
         ClientSetActiveView.as_view(),
         name="client-set-active",
     ),
     path(
-        "<int:pk>/force-reset-password/",
+        "<str:pk>/force-reset-password/",
         ClientForceResetPasswordView.as_view(),
         name="client-force-reset-password",
     ),

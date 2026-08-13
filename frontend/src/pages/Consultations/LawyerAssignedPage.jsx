@@ -219,7 +219,7 @@ function LawyerAssignedPage() {
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   const dashboardPath = getDashboardPath(user?.role || 'CLIENT');
-                                  navigate(`${dashboardPath}/cases/${item.case_id}`);
+                                  navigate(`${dashboardPath}/cases/${item.case_reference || item.case_id}`);
                                 }}
                               >
                                 <NavIcon name="cases" /> {item.case_reference}

@@ -5,36 +5,54 @@
 
 export const PORTAL_NAV_BY_ROLE = {
   ADMIN: [
-    { id: 'dashboard', label: 'Dashboard', icon: 'home' },
     {
-      id: 'users',
-      label: 'Staff',
-      icon: 'users',
-      route: '/dashboard/admin/employees',
+      group: 'FIRM',
+      items: [{ id: 'dashboard', label: 'Dashboard', icon: 'home' }],
     },
     {
-      id: 'clients',
-      label: 'Clients',
-      icon: 'clients',
-      route: '/dashboard/admin/clients',
+      group: 'PEOPLE',
+      items: [
+        {
+          id: 'users',
+          label: 'Staff',
+          icon: 'users',
+          route: '/dashboard/admin/employees',
+        },
+        {
+          id: 'clients',
+          label: 'Clients',
+          icon: 'clients',
+          route: '/dashboard/admin/clients',
+        },
+      ],
     },
     {
-      id: 'consultations',
-      label: 'Consultations',
-      icon: 'consultations',
-      route: '/dashboard/admin/consultations',
+      group: 'MATTERS',
+      items: [
+        {
+          id: 'consultations',
+          label: 'Consultations',
+          icon: 'consultations',
+          route: '/dashboard/admin/consultations',
+        },
+        {
+          id: 'cases',
+          label: 'Cases',
+          icon: 'cases',
+          route: '/dashboard/admin/cases',
+        },
+      ],
     },
     {
-      id: 'practice-areas',
-      label: 'Practice Areas',
-      icon: 'cases',
-      route: '/dashboard/admin/practice-areas',
-    },
-    {
-      id: 'cases',
-      label: 'Cases',
-      icon: 'cases',
-      route: '/dashboard/admin/cases',
+      group: 'FIRM SETUP',
+      items: [
+        {
+          id: 'practice-areas',
+          label: 'Practice Areas',
+          icon: 'cases',
+          route: '/dashboard/admin/practice-areas',
+        },
+      ],
     },
   ],
   CLIENT: [

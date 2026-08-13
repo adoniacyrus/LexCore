@@ -148,6 +148,40 @@ body.lw-shell-fill-lock {
   min-height: 0;
 }
 
+.lw-sidebar__group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-bottom: 0.75rem;
+}
+
+.lw-sidebar__group:last-child {
+  margin-bottom: 0;
+}
+
+.lw-sidebar__group-title {
+  margin: 0.25rem 0 0.15rem;
+  padding: 0.2rem 0.7rem;
+  font-family: var(--font-sans);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #966e00;
+  line-height: 1.2;
+  user-select: none;
+}
+
+.lw-shell--collapsed .lw-sidebar__group-title,
+.is-collapsed .lw-sidebar__group-title {
+  display: none;
+}
+
+.lw-shell--collapsed .lw-sidebar__group,
+.is-collapsed .lw-sidebar__group {
+  margin-bottom: 0.4rem;
+}
+
 .lw-sidebar__footer {
   margin-top: 0.85rem;
   padding-top: 0.65rem;

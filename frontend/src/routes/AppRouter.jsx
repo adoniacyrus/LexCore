@@ -72,7 +72,7 @@ function AppRouter() {
               }
             />
             <Route
-              path="/dashboard/admin/clients/:id"
+              path="/dashboard/admin/clients/:clientReference"
               element={
                 <RoleProtectedRoute roles={['ADMIN']}>
                   <ClientDetailPage />
@@ -104,7 +104,7 @@ function AppRouter() {
               }
             />
             <Route
-              path="/dashboard/admin/cases/:id"
+              path="/dashboard/admin/cases/:caseReference"
               element={
                 <RoleProtectedRoute roles={['ADMIN']}>
                   <CaseDetailPage />
@@ -136,7 +136,7 @@ function AppRouter() {
               }
             />
             <Route
-              path="/dashboard/senior/cases/:id"
+              path="/dashboard/senior/cases/:caseReference"
               element={
                 <RoleProtectedRoute roles={['SENIOR_LAWYER']}>
                   <CaseDetailPage />
@@ -144,7 +144,7 @@ function AppRouter() {
               }
             />
             <Route
-              path="/dashboard/senior/cases/convert/:consultationId"
+              path="/dashboard/senior/cases/convert/:consultationReference"
               element={
                 <RoleProtectedRoute roles={['SENIOR_LAWYER']}>
                   <CaseConvertPage />
@@ -152,7 +152,7 @@ function AppRouter() {
               }
             />
             <Route
-              path="/dashboard/senior/cases/edit/:id"
+              path="/dashboard/senior/cases/edit/:caseReference"
               element={
                 <RoleProtectedRoute roles={['SENIOR_LAWYER']}>
                   <CaseEditPage />
@@ -184,7 +184,7 @@ function AppRouter() {
               }
             />
             <Route
-              path="/dashboard/junior/cases/:id"
+              path="/dashboard/junior/cases/:caseReference"
               element={
                 <RoleProtectedRoute roles={['JUNIOR_LAWYER']}>
                   <CaseDetailPage />
@@ -192,7 +192,7 @@ function AppRouter() {
               }
             />
             <Route
-              path="/dashboard/junior/cases/convert/:consultationId"
+              path="/dashboard/junior/cases/convert/:consultationReference"
               element={
                 <RoleProtectedRoute roles={['JUNIOR_LAWYER']}>
                   <CaseConvertPage />
@@ -200,7 +200,7 @@ function AppRouter() {
               }
             />
             <Route
-              path="/dashboard/junior/cases/edit/:id"
+              path="/dashboard/junior/cases/edit/:caseReference"
               element={
                 <RoleProtectedRoute roles={['JUNIOR_LAWYER']}>
                   <CaseEditPage />
@@ -224,7 +224,7 @@ function AppRouter() {
               }
             />
             <Route
-              path="/dashboard/paralegal/cases/:id"
+              path="/dashboard/paralegal/cases/:caseReference"
               element={
                 <RoleProtectedRoute roles={['PARALEGAL']}>
                   <CaseDetailPage />
@@ -272,7 +272,7 @@ function AppRouter() {
               }
             />
             <Route
-              path="/dashboard/client/cases/:id"
+              path="/dashboard/client/cases/:caseReference"
               element={
                 <RoleProtectedRoute roles={['CLIENT']}>
                   <CaseDetailPage />

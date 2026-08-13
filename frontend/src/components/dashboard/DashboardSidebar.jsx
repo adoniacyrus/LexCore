@@ -24,6 +24,47 @@ function DashboardSidebar({
     navigate('/login', { replace: true });
   };
 
+  const renderLink = (item) => {
+    const isActive = activeModule === item.id;
+
+    if (item.id === 'dashboard') {
+      return (
+        <NavLink
+          key={item.id}
+          to={homePath}
+          end
+          className={({ isActive: routeActive }) =>
+            `lw-sidebar__link ${routeActive || isActive ? 'is-active' : ''}`
+          }
+          onClick={() => onNavigate?.()}
+          title={collapsed ? item.label : undefined}
+        >
+          <NavIcon name={item.icon} />
+          <span>{item.label}</span>
+        </NavLink>
+      );
+    }
+
+    if (item.route) {
+      return (
+        <NavLink
+          key={item.id}
+          to={item.route}
+          className={({ isActive: routeActive }) =>
+            `lw-sidebar__link ${routeActive || isActive ? 'is-active' : ''}`
+          }
+          onClick={() => onNavigate?.()}
+          title={collapsed ? item.label : undefined}
+        >
+          <NavIcon name={item.icon} />
+          <span>{item.label}</span>
+        </NavLink>
+      );
+    }
+
+    return null;
+  };
+
   return (
     <aside
       className={`lw-sidebar ${collapsed ? 'is-collapsed' : ''} ${mobileOpen ? 'is-mobile-open' : ''}`.trim()}
@@ -38,48 +79,26 @@ function DashboardSidebar({
       </Link>
 
       <nav className="lw-sidebar__nav">
-        {items.map((item) => {
-          const isActive = activeModule === item.id;
-
-          if (item.id === 'dashboard') {
+        {items.map((groupOrItem, index) => {
+          if (groupOrItem.group && Array.isArray(groupOrItem.items)) {
             return (
-              <NavLink
-                key={item.id}
-                to={homePath}
-                end
-                className={({ isActive: routeActive }) =>
-                  `lw-sidebar__link ${routeActive || isActive ? 'is-active' : ''}`
-                }
-                onClick={() => onNavigate?.()}
-              >
-                <NavIcon name={item.icon} />
-                <span>{item.label}</span>
-              </NavLink>
+              <div key={groupOrItem.group || index} className="lw-sidebar__group">
+                <p className="lw-sidebar__group-title">{groupOrItem.group}</p>
+                {groupOrItem.items.map((item) => renderLink(item))}
+              </div>
             );
           }
-
-          if (item.route) {
-            return (
-              <NavLink
-                key={item.id}
-                to={item.route}
-                className={({ isActive: routeActive }) =>
-                  `lw-sidebar__link ${routeActive || isActive ? 'is-active' : ''}`
-                }
-                onClick={() => onNavigate?.()}
-              >
-                <NavIcon name={item.icon} />
-                <span>{item.label}</span>
-              </NavLink>
-            );
-          }
-
-          return null;
+          return renderLink(groupOrItem);
         })}
       </nav>
 
       <div className="lw-sidebar__footer">
-        <button type="button" className="lw-sidebar__link lw-sidebar__logout" onClick={handleLogout}>
+        <button
+          type="button"
+          className="lw-sidebar__link lw-sidebar__logout"
+          onClick={handleLogout}
+          title={collapsed ? 'Logout' : undefined}
+        >
           <NavIcon name="logout" />
           <span>Logout</span>
         </button>

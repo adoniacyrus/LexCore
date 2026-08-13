@@ -200,6 +200,13 @@ class AdminConsultationListView(APIView):
         )
 
 
+def _get_consultation_or_404(qs, pk_or_ref, **kwargs):
+    """Lookup Consultation by numeric PK or consultation_id (e.g. CONS-2026-0001)."""
+    if str(pk_or_ref).isdigit():
+        return get_object_or_404(qs, pk=int(pk_or_ref), **kwargs)
+    return get_object_or_404(qs, consultation_id=pk_or_ref, **kwargs)
+
+
 class AdminConsultationDetailView(APIView):
     """
     GET   /api/consultations/admin/<id>/
@@ -209,14 +216,14 @@ class AdminConsultationDetailView(APIView):
     permission_classes = [IsAdminRole]
 
     def get(self, request, pk):
-        consultation = get_object_or_404(_consultation_qs(), pk=pk)
+        consultation = _get_consultation_or_404(_consultation_qs(), pk)
         return Response(
             ConsultationSerializer(consultation).data,
             status=status.HTTP_200_OK,
         )
 
     def patch(self, request, pk):
-        consultation = get_object_or_404(_consultation_qs(), pk=pk)
+        consultation = _get_consultation_or_404(_consultation_qs(), pk)
         serializer = AdminConsultationUpdateSerializer(
             consultation,
             data=request.data,
@@ -279,9 +286,9 @@ class LawyerAssignedStatusView(APIView):
     permission_classes = [IsLawyerRole]
 
     def patch(self, request, pk):
-        consultation = get_object_or_404(
+        consultation = _get_consultation_or_404(
             _consultation_qs(),
-            pk=pk,
+            pk,
             assigned_lawyer=request.user,
         )
         serializer = LawyerStatusUpdateSerializer(

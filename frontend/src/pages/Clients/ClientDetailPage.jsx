@@ -27,18 +27,19 @@ function formatDateTime(value) {
 }
 
 function ClientDetailPage() {
-  const { id } = useParams();
+  const { clientReference, id } = useParams();
+  const targetRef = clientReference || id;
   const { accessToken } = useAuth();
   const [client, setClient] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
-    if (!accessToken || !id) return;
+    if (!accessToken || !targetRef) return;
     setLoading(true);
     setError('');
     try {
-      const data = await getClient(accessToken, id);
+      const data = await getClient(accessToken, targetRef);
       setClient(data);
     } catch (err) {
       setError(getErrorMessage(err, 'Unable to load client details.'));
@@ -46,7 +47,7 @@ function ClientDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [accessToken, id]);
+  }, [accessToken, targetRef]);
 
   useEffect(() => {
     load();

@@ -30,6 +30,15 @@ def _client_queryset():
 
 
 def _get_client(pk):
+    pk_str = str(pk)
+    if pk_str.startswith("CL-"):
+        try:
+            numeric_id = int(pk_str.replace("CL-", ""))
+            return get_object_or_404(_client_queryset(), pk=numeric_id)
+        except ValueError:
+            pass
+    if pk_str.isdigit():
+        return get_object_or_404(_client_queryset(), pk=int(pk_str))
     return get_object_or_404(_client_queryset(), pk=pk)
 
 

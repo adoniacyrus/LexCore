@@ -137,7 +137,7 @@ function CaseConversionModal({ open, consultation, onClose, onSuccess }) {
         // Redirect to case details page
         const role = user?.role || 'CLIENT';
         const dashboardPath = getDashboardPath(role);
-        navigate(`${dashboardPath}/cases/${result.id}`);
+        navigate(`${dashboardPath}/cases/${result.case_reference}`);
       }, 1500);
     } catch (err) {
       setError(getErrorMessage(err, 'Failed to convert consultation to case file.'));

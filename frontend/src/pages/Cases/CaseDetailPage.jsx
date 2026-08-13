@@ -34,7 +34,8 @@ function DetailField({ label, value, long = false }) {
 }
 
 function CaseDetailPage() {
-  const { id } = useParams();
+  const { caseReference, id } = useParams();
+  const targetRef = caseReference || id;
   const { user, accessToken } = useAuth();
   const [item, setItem] = useState(null);
   
@@ -61,20 +62,20 @@ function CaseDetailPage() {
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
-    if (!accessToken || !id) return;
+    if (!accessToken || !targetRef) return;
     setLoading(true);
     setDocsLoading(true);
     setTasksLoading(true);
     setError('');
     try {
-      const data = await getCaseDetail(accessToken, id);
+      const data = await getCaseDetail(accessToken, targetRef);
       setItem(data);
 
-      const docs = await listCaseDocuments(accessToken, id);
+      const docs = await listCaseDocuments(accessToken, targetRef);
       setDocuments(Array.isArray(docs) ? docs : []);
 
       if (user?.role !== 'CLIENT') {
-        const tasksData = await listCaseTasks(accessToken, id);
+        const tasksData = await listCaseTasks(accessToken, targetRef);
         setTasks(Array.isArray(tasksData) ? tasksData : []);
       }
     } catch (err) {
@@ -85,7 +86,7 @@ function CaseDetailPage() {
       setDocsLoading(false);
       setTasksLoading(false);
     }
-  }, [accessToken, id, user?.role]);
+  }, [accessToken, targetRef, user?.role]);
 
   useEffect(() => {
     load();
@@ -186,7 +187,7 @@ function CaseDetailPage() {
                   <DetailField label="Title" value={item.title} />
                   <DetailField label="Case Type" value={item.case_type_label || item.case_type} />
                   <DetailField label="Status" value={
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                       <span className={`cases-status is-${String(item.status).toLowerCase()}`}>
                         {item.status_label || item.status}
                       </span>
@@ -204,27 +205,31 @@ function CaseDetailPage() {
                   } />
                   <DetailField label="Start Date" value={formatDate(item.start_date)} />
                   <DetailField label="Originating Consultation" value={item.originating_consultation_ref} />
-                  <div className="case-form-full-width">
-                    <DetailField label="Description" value={item.description} long />
-                  </div>
+                  {item.description && (
+                    <div className="case-form-full-width">
+                      <DetailField label="Description" value={item.description} long />
+                    </div>
+                  )}
                 </div>
-              </section>
 
-              {hasCourtInfo ? (
-                <section className="case-section" aria-labelledby="section-court-info">
-                  <h2 id="section-court-info" className="case-section__title">Court Information</h2>
-                  <div className="case-grid">
-                    <DetailField label="Court" value={item.court} />
-                    <DetailField label="Jurisdiction" value={item.jurisdiction} />
-                    <DetailField label="Bench" value={item.bench} />
-                    <DetailField label="Location" value={item.location} />
-                    <DetailField label="CNR Number" value={item.cnr_number} />
-                    <DetailField label="Filing Number" value={item.filing_number} />
-                    <DetailField label="Registration Number" value={item.registration_number} />
-                    <DetailField label="Official Court Reference" value={item.official_court_reference} />
+                {hasCourtInfo && (
+                  <div style={{ marginTop: '1rem', paddingTop: '0.85rem', borderTop: '1px dashed var(--color-border)' }}>
+                    <span style={{ fontSize: '0.75rem', color: '#888280', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600, display: 'block', marginBottom: '0.65rem' }}>
+                      Official Court Filings
+                    </span>
+                    <div className="case-grid">
+                      <DetailField label="Court" value={item.court} />
+                      <DetailField label="Jurisdiction" value={item.jurisdiction} />
+                      <DetailField label="Bench" value={item.bench} />
+                      <DetailField label="Location" value={item.location} />
+                      <DetailField label="CNR Number" value={item.cnr_number} />
+                      <DetailField label="Filing Number" value={item.filing_number} />
+                      <DetailField label="Registration Number" value={item.registration_number} />
+                      <DetailField label="Court Reference" value={item.official_court_reference} />
+                    </div>
                   </div>
-                </section>
-              ) : null}
+                )}
+              </section>
 
               {/* TASKS & WORK SECTION (Internal Legal Team Only) */}
               {role !== 'CLIENT' && (

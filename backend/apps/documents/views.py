@@ -15,6 +15,13 @@ from .permissions import IsDocumentAuthorized
 from .serializers import DocumentSerializer
 
 
+def _get_case(case_id_or_ref):
+    """Lookup Case by numeric PK or case_reference."""
+    if str(case_id_or_ref).isdigit():
+        return get_object_or_404(Case, pk=int(case_id_or_ref))
+    return get_object_or_404(Case, case_reference=case_id_or_ref)
+
+
 class CaseDocumentsView(APIView):
     """
     GET /api/cases/<case_id>/documents/
@@ -27,7 +34,7 @@ class CaseDocumentsView(APIView):
     parser_classes = (MultiPartParser, FormParser)
 
     def get(self, request, case_id):
-        case = get_object_or_404(Case, pk=case_id)
+        case = _get_case(case_id)
         # Check that caller is a participant of the case
         permission = IsCaseParticipant()
         if not permission.has_object_permission(request, self, case):
@@ -41,7 +48,7 @@ class CaseDocumentsView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, case_id):
-        case = get_object_or_404(Case, pk=case_id)
+        case = _get_case(case_id)
         # Check that caller has participant access to upload
         permission = IsCaseParticipant()
         if not permission.has_object_permission(request, self, case):

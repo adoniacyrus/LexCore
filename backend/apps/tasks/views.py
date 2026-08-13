@@ -18,6 +18,20 @@ from .serializers import (
 )
 
 
+def _get_case(case_id_or_ref):
+    """Lookup Case by numeric PK or case_reference."""
+    if str(case_id_or_ref).isdigit():
+        return get_object_or_404(Case, pk=int(case_id_or_ref))
+    return get_object_or_404(Case, case_reference=case_id_or_ref)
+
+
+def _get_task(qs, pk_or_ref):
+    """Lookup CaseTask by numeric PK or task_id (e.g. TASK-2026-0001)."""
+    if str(pk_or_ref).isdigit():
+        return get_object_or_404(qs, pk=int(pk_or_ref))
+    return get_object_or_404(qs, task_id=pk_or_ref)
+
+
 class CaseTaskListCreateView(APIView):
     """
     GET /api/cases/tasks/ or GET /api/cases/<case_id>/tasks/
@@ -41,7 +55,8 @@ class CaseTaskListCreateView(APIView):
 
         if user.role == UserRole.ADMIN:
             if target_case_id:
-                queryset = queryset.filter(case_id=target_case_id)
+                case = _get_case(target_case_id)
+                queryset = queryset.filter(case=case)
         else:
             # Filter by cases where the user is a team member
             accessible_cases = Case.objects.filter(
@@ -51,7 +66,7 @@ class CaseTaskListCreateView(APIView):
             ).distinct()
 
             if target_case_id:
-                case = get_object_or_404(Case, pk=target_case_id)
+                case = _get_case(target_case_id)
                 if not is_user_in_case_team(user, case):
                     return Response(
                         {"detail": "You do not have permission to access tasks for this case."},
@@ -93,7 +108,7 @@ class CaseTaskListCreateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        case = get_object_or_404(Case, pk=target_case_id)
+        case = _get_case(target_case_id)
 
         # Only Admin or Responsible Lawyer can create tasks for a case
         is_admin = user.role == UserRole.ADMIN
@@ -128,17 +143,17 @@ class CaseTaskDetailView(APIView):
     permission_classes = [IsAuthenticated, IsTaskAuthorized]
 
     def get(self, request, pk):
-        task = get_object_or_404(
+        task = _get_task(
             CaseTask.objects.select_related("case", "assigned_to", "created_by").prefetch_related("documents"),
-            pk=pk,
+            pk,
         )
         self.check_object_permissions(request, task)
         return Response(CaseTaskSerializer(task).data, status=status.HTTP_200_OK)
 
     def patch(self, request, pk):
-        task = get_object_or_404(
+        task = _get_task(
             CaseTask.objects.select_related("case", "assigned_to", "created_by").prefetch_related("documents"),
-            pk=pk,
+            pk,
         )
         self.check_object_permissions(request, task)
 
@@ -189,7 +204,7 @@ class TaskDocumentsView(APIView):
     parser_classes = (MultiPartParser, FormParser)
 
     def get(self, request, pk):
-        task = get_object_or_404(CaseTask, pk=pk)
+        task = _get_task(CaseTask.objects.all(), pk)
         self.check_object_permissions(request, task)
 
         documents = Document.objects.filter(task=task).select_related(
@@ -199,7 +214,7 @@ class TaskDocumentsView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, pk):
-        task = get_object_or_404(CaseTask, pk=pk)
+        task = _get_task(CaseTask.objects.all(), pk)
         self.check_object_permissions(request, task)
 
         serializer = DocumentSerializer(data=request.data)

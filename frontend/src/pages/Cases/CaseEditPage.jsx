@@ -33,7 +33,8 @@ const STATUS_CHOICES = [
 ];
 
 function CaseEditPage() {
-  const { id } = useParams();
+  const { caseReference, id } = useParams();
+  const targetRef = caseReference || id;
   const navigate = useNavigate();
   const { user, accessToken } = useAuth();
 
@@ -63,12 +64,12 @@ function CaseEditPage() {
   const [officialCourtReference, setOfficialCourtReference] = useState('');
 
   const loadData = useCallback(async () => {
-    if (!accessToken || !id) return;
+    if (!accessToken || !targetRef) return;
     setError('');
     setLoading(true);
     try {
       // 1. Fetch case details
-      const detail = await getCaseDetail(accessToken, id);
+      const detail = await getCaseDetail(accessToken, targetRef);
       
       // Verify authorization on frontend as well
       if (detail.responsible_lawyer?.id !== user?.id) {
@@ -139,12 +140,12 @@ function CaseEditPage() {
     };
 
     try {
-      await updateCase(accessToken, id, payload);
+      await updateCase(accessToken, targetRef, payload);
       setSuccessMsg('Case details updated successfully.');
       setTimeout(() => {
         const role = user?.role || 'CLIENT';
         const dashboardPath = getDashboardPath(role);
-        navigate(`${dashboardPath}/cases/${id}`);
+        navigate(`${dashboardPath}/cases/${caseObj?.case_reference || targetRef}`);
       }, 1500);
     } catch (err) {
       setError(getErrorMessage(err, 'Failed to save changes. Please review fields and try again.'));
@@ -154,7 +155,7 @@ function CaseEditPage() {
 
   const role = user?.role || 'CLIENT';
   const dashboardPath = getDashboardPath(role);
-  const detailPath = `${dashboardPath}/cases/${id}`;
+  const detailPath = `${dashboardPath}/cases/${caseObj?.case_reference || targetRef}`;
 
   return (
     <DashboardLayout showContext={false} activeModule="cases" fillHeight>

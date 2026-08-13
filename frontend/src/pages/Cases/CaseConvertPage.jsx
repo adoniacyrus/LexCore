@@ -25,7 +25,8 @@ const CASE_TYPE_CHOICES = [
 ];
 
 function CaseConvertPage() {
-  const { consultationId } = useParams();
+  const { consultationReference, consultationId } = useParams();
+  const targetConsultationRef = consultationReference || consultationId;
   const navigate = useNavigate();
   const location = useLocation();
   const { user, accessToken } = useAuth();
@@ -68,7 +69,11 @@ function CaseConvertPage() {
       // 2. Fetch consultation details if not passed in route state
       if (!consultation) {
         const consultations = await listAssignedConsultations(accessToken);
-        const match = consultations.find((c) => String(c.id) === String(consultationId));
+        const match = consultations.find(
+          (c) =>
+            String(c.consultation_id) === String(targetConsultationRef) ||
+            String(c.id) === String(targetConsultationRef)
+        );
         if (match) {
           setConsultation(match);
           setTitle(`Matter: ${match.subject}`);
@@ -83,7 +88,7 @@ function CaseConvertPage() {
     } finally {
       setLoading(false);
     }
-  }, [accessToken, consultation, consultationId]);
+  }, [accessToken, consultation, targetConsultationRef]);
 
   useEffect(() => {
     loadData();
@@ -100,7 +105,7 @@ function CaseConvertPage() {
     setSubmitting(true);
 
     const payload = {
-      originating_consultation: Number(consultationId),
+      originating_consultation: consultation?.id || targetConsultationRef,
       title: title.trim(),
       case_type: caseType,
       start_date: startDate,
@@ -130,7 +135,7 @@ function CaseConvertPage() {
   const handleNavigateToDetails = () => {
     const role = user?.role || 'CLIENT';
     const dashboardPath = getDashboardPath(role);
-    navigate(`${dashboardPath}/cases/${createdCaseId}`);
+    navigate(`${dashboardPath}/cases/${createdCaseRef || createdCaseId}`);
   };
 
   const dashboardPath = getDashboardPath(user?.role || 'CLIENT');

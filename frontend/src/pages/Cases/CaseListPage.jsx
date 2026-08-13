@@ -211,11 +211,11 @@ function CaseListPage() {
                     key={item.id}
                     className="cases-table__row-clickable"
                     tabIndex={0}
-                    onClick={() => handleRowClick(item.id)}
+                    onClick={() => handleRowClick(item.case_reference)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
-                        handleRowClick(item.id);
+                        handleRowClick(item.case_reference);
                       }
                     }}
                   >

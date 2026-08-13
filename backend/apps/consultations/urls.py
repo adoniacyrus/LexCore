@@ -38,7 +38,7 @@ urlpatterns = [
         name="consultation-eligible-lawyers",
     ),
     path(
-        "admin/<int:pk>/",
+        "admin/<str:pk>/",
         AdminConsultationDetailView.as_view(),
         name="consultation-admin-detail",
     ),
@@ -48,7 +48,7 @@ urlpatterns = [
         name="consultation-assigned-list",
     ),
     path(
-        "assigned/<int:pk>/status/",
+        "assigned/<str:pk>/status/",
         LawyerAssignedStatusView.as_view(),
         name="consultation-assigned-status",
     ),
