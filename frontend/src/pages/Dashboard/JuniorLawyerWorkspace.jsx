@@ -2,8 +2,9 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { NavIcon } from '../../components/dashboard/icons';
 import { useAuth } from '../../context/AuthContext';
-import { listMyConsultations, getErrorMessage } from '../../services/consultationService';
+import { listAssignedConsultations, getErrorMessage } from '../../services/consultationService';
 import { listCases } from '../../services/caseService';
+import { listCaseTasks } from '../../services/taskService';
 import './adminWorkspace.css';
 
 function getGreeting() {
@@ -24,43 +25,30 @@ function formatDashboardDate(date = new Date()) {
 
 const QUICK_ACTIONS = [
   {
-    id: 'book-consultation',
-    title: 'Book Consultation',
-    description: 'Schedule a legal consultation',
-    icon: 'edit',
-    to: '/dashboard/client/consultations/book',
-  },
-  {
-    id: 'my-consultations',
-    title: 'My Consultations',
-    description: 'View consultation history & status',
+    id: 'view-consultations',
+    title: 'Assigned Consultations',
+    description: 'Review assigned client requests',
     icon: 'consultations',
-    to: '/dashboard/client/consultations',
+    to: '/dashboard/junior/consultations',
   },
   {
     id: 'my-cases',
     title: 'My Cases',
-    description: 'Track active matter progress',
+    description: 'Access matter files and work items',
     icon: 'cases',
-    to: '/dashboard/client/cases',
-  },
-  {
-    id: 'my-account',
-    title: 'My Account',
-    description: 'View portal account profile',
-    icon: 'clients',
-    to: '/dashboard/client/account',
+    to: '/dashboard/junior/cases',
   },
 ];
 
-function ClientWorkspace() {
+function JuniorLawyerWorkspace() {
   const { accessToken, user } = useAuth();
   const [consultations, setConsultations] = useState([]);
   const [cases, setCases] = useState([]);
+  const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const firstName = (user?.full_name || 'Client').split(' ')[0];
+  const firstName = (user?.full_name || 'Counsel').split(' ')[0];
   const todayLabel = useMemo(() => formatDashboardDate(), []);
 
   const load = useCallback(async () => {
@@ -68,16 +56,19 @@ function ClientWorkspace() {
     setLoading(true);
     setError('');
     try {
-      const [consData, caseData] = await Promise.all([
-        listMyConsultations(accessToken),
+      const [consData, caseData, taskData] = await Promise.all([
+        listAssignedConsultations(accessToken),
         listCases(accessToken),
+        listCaseTasks(accessToken),
       ]);
       setConsultations(Array.isArray(consData) ? consData : []);
       setCases(Array.isArray(caseData) ? caseData : []);
+      setTasks(Array.isArray(taskData) ? taskData : []);
     } catch (err) {
-      setError(getErrorMessage(err, 'Unable to load client portal overview.'));
+      setError(getErrorMessage(err, 'Unable to load workspace data.'));
       setConsultations([]);
       setCases([]);
+      setTasks([]);
     } finally {
       setLoading(false);
     }
@@ -89,84 +80,88 @@ function ClientWorkspace() {
 
   const stats = useMemo(() => {
     const pendingCons = consultations.filter(
-      (c) => c.status === 'PENDING' || c.status === 'UNDER_REVIEW' || c.status === 'ACCEPTED'
+      (c) => c.status === 'ACCEPTED' || c.status === 'PENDING' || c.status === 'UNDER_REVIEW'
     ).length;
-    const completedCons = consultations.filter(
-      (c) => c.status === 'COMPLETED' || c.status === 'CONVERTED_TO_CASE'
+    const myTasks = tasks.filter((t) => t.assigned_to?.id === user?.id).length;
+    const inProgressTasks = tasks.filter(
+      (t) => t.assigned_to?.id === user?.id && t.status === 'IN_PROGRESS'
+    ).length;
+    const pendingTasks = tasks.filter(
+      (t) => t.assigned_to?.id === user?.id && t.status === 'PENDING'
     ).length;
 
     return {
       totalCons: consultations.length,
       pendingCons,
-      completedCons,
       totalCases: cases.length,
+      myTasks,
+      inProgressTasks,
+      pendingTasks,
     };
-  }, [consultations, cases]);
+  }, [consultations, cases, tasks, user?.id]);
 
   const attentionItems = useMemo(() => {
     const items = [];
 
     const reviewQueue = consultations.filter(
-      (c) => c.status === 'PENDING' || c.status === 'UNDER_REVIEW'
+      (c) => c.status === 'ACCEPTED' || c.status === 'PENDING' || c.status === 'UNDER_REVIEW'
     );
     if (reviewQueue.length > 0) {
       items.push({
         id: 'review-cons',
         priority: 'High',
-        title: 'Consultation awaiting review',
-        description: `Your consultation request (${reviewQueue[0].consultation_id}) is currently under review by our legal team.`,
-        actionLabel: 'View consultations',
-        actionTo: '/dashboard/client/consultations',
+        title: 'Assigned consultations awaiting action',
+        description: `${reviewQueue.length} consultation${reviewQueue.length === 1 ? '' : 's'} assigned to you require review.`,
+        actionLabel: 'Review queue',
+        actionTo: '/dashboard/junior/consultations',
       });
     }
 
-    const acceptedCons = consultations.filter((c) => c.status === 'ACCEPTED');
-    if (acceptedCons.length > 0) {
+    const myActiveTasks = tasks.filter(
+      (t) => t.assigned_to?.id === user?.id && (t.status === 'PENDING' || t.status === 'IN_PROGRESS')
+    );
+    if (myActiveTasks.length > 0) {
       items.push({
-        id: 'accepted-cons',
+        id: 'my-tasks',
         priority: 'High',
-        title: 'Consultation confirmed',
-        description: `${acceptedCons.length} consultation request${acceptedCons.length === 1 ? '' : 's'} accepted by advocate.`,
-        actionLabel: 'View details',
-        actionTo: '/dashboard/client/consultations',
-      });
-    }
-
-    if (cases.length > 0) {
-      items.push({
-        id: 'active-cases',
-        priority: 'Medium',
-        title: 'Active legal matters',
-        description: `You have ${cases.length} active case matter${cases.length === 1 ? '' : 's'} managed by LexCore Chambers.`,
-        actionLabel: 'View cases',
-        actionTo: '/dashboard/client/cases',
+        title: 'Work tasks assigned to you',
+        description: `You have ${myActiveTasks.length} task${myActiveTasks.length === 1 ? '' : 's'} assigned requiring work or status updates.`,
+        actionLabel: 'View tasks',
+        actionTo: '/dashboard/junior/cases',
       });
     }
 
     return items;
-  }, [consultations, cases]);
+  }, [consultations, tasks, user?.id]);
 
   const kpiCards = [
     {
       id: 'consultations',
       icon: 'consultations',
       value: stats.totalCons,
-      label: 'My Consultations',
-      secondary: `${stats.pendingCons} pending review`,
+      label: 'Assigned Consultations',
+      secondary: `${stats.pendingCons} active`,
     },
     {
       id: 'cases',
       icon: 'cases',
       value: stats.totalCases,
-      label: 'Active Cases',
-      secondary: 'Ongoing legal matters',
+      label: 'My Cases',
+      secondary: 'Assigned matters',
     },
     {
-      id: 'completed',
+      id: 'my-tasks',
+      icon: 'tasks',
+      value: stats.myTasks,
+      label: 'My Tasks',
+      secondary: `${stats.inProgressTasks} in progress`,
+    },
+    {
+      id: 'pending-tasks',
       icon: 'reports',
-      value: stats.completedCons,
-      label: 'Completed Consultations',
-      secondary: 'Historical reviews',
+      value: stats.pendingTasks,
+      label: 'Pending Tasks',
+      secondary: 'Awaiting action',
     },
   ];
 
@@ -174,12 +169,12 @@ function ClientWorkspace() {
     <div className="admin-dash lw-fade-in">
       <header className="admin-dash__header">
         <div className="admin-dash__header-main">
-          <p className="section-tag-gold">LexCore Client Portal</p>
+          <p className="section-tag-gold">Chambers Associate Counsel</p>
           <h1 className="admin-dash__title">
             {getGreeting()}, <em>{firstName}</em>
           </h1>
           <p className="admin-dash__subtitle">
-            Book consultations, track matter updates, and review case communications with your legal team.
+            Track assigned legal consultations, update matter tasks, and perform legal research.
           </p>
         </div>
         <p className="admin-dash__date">{todayLabel}</p>
@@ -191,9 +186,9 @@ function ClientWorkspace() {
         </p>
       ) : null}
 
-      <section className="admin-dash__kpis" aria-label="Client portal summary" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
+      <section className="admin-dash__kpis" aria-label="Junior Lawyer summary">
         {loading ? (
-          <p className="lw-muted admin-dash__loading">Loading client portal overview…</p>
+          <p className="lw-muted admin-dash__loading">Loading workspace overview…</p>
         ) : (
           kpiCards.map((card) => (
             <article key={card.id} className="admin-kpi">
@@ -220,12 +215,12 @@ function ClientWorkspace() {
           </div>
 
           {loading ? (
-            <p className="lw-muted">Checking account updates…</p>
+            <p className="lw-muted">Checking assigned work…</p>
           ) : attentionItems.length === 0 ? (
             <div className="admin-dash__clear">
-              <p className="admin-dash__clear-title">You&apos;re all caught up</p>
+              <p className="admin-dash__clear-title">All clear</p>
               <p className="admin-dash__clear-desc">
-                No consultation or case action requires your attention right now.
+                No pending consultations or tasks require your attention.
               </p>
             </div>
           ) : (
@@ -271,4 +266,4 @@ function ClientWorkspace() {
   );
 }
 
-export default ClientWorkspace;
+export default JuniorLawyerWorkspace;

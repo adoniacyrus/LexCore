@@ -1,11 +1,11 @@
 import React from 'react';
 import DashboardLayout from '../../layouts/DashboardLayout';
-import StaffWorkspace from './StaffWorkspace';
+import JuniorLawyerWorkspace from './JuniorLawyerWorkspace';
 
 function JuniorLawyerDashboard() {
   return (
-    <DashboardLayout showContext={false}>
-      <StaffWorkspace />
+    <DashboardLayout showContext={false} fillHeight>
+      <JuniorLawyerWorkspace />
     </DashboardLayout>
   );
 }

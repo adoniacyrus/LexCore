@@ -4,7 +4,7 @@ import ClientWorkspace from './ClientWorkspace';
 
 function ClientDashboard() {
   return (
-    <DashboardLayout showContext={false}>
+    <DashboardLayout showContext={false} fillHeight>
       <ClientWorkspace />
     </DashboardLayout>
   );
