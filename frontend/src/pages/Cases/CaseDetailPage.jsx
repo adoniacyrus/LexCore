@@ -3,10 +3,22 @@ import { useParams, Link } from 'react-router-dom';
 import PageHeader from '../../components/dashboard/PageHeader';
 import { useAuth } from '../../context/AuthContext';
 import DashboardLayout from '../../layouts/DashboardLayout';
-import { getCaseDetail, getErrorMessage } from '../../services/caseService';
+import {
+  getCaseDetail,
+  getErrorMessage,
+  listCaseDocuments,
+  downloadCaseDocument,
+} from '../../services/caseService';
+import { listCaseTasks } from '../../services/taskService';
 import { getDashboardPath } from '../../utils/roleRoutes';
 import { NavIcon } from '../../components/dashboard/icons';
 import CaseEditModal from './CaseEditModal';
+import ManageCaseTeamModal from './ManageCaseTeamModal';
+import ChangeCaseStatusModal from './ChangeCaseStatusModal';
+import UploadDocumentModal from './UploadDocumentModal';
+import DeleteDocumentConfirmModal from './DeleteDocumentConfirmModal';
+import CreateTaskModal from './CreateTaskModal';
+import TaskDetailModal from './TaskDetailModal';
 import './cases.css';
 
 function DetailField({ label, value, long = false }) {
@@ -25,24 +37,55 @@ function CaseDetailPage() {
   const { id } = useParams();
   const { user, accessToken } = useAuth();
   const [item, setItem] = useState(null);
+  
+  // Modals
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showTeamModal, setShowTeamModal] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedDocToDelete, setSelectedDocToDelete] = useState(null);
+  
+  // Tasks Modals & State
+  const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
+  const [showTaskDetailModal, setShowTaskDetailModal] = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState(null);
+  const [tasks, setTasks] = useState([]);
+  const [tasksLoading, setTasksLoading] = useState(true);
+  const [taskFilter, setTaskFilter] = useState('ALL');
+
+  // Documents State
+  const [documents, setDocuments] = useState([]);
+  const [docsLoading, setDocsLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
     if (!accessToken || !id) return;
     setLoading(true);
+    setDocsLoading(true);
+    setTasksLoading(true);
     setError('');
     try {
       const data = await getCaseDetail(accessToken, id);
       setItem(data);
+
+      const docs = await listCaseDocuments(accessToken, id);
+      setDocuments(Array.isArray(docs) ? docs : []);
+
+      if (user?.role !== 'CLIENT') {
+        const tasksData = await listCaseTasks(accessToken, id);
+        setTasks(Array.isArray(tasksData) ? tasksData : []);
+      }
     } catch (err) {
       setError(getErrorMessage(err, 'Unable to load case details.'));
       setItem(null);
     } finally {
       setLoading(false);
+      setDocsLoading(false);
+      setTasksLoading(false);
     }
-  }, [accessToken, id]);
+  }, [accessToken, id, user?.role]);
 
   useEffect(() => {
     load();
@@ -51,6 +94,16 @@ function CaseDetailPage() {
   const role = user?.role || 'CLIENT';
   const dashboardPath = getDashboardPath(role);
   const listPath = `${dashboardPath}/cases`;
+
+  const handleViewDownload = async (doc) => {
+    try {
+      const blob = await downloadCaseDocument(accessToken, doc.id);
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    } catch (err) {
+      alert(getErrorMessage(err, 'Failed to open document.'));
+    }
+  };
 
   const formatDate = (dateString) => {
     if (!dateString) return '';
@@ -72,8 +125,23 @@ function CaseDetailPage() {
     item.official_court_reference
   );
 
+  // Filter tasks
+  const filteredTasks = tasks.filter(t => {
+    if (taskFilter === 'MY_TASKS') return t.assigned_to?.id === user?.id;
+    if (taskFilter === 'PENDING') return t.status === 'PENDING';
+    if (taskFilter === 'IN_PROGRESS') return t.status === 'IN_PROGRESS';
+    if (taskFilter === 'COMPLETED') return t.status === 'COMPLETED';
+    return true;
+  });
+
+  const pendingCount = tasks.filter(t => t.status === 'PENDING').length;
+  const inProgressCount = tasks.filter(t => t.status === 'IN_PROGRESS').length;
+  const completedCount = tasks.filter(t => t.status === 'COMPLETED').length;
+
+  const canCreateTask = role === 'ADMIN' || item?.responsible_lawyer?.id === user?.id;
+
   return (
-    <DashboardLayout showContext={false} activeModule="cases" fillHeight>
+    <DashboardLayout showContext={false} activeModule="cases">
       <div className="cases-page lw-fade-in">
         <PageHeader
           eyebrow={item?.case_reference || 'Case Matter'}
@@ -118,9 +186,21 @@ function CaseDetailPage() {
                   <DetailField label="Title" value={item.title} />
                   <DetailField label="Case Type" value={item.case_type_label || item.case_type} />
                   <DetailField label="Status" value={
-                    <span className={`cases-status is-${String(item.status).toLowerCase()}`}>
-                      {item.status_label || item.status}
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                      <span className={`cases-status is-${String(item.status).toLowerCase()}`}>
+                        {item.status_label || item.status}
+                      </span>
+                      {role === 'ADMIN' && (
+                        <button
+                          type="button"
+                          className="btn btn-ghost-dark"
+                          style={{ fontSize: '0.72rem', padding: '0.2rem 0.5rem', height: 'auto', minHeight: 'auto' }}
+                          onClick={() => setShowStatusModal(true)}
+                        >
+                          Change Status
+                        </button>
+                      )}
+                    </div>
                   } />
                   <DetailField label="Start Date" value={formatDate(item.start_date)} />
                   <DetailField label="Originating Consultation" value={item.originating_consultation_ref} />
@@ -145,8 +225,274 @@ function CaseDetailPage() {
                   </div>
                 </section>
               ) : null}
+
+              {/* TASKS & WORK SECTION (Internal Legal Team Only) */}
+              {role !== 'CLIENT' && (
+                <section className="case-section" aria-labelledby="section-tasks-work" style={{ marginTop: '2rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <h2 id="section-tasks-work" className="case-section__title" style={{ margin: 0, border: 'none', padding: 0 }}>
+                        Tasks & Work
+                      </h2>
+                      <div style={{ display: 'flex', gap: '0.35rem', fontSize: '0.72rem' }}>
+                        <span style={{ background: '#faf9f6', border: '1px solid var(--color-border)', padding: '0.15rem 0.45rem', borderRadius: '10px', fontWeight: 600 }}>
+                          {tasks.length} total
+                        </span>
+                        <span style={{ background: '#fdf6e2', color: '#8a6d3b', border: '1px solid #f9ebc7', padding: '0.15rem 0.45rem', borderRadius: '10px', fontWeight: 600 }}>
+                          {pendingCount} pending
+                        </span>
+                        <span style={{ background: '#eaf4fc', color: '#31708f', border: '1px solid #d9edf7', padding: '0.15rem 0.45rem', borderRadius: '10px', fontWeight: 600 }}>
+                          {inProgressCount} in progress
+                        </span>
+                        <span style={{ background: '#e8f8f5', color: '#27ae60', border: '1px solid #d4efdf', padding: '0.15rem 0.45rem', borderRadius: '10px', fontWeight: 600 }}>
+                          {completedCount} completed
+                        </span>
+                      </div>
+                    </div>
+
+                    {canCreateTask && (
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        style={{ fontSize: '0.78rem', padding: '0.4rem 0.75rem', height: 'auto', minHeight: 'auto', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                        onClick={() => setShowCreateTaskModal(true)}
+                      >
+                        + Add Task
+                      </button>
+                    )}
+                  </div>
+
+                  {/* TASK FILTER TABS */}
+                  <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                    {[
+                      { key: 'ALL', label: 'All Tasks' },
+                      { key: 'MY_TASKS', label: 'My Tasks' },
+                      { key: 'PENDING', label: 'Pending' },
+                      { key: 'IN_PROGRESS', label: 'In Progress' },
+                      { key: 'COMPLETED', label: 'Completed' },
+                    ].map(tab => (
+                      <button
+                        key={tab.key}
+                        type="button"
+                        onClick={() => setTaskFilter(tab.key)}
+                        style={{
+                          fontSize: '0.75rem',
+                          padding: '0.25rem 0.6rem',
+                          borderRadius: '12px',
+                          border: '1px solid var(--color-border)',
+                          background: taskFilter === tab.key ? 'var(--color-primary)' : '#FAF9F6',
+                          color: taskFilter === tab.key ? '#fff' : 'var(--color-text)',
+                          fontWeight: taskFilter === tab.key ? 600 : 500,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {tasksLoading ? (
+                    <div style={{ padding: '1.5rem', textAlign: 'center', color: '#888280', fontSize: '0.9rem' }}>Loading tasks…</div>
+                  ) : filteredTasks.length === 0 ? (
+                    <div style={{ padding: '2.5rem', textAlign: 'center', backgroundColor: '#faf9f6', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius-sm)' }}>
+                      <p style={{ fontSize: '0.9rem', color: '#888280', marginBottom: canCreateTask ? '1rem' : 0 }}>
+                        {taskFilter !== 'ALL' ? 'No tasks match selected filter.' : 'No tasks assigned to this case yet.'}
+                      </p>
+                      {canCreateTask && taskFilter === 'ALL' && (
+                        <button
+                          type="button"
+                          className="btn btn-ghost-dark"
+                          onClick={() => setShowCreateTaskModal(true)}
+                        >
+                          Add Task
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="cases-table-wrap" style={{ border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius-sm)', background: '#fff' }}>
+                      <table className="cases-table" style={{ margin: 0 }}>
+                        <thead>
+                          <tr>
+                            <th>Task Reference & Title</th>
+                            <th>Assigned Member</th>
+                            <th>Due Date</th>
+                            <th>Status</th>
+                            <th style={{ textAlign: 'right' }}>Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredTasks.map((t) => (
+                            <tr
+                              key={t.id}
+                              className="cases-table__row-clickable"
+                              onClick={() => {
+                                setSelectedTaskId(t.id);
+                                setShowTaskDetailModal(true);
+                              }}
+                            >
+                              <td>
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                  <span style={{ fontSize: '0.72rem', color: '#888280', fontWeight: 600 }}>{t.task_id}</span>
+                                  <span style={{ fontWeight: 600, color: 'var(--color-primary)' }}>{t.title}</span>
+                                </div>
+                              </td>
+                              <td>
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                  <span style={{ fontSize: '0.85rem', fontWeight: 500 }}>{t.assigned_to?.full_name || '—'}</span>
+                                  <span style={{ fontSize: '0.72rem', color: '#888280' }}>{t.assigned_to?.email || ''}</span>
+                                </div>
+                              </td>
+                              <td style={{ fontSize: '0.85rem' }}>{formatDate(t.due_date)}</td>
+                              <td>
+                                <span className={`cases-status is-${String(t.status).toLowerCase()}`}>
+                                  {t.status_label || t.status}
+                                </span>
+                              </td>
+                              <td style={{ textAlign: 'right' }}>
+                                <button
+                                  type="button"
+                                  className="btn btn-ghost-dark"
+                                  style={{ fontSize: '0.72rem', padding: '0.25rem 0.5rem', height: 'auto', minHeight: 'auto' }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedTaskId(t.id);
+                                    setShowTaskDetailModal(true);
+                                  }}
+                                >
+                                  View Task
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </section>
+              )}
+
+              {/* CASE DOCUMENTS SECTION (Common Repository) */}
+              <section className="case-section" aria-labelledby="section-case-documents" style={{ marginTop: '2rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.75rem', marginBottom: '1.25rem' }}>
+                  <h2 id="section-case-documents" className="case-section__title" style={{ margin: 0, border: 'none', padding: 0 }}>Documents & Evidence</h2>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    style={{ fontSize: '0.78rem', padding: '0.4rem 0.75rem', height: 'auto', minHeight: 'auto', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                    onClick={() => setShowUploadModal(true)}
+                  >
+                    + Upload Document
+                  </button>
+                </div>
+
+                {docsLoading ? (
+                  <div style={{ padding: '1.5rem', textAlign: 'center', color: '#888280', fontSize: '0.9rem' }}>Loading documents…</div>
+                ) : documents.length === 0 ? (
+                  <div style={{ padding: '2.5rem', textAlign: 'center', backgroundColor: '#faf9f6', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius-sm)' }}>
+                    <p style={{ fontSize: '0.9rem', color: '#888280', marginBottom: '1rem' }}>No documents have been uploaded for this case.</p>
+                    <button
+                      type="button"
+                      className="btn btn-ghost-dark"
+                      onClick={() => setShowUploadModal(true)}
+                    >
+                      Upload Document
+                    </button>
+                  </div>
+                ) : (
+                  <div className="cases-table-wrap" style={{ border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius-sm)', background: '#fff' }}>
+                    <table className="cases-table" style={{ margin: 0 }}>
+                      <thead>
+                        <tr>
+                          <th>Document Name</th>
+                          <th>Category</th>
+                          <th>Uploaded By</th>
+                          <th>Uploaded Date</th>
+                          <th>Size</th>
+                          <th style={{ textAlign: 'right' }}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {documents.map((doc) => {
+                          const canDelete = role === 'ADMIN' || 
+                                            role === 'SENIOR_LAWYER' || 
+                                            role === 'JUNIOR_LAWYER' || 
+                                            role === 'PARALEGAL' || 
+                                            (role === 'CLIENT' && doc.uploaded_by?.id === user?.id);
+
+                          return (
+                            <tr key={doc.id}>
+                              <td>
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.3rem' }}>
+                                    <span style={{ fontWeight: 600, color: 'var(--color-primary)' }}>{doc.title}</span>
+                                    {doc.task && (
+                                      <span
+                                        className="case-tag-chip"
+                                        style={{
+                                          fontSize: '0.68rem',
+                                          backgroundColor: '#faf3e0',
+                                          color: '#966e00',
+                                          border: '1px solid #f3e5ab',
+                                          padding: '0.1rem 0.4rem',
+                                          borderRadius: '8px',
+                                        }}
+                                        title={`Originated from task: ${doc.task.title}`}
+                                      >
+                                        Task: {doc.task.title}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span style={{ fontSize: '0.72rem', color: '#888280' }}>{doc.file ? doc.file.split('/').pop() : ''}</span>
+                                </div>
+                              </td>
+                              <td>
+                                <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>{doc.category_label || doc.category}</span>
+                              </td>
+                              <td>
+                                <span style={{ fontSize: '0.8rem' }}>{doc.uploaded_by?.full_name || '—'}</span>
+                              </td>
+                              <td>
+                                <span style={{ fontSize: '0.8rem' }}>{formatDate(doc.uploaded_at?.split('T')[0])}</span>
+                              </td>
+                              <td>
+                                <span style={{ fontSize: '0.8rem', color: '#666' }}>{doc.file_size}</span>
+                              </td>
+                              <td style={{ textAlign: 'right' }}>
+                                <div style={{ display: 'inline-flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
+                                  <button
+                                    type="button"
+                                    className="btn btn-ghost-dark"
+                                    style={{ fontSize: '0.72rem', padding: '0.25rem 0.5rem', height: 'auto', minHeight: 'auto' }}
+                                    onClick={() => handleViewDownload(doc)}
+                                  >
+                                    View
+                                  </button>
+                                  {canDelete && (
+                                    <button
+                                      type="button"
+                                      className="btn btn-ghost-dark"
+                                      style={{ fontSize: '0.72rem', padding: '0.25rem 0.5rem', height: 'auto', minHeight: 'auto', color: '#c0392b', borderColor: '#f8d7da' }}
+                                      onClick={() => {
+                                        setSelectedDocToDelete(doc);
+                                        setShowDeleteModal(true);
+                                      }}
+                                    >
+                                      Delete
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
             </div>
 
+            {/* SIDEBAR */}
             <div className="case-detail-sidebar">
               <section className="case-section" aria-labelledby="section-client-info">
                 <h2 id="section-client-info" className="case-section__title">Client</h2>
@@ -154,21 +500,71 @@ function CaseDetailPage() {
                   <DetailField label="Name" value={item.client?.full_name} />
                   {role !== 'CLIENT' && <DetailField label="Email" value={item.client?.email} />}
                   {role !== 'CLIENT' && <DetailField label="Phone" value={item.client?.phone_number} />}
+                  <DetailField label="Practice Area" value={item.practice_area?.name} />
                 </div>
               </section>
 
               <section className="case-section" aria-labelledby="section-legal-team">
                 <h2 id="section-legal-team" className="case-section__title">Legal Team</h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  <DetailField label="Responsible Lawyer" value={item.responsible_lawyer?.full_name} />
-                  <DetailField label="Practice Area" value={item.practice_area?.name} />
+                  <div className="case-field">
+                    <span className="case-label">Responsible Lawyer</span>
+                    <span className="case-value" style={{ fontWeight: 600, color: 'var(--color-primary)' }}>
+                      {item.responsible_lawyer?.full_name || '—'}
+                    </span>
+                    <span style={{ display: 'block', fontSize: '0.72rem', color: '#888280', marginTop: '0.1rem' }}>
+                      Lead Advocate
+                    </span>
+                  </div>
+
+                  <div className="case-field">
+                    <span className="case-label">Assistant Lawyers</span>
+                    {Array.isArray(item.assistant_lawyers) && item.assistant_lawyers.length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.2rem' }}>
+                        {item.assistant_lawyers.map(al => (
+                          <div key={al.id} style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span className="case-value" style={{ fontWeight: 500 }}>{al.full_name}</span>
+                            <span style={{ fontSize: '0.72rem', color: '#888280' }}>
+                              {al.role === 'SENIOR_LAWYER' ? 'Senior Advocate' : 'Junior Advocate'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="case-value" style={{ color: '#aaa', fontStyle: 'italic', fontSize: '0.85rem' }}>
+                        None assigned
+                      </span>
+                    )}
+                  </div>
+
                   {item.supporting_paralegal ? (
-                    <DetailField label="Supporting Paralegal" value={item.supporting_paralegal?.full_name} />
+                    <div className="case-field">
+                      <span className="case-label">Supporting Paralegal</span>
+                      <span className="case-value" style={{ fontWeight: 500 }}>
+                        {item.supporting_paralegal?.full_name}
+                      </span>
+                      <span style={{ display: 'block', fontSize: '0.72rem', color: '#888280', marginTop: '0.1rem' }}>
+                        Paralegal
+                      </span>
+                    </div>
                   ) : (
                     <div className="case-field">
                       <span className="case-label">Supporting Paralegal</span>
-                      <span className="case-value" style={{ color: '#aaa', fontStyle: 'italic' }}>None assigned</span>
+                      <span className="case-value" style={{ color: '#aaa', fontStyle: 'italic', fontSize: '0.85rem' }}>
+                        None assigned
+                      </span>
                     </div>
+                  )}
+
+                  {(role === 'ADMIN' || item.responsible_lawyer?.id === user?.id) && (
+                    <button
+                      type="button"
+                      className="btn btn-ghost-dark"
+                      style={{ marginTop: '0.75rem', width: '100%', fontSize: '0.82rem', padding: '0.45rem 0.8rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}
+                      onClick={() => setShowTeamModal(true)}
+                    >
+                      <NavIcon name="edit" /> Manage Team
+                    </button>
                   )}
                 </div>
               </section>
@@ -181,6 +577,56 @@ function CaseDetailPage() {
         open={showEditModal}
         caseId={item?.id}
         onClose={() => setShowEditModal(false)}
+        onSuccess={() => load()}
+      />
+
+      <ManageCaseTeamModal
+        open={showTeamModal}
+        caseObj={item}
+        onClose={() => setShowTeamModal(false)}
+        onSuccess={() => load()}
+      />
+
+      <ChangeCaseStatusModal
+        open={showStatusModal}
+        caseObj={item}
+        onClose={() => setShowStatusModal(false)}
+        onSuccess={() => load()}
+      />
+
+      <UploadDocumentModal
+        open={showUploadModal}
+        caseObj={item}
+        onClose={() => setShowUploadModal(false)}
+        onSuccess={() => load()}
+      />
+
+      <DeleteDocumentConfirmModal
+        open={showDeleteModal}
+        documentObj={selectedDocToDelete}
+        caseObj={item}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setSelectedDocToDelete(null);
+        }}
+        onSuccess={() => load()}
+      />
+
+      <CreateTaskModal
+        open={showCreateTaskModal}
+        caseObj={item}
+        onClose={() => setShowCreateTaskModal(false)}
+        onSuccess={() => load()}
+      />
+
+      <TaskDetailModal
+        open={showTaskDetailModal}
+        taskId={selectedTaskId}
+        caseObj={item}
+        onClose={() => {
+          setShowTaskDetailModal(false);
+          setSelectedTaskId(null);
+        }}
         onSuccess={() => load()}
       />
     </DashboardLayout>

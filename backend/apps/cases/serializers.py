@@ -30,6 +30,7 @@ class CaseSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True,
     )
+    assistant_lawyers = UserBriefSerializer(many=True, read_only=True)
     practice_area = PracticeAreaBriefSerializer(read_only=True)
     originating_consultation_ref = serializers.CharField(
         source="originating_consultation.consultation_id",
@@ -57,6 +58,7 @@ class CaseSerializer(serializers.ModelSerializer):
             "practice_area",
             "responsible_lawyer",
             "originating_consultation",
+            "assistant_lawyers",
         )
 
     def to_representation(self, instance):
@@ -141,3 +143,97 @@ class CaseConvertSerializer(serializers.ModelSerializer):
 
         # Create the Case
         return super().create(validated_data)
+
+
+class LawyerBriefSerializer(serializers.ModelSerializer):
+    practice_areas = PracticeAreaBriefSerializer(many=True, read_only=True)
+    role_label = serializers.CharField(source="get_role_display", read_only=True)
+
+    class Meta:
+        model = User
+        fields = ("id", "full_name", "email", "role", "role_label", "practice_areas")
+        read_only_fields = fields
+
+
+class CaseTeamUpdateSerializer(serializers.ModelSerializer):
+    responsible_lawyer = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.filter(
+            role__in=(UserRole.SENIOR_LAWYER, UserRole.JUNIOR_LAWYER),
+            is_active=True,
+        ),
+        required=False,
+    )
+    supporting_paralegal = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.filter(role=UserRole.PARALEGAL, is_active=True),
+        required=False,
+        allow_null=True,
+    )
+    assistant_lawyers = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.filter(
+            role__in=(UserRole.SENIOR_LAWYER, UserRole.JUNIOR_LAWYER),
+            is_active=True,
+        ),
+        many=True,
+        required=False,
+    )
+
+    class Meta:
+        model = Case
+        fields = ("responsible_lawyer", "supporting_paralegal", "assistant_lawyers")
+
+    def validate_responsible_lawyer(self, value):
+        if not value.is_active:
+            raise serializers.ValidationError("Cannot assign an inactive lawyer.")
+        if value.role not in (UserRole.SENIOR_LAWYER, UserRole.JUNIOR_LAWYER):
+            raise serializers.ValidationError("Assigned user must be a lawyer.")
+        return value
+
+    def validate_supporting_paralegal(self, value):
+        if value is not None:
+            if not value.is_active:
+                raise serializers.ValidationError("Cannot assign an inactive paralegal.")
+            if value.role != UserRole.PARALEGAL:
+                raise serializers.ValidationError("Assigned user must be a paralegal.")
+        return value
+
+    def validate_assistant_lawyers(self, value):
+        request = self.context.get("request")
+        if request and "assistant_lawyers" in request.data:
+            raw_ids = request.data["assistant_lawyers"]
+            if isinstance(raw_ids, list) and len(raw_ids) != len(set(raw_ids)):
+                raise serializers.ValidationError("Duplicate assistant lawyers are not allowed.")
+        return value
+
+    def validate(self, attrs):
+        resp_lawyer = attrs.get("responsible_lawyer")
+        if resp_lawyer is None and self.instance:
+            resp_lawyer = self.instance.responsible_lawyer
+
+        assistant_lawyers = attrs.get("assistant_lawyers")
+        if assistant_lawyers is not None and resp_lawyer in assistant_lawyers:
+            raise serializers.ValidationError(
+                {"assistant_lawyers": "The responsible lawyer is already the lead lawyer for this case."}
+            )
+        return attrs
+
+    def update(self, instance, validated_data):
+        responsible_lawyer = validated_data.get("responsible_lawyer")
+        assistant_lawyers = validated_data.get("assistant_lawyers")
+
+        if responsible_lawyer and responsible_lawyer != instance.responsible_lawyer:
+            instance.responsible_lawyer = responsible_lawyer
+
+        if "supporting_paralegal" in validated_data:
+            instance.supporting_paralegal = validated_data["supporting_paralegal"]
+
+        instance.save()
+
+        if assistant_lawyers is not None:
+            # Filter out the responsible lawyer to be absolutely safe
+            assistant_lawyers = [al for al in assistant_lawyers if al != instance.responsible_lawyer]
+            instance.assistant_lawyers.set(assistant_lawyers)
+        else:
+            if responsible_lawyer and instance.assistant_lawyers.filter(pk=responsible_lawyer.pk).exists():
+                instance.assistant_lawyers.remove(responsible_lawyer)
+
+        return instance

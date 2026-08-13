@@ -8,7 +8,13 @@ from apps.accounts.models import User, UserRole
 from apps.consultations.permissions import IsLawyerRole
 from .models import Case
 from .permissions import IsCaseParticipant
-from .serializers import CaseConvertSerializer, CaseSerializer, UserBriefSerializer
+from .serializers import (
+    CaseConvertSerializer,
+    CaseSerializer,
+    UserBriefSerializer,
+    LawyerBriefSerializer,
+    CaseTeamUpdateSerializer,
+)
 
 
 class CaseConvertView(APIView):
@@ -63,13 +69,14 @@ class CaseListView(APIView):
             "responsible_lawyer",
             "supporting_paralegal",
             "originating_consultation",
-        )
+        ).prefetch_related("assistant_lawyers")
 
         if user.role == UserRole.ADMIN:
             # Admins see all cases
             pass
         elif user.role in (UserRole.SENIOR_LAWYER, UserRole.JUNIOR_LAWYER):
-            queryset = queryset.filter(responsible_lawyer=user)
+            from django.db.models import Q
+            queryset = queryset.filter(Q(responsible_lawyer=user) | Q(assistant_lawyers=user)).distinct()
         elif user.role == UserRole.PARALEGAL:
             queryset = queryset.filter(supporting_paralegal=user)
         elif user.role == UserRole.CLIENT:
@@ -99,7 +106,7 @@ class CaseDetailView(APIView):
             "responsible_lawyer",
             "supporting_paralegal",
             "originating_consultation",
-        )
+        ).prefetch_related("assistant_lawyers")
         case_obj = get_object_or_404(queryset, pk=pk)
         self.check_object_permissions(request, case_obj)
 
@@ -113,7 +120,7 @@ class CaseDetailView(APIView):
             "responsible_lawyer",
             "supporting_paralegal",
             "originating_consultation",
-        )
+        ).prefetch_related("assistant_lawyers")
         case_obj = get_object_or_404(queryset, pk=pk)
         self.check_object_permissions(request, case_obj)
 
@@ -158,7 +165,7 @@ class CaseDetailView(APIView):
             "responsible_lawyer",
             "supporting_paralegal",
             "originating_consultation",
-        ).get(pk=case_obj.pk)
+        ).prefetch_related("assistant_lawyers").get(pk=case_obj.pk)
 
         return Response(CaseSerializer(updated_case).data, status=status.HTTP_200_OK)
 
@@ -166,16 +173,108 @@ class CaseDetailView(APIView):
 class ActiveParalegalsListView(APIView):
     """
     GET /api/cases/active-paralegals/
-    Lists all active paralegals to populate selection dropdowns during case conversion.
-    Only accessible by lawyers.
+    Lists all active paralegals to populate selection dropdowns during case conversion and team management.
+    Accessible by Admin, Senior Lawyer, and Junior Lawyer.
     """
 
-    permission_classes = [IsLawyerRole]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        if request.user.role not in (UserRole.ADMIN, UserRole.SENIOR_LAWYER, UserRole.JUNIOR_LAWYER):
+            return Response(
+                {"detail": "You do not have permission to perform this action."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         paralegals = User.objects.filter(
             role=UserRole.PARALEGAL,
             is_active=True,
         ).order_by("full_name")
         serializer = UserBriefSerializer(paralegals, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ActiveLawyersListView(APIView):
+    """
+    GET /api/cases/active-lawyers/
+    Returns a list of all active senior and junior advocates to populate dropdown selectors.
+    Only accessible by ADMIN.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role not in (UserRole.ADMIN, UserRole.SENIOR_LAWYER, UserRole.JUNIOR_LAWYER):
+            return Response(
+                {"detail": "You do not have permission to perform this action."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        lawyers = User.objects.filter(
+            role__in=(UserRole.SENIOR_LAWYER, UserRole.JUNIOR_LAWYER),
+            is_active=True,
+        ).prefetch_related("practice_areas").order_by("full_name")
+        serializer = LawyerBriefSerializer(lawyers, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class CaseTeamUpdateView(APIView):
+    """
+    PATCH /api/cases/<id>/team/
+    Allows:
+    - Admin: full litigation team updates (responsible lawyer and supporting paralegal).
+    - Responsible Lawyer: supporting paralegal management only (responsible lawyer cannot be updated).
+    All other roles receive 403 Forbidden.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, pk):
+        case_obj = get_object_or_404(Case, pk=pk)
+        user = request.user
+
+        is_admin = user.role == UserRole.ADMIN
+        is_responsible_lawyer = (
+            user.role in (UserRole.SENIOR_LAWYER, UserRole.JUNIOR_LAWYER)
+            and case_obj.responsible_lawyer == user
+        )
+
+        if not (is_admin or is_responsible_lawyer):
+            return Response(
+                {"detail": "You do not have permission to manage the team for this case."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if is_admin:
+            # Admin can edit all fields
+            serializer = CaseTeamUpdateSerializer(
+                case_obj, data=request.data, partial=True, context={"request": request}
+            )
+        else:
+            if "responsible_lawyer" in request.data:
+                try:
+                    if int(request.data["responsible_lawyer"]) != case_obj.responsible_lawyer.id:
+                        return Response(
+                            {"responsible_lawyer": "Only administrators can reassign the responsible lawyer."},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+                except (ValueError, TypeError):
+                    pass
+            # Responsible Lawyer can update supporting_paralegal and assistant_lawyers
+            data = request.data.copy()
+            data.pop("responsible_lawyer", None)
+            serializer = CaseTeamUpdateSerializer(
+                case_obj, data=data, partial=True, context={"request": request}
+            )
+
+        serializer.is_valid(raise_exception=True)
+        updated_case = serializer.save()
+
+        # Refetch with select_related for nested representation
+        full_case = Case.objects.select_related(
+            "client",
+            "practice_area",
+            "responsible_lawyer",
+            "supporting_paralegal",
+            "originating_consultation",
+        ).prefetch_related("assistant_lawyers").get(pk=updated_case.pk)
+
+        return Response(CaseSerializer(full_case).data, status=status.HTTP_200_OK)

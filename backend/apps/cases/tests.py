@@ -371,3 +371,217 @@ class CaseMilestoneTests(APITestCase):
         # Try to update ONLY legal content -> should return 400 Bad Request since no allowed fields are present
         response = self.client.patch(url, {"title": "Another Admin Title"})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_case_team_extended_administration(self):
+        """Test the 25 specific assertions for Case Team & Assistant Lawyers."""
+        # Create primary Case
+        case = Case.objects.create(
+            originating_consultation=self.consultation,
+            client=self.client_user,
+            practice_area=self.practice_area,
+            responsible_lawyer=self.lawyer_a,
+            supporting_paralegal=None,
+            title="Team Administration Case",
+            case_type=CaseType.CIVIL,
+            start_date="2026-08-12",
+        )
+        team_url = reverse("case-team-update", kwargs={"pk": case.id})
+        list_url = reverse("case-list")
+        detail_url = reverse("case-detail", kwargs={"pk": case.id})
+        active_lawyers_url = reverse("active-lawyers")
+        
+        # Create additional users for testing
+        inactive_lawyer = User.objects.create_user(
+            email="inactivelawyer@lexcore.local",
+            full_name="Inactive Lawyer",
+            password="password123",
+            role=UserRole.SENIOR_LAWYER,
+            is_active=False,
+        )
+        inactive_paralegal = User.objects.create_user(
+            email="inactiveparalegal@lexcore.local",
+            full_name="Inactive Paralegal",
+            password="password123",
+            role=UserRole.PARALEGAL,
+            is_active=False,
+        )
+        other_lawyer = User.objects.create_user(
+            email="otherlawyer@lexcore.local",
+            full_name="Other Lawyer",
+            password="password123",
+            role=UserRole.JUNIOR_LAWYER,
+        )
+
+        # 1. Admin can add assistant lawyers.
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.patch(team_url, {"assistant_lawyers": [self.lawyer_b.id]}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["assistant_lawyers"]), 1)
+        self.assertEqual(response.data["assistant_lawyers"][0]["id"], self.lawyer_b.id)
+
+        # 2. Admin can remove assistant lawyers.
+        response = self.client.patch(team_url, {"assistant_lawyers": []}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["assistant_lawyers"]), 0)
+
+        # 3. Responsible Lawyer can add assistant lawyers.
+        self.client.force_authenticate(user=self.lawyer_a)
+        response = self.client.patch(team_url, {"assistant_lawyers": [self.lawyer_b.id]}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["assistant_lawyers"]), 1)
+        self.assertEqual(response.data["assistant_lawyers"][0]["id"], self.lawyer_b.id)
+
+        # 4. Responsible Lawyer can remove assistant lawyers.
+        response = self.client.patch(team_url, {"assistant_lawyers": []}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["assistant_lawyers"]), 0)
+
+        # 5. Responsible Lawyer can assign paralegal.
+        response = self.client.patch(team_url, {"supporting_paralegal": self.paralegal.id}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["supporting_paralegal"]["id"], self.paralegal.id)
+
+        # 6. Responsible Lawyer can remove paralegal.
+        response = self.client.patch(team_url, {"supporting_paralegal": None}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIsNone(response.data["supporting_paralegal"])
+
+        # 7. Responsible Lawyer cannot change responsible lawyer.
+        # Should return a clear 400 validation error (instead of discarding).
+        response = self.client.patch(team_url, {"responsible_lawyer": self.lawyer_b.id}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("responsible_lawyer", response.data)
+
+        # 8. Assistant Lawyer cannot manage team.
+        # Let's add lawyer_b as assistant first (via Admin)
+        self.client.force_authenticate(user=self.admin)
+        self.client.patch(team_url, {"assistant_lawyers": [self.lawyer_b.id]}, format="json")
+        # Check lawyer_b (assistant) gets 403 Forbidden
+        self.client.force_authenticate(user=self.lawyer_b)
+        response = self.client.patch(team_url, {"supporting_paralegal": self.paralegal.id}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 9. Other Lawyer cannot manage team.
+        self.client.force_authenticate(user=other_lawyer)
+        response = self.client.patch(team_url, {"supporting_paralegal": self.paralegal.id}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 10. Paralegal cannot manage team.
+        self.client.force_authenticate(user=self.paralegal)
+        response = self.client.patch(team_url, {"supporting_paralegal": None}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 11. Client cannot manage team.
+        self.client.force_authenticate(user=self.client_user)
+        response = self.client.patch(team_url, {"supporting_paralegal": None}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 12. Client cannot become assistant lawyer (invalid choice - 400).
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.patch(team_url, {"assistant_lawyers": [self.client_user.id]}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # 13. Paralegal cannot become assistant lawyer (invalid choice - 400).
+        response = self.client.patch(team_url, {"assistant_lawyers": [self.paralegal.id]}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # 14. Admin cannot assign inactive lawyer as assistant (400).
+        response = self.client.patch(team_url, {"assistant_lawyers": [inactive_lawyer.id]}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # 15. Responsible Lawyer cannot assign inactive lawyer as assistant (400).
+        self.client.force_authenticate(user=self.lawyer_a)
+        response = self.client.patch(team_url, {"assistant_lawyers": [inactive_lawyer.id]}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # 16. Responsible Lawyer cannot assign themselves as assistant (lead cannot also be assistant).
+        response = self.client.patch(team_url, {"assistant_lawyers": [self.lawyer_a.id]}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("assistant_lawyers", response.data)
+
+        # 17. Duplicate assistant lawyers are rejected.
+        response = self.client.patch(team_url, {"assistant_lawyers": [self.lawyer_b.id, self.lawyer_b.id]}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("assistant_lawyers", response.data)
+
+        # Reset team via Admin for visibility testing
+        self.client.force_authenticate(user=self.admin)
+        self.client.patch(
+            team_url,
+            {"responsible_lawyer": self.lawyer_a.id, "assistant_lawyers": [self.lawyer_b.id], "supporting_paralegal": self.paralegal.id},
+            format="json"
+        )
+
+        # 18. Assistant lawyers can see the Case (in list and detail).
+        self.client.force_authenticate(user=self.lawyer_b)
+        response = self.client.get(list_url)
+        case_ids = [c["id"] for c in response.data]
+        self.assertIn(case.id, case_ids)
+
+        response = self.client.get(detail_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # 19. Removing an assistant lawyer removes their Case visibility.
+        self.client.force_authenticate(user=self.admin)
+        self.client.patch(team_url, {"assistant_lawyers": []}, format="json")
+        
+        self.client.force_authenticate(user=self.lawyer_b)
+        response = self.client.get(list_url)
+        case_ids = [c["id"] for c in response.data]
+        self.assertNotIn(case.id, case_ids)
+
+        response = self.client.get(detail_url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # Reset assistant and reassign responsible lawyer
+        self.client.force_authenticate(user=self.admin)
+        self.client.patch(team_url, {"assistant_lawyers": [self.lawyer_b.id]}, format="json")
+
+        # 20. Reassigning Responsible Lawyer updates Case ownership.
+        response = self.client.patch(team_url, {"responsible_lawyer": self.lawyer_b.id}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["responsible_lawyer"]["id"], self.lawyer_b.id)
+
+        # 21. New Responsible Lawyer gains access.
+        self.client.force_authenticate(user=self.lawyer_b)
+        response = self.client.get(detail_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # 22. Old Responsible Lawyer (lawyer_a) loses access unless independently assigned as assistant.
+        self.client.force_authenticate(user=self.lawyer_a)
+        response = self.client.get(detail_url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 23. If the new Responsible Lawyer was previously an assistant (lawyer_b),
+        # they are removed from assistant_lawyers automatically.
+        self.client.force_authenticate(user=self.admin)
+        # Fetch current case team from DB
+        case.refresh_from_db()
+        self.assertEqual(case.responsible_lawyer, self.lawyer_b)
+        self.assertNotIn(self.lawyer_b, case.assistant_lawyers.all())
+
+        # 24. Client continues to see the Case.
+        self.client.force_authenticate(user=self.client_user)
+        response = self.client.get(detail_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # 25. Supporting Paralegal continues to see the Case.
+        # Assign paralegal first
+        self.client.force_authenticate(user=self.admin)
+        self.client.patch(team_url, {"supporting_paralegal": self.paralegal.id}, format="json")
+        # Check access
+        self.client.force_authenticate(user=self.paralegal)
+        response = self.client.get(detail_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Test listing active lawyers endpoint access (accessible to lawyers)
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.get(active_lawyers_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        lawyer_ids = [l["id"] for l in response.data]
+        self.assertNotIn(inactive_lawyer.id, lawyer_ids)
+        self.assertIn(self.lawyer_b.id, lawyer_ids)
+
+        self.client.force_authenticate(user=self.lawyer_a)
+        response = self.client.get(active_lawyers_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)

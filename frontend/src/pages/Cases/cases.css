@@ -498,3 +498,9 @@
     padding: 1rem;
   }
 }
+
+.case-modal--small {
+  width: min(480px, 100%) !important;
+  height: auto !important;
+  max-height: min(85vh, 480px) !important;
+}

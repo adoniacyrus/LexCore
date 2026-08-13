@@ -69,6 +69,11 @@ class Case(models.Model):
         blank=True,
         related_name="supporting_cases",
     )
+    assistant_lawyers = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        related_name="assistant_cases",
+        blank=True,
+    )
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, default="")
     case_type = models.CharField(
