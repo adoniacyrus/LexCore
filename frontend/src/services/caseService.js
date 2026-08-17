@@ -14,6 +14,11 @@ export async function listCases(access) {
   return data;
 }
 
+export async function getMatterBoardSummary(access) {
+  const { data } = await api.get('/cases/matter-board/', authHeaders(access));
+  return data;
+}
+
 export async function getCaseDetail(access, id) {
   const { data } = await api.get(`/cases/${id}/`, authHeaders(access));
   return data;

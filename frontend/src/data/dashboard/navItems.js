@@ -7,7 +7,15 @@ export const PORTAL_NAV_BY_ROLE = {
   ADMIN: [
     {
       group: 'FIRM',
-      items: [{ id: 'dashboard', label: 'Dashboard', icon: 'home' }],
+      items: [
+        { id: 'dashboard', label: 'Dashboard', icon: 'home' },
+        {
+          id: 'matter-board',
+          label: 'Matter Board',
+          icon: 'reports',
+          route: '/dashboard/admin/matter-board',
+        },
+      ],
     },
     {
       group: 'PEOPLE',
@@ -79,6 +87,12 @@ export const PORTAL_NAV_BY_ROLE = {
   SENIOR_LAWYER: [
     { id: 'dashboard', label: 'Dashboard', icon: 'home' },
     {
+      id: 'matter-board',
+      label: 'Matter Board',
+      icon: 'reports',
+      route: '/dashboard/senior/matter-board',
+    },
+    {
       id: 'assigned-consultations',
       label: 'Assigned Consultations',
       icon: 'consultations',
@@ -94,6 +108,12 @@ export const PORTAL_NAV_BY_ROLE = {
   JUNIOR_LAWYER: [
     { id: 'dashboard', label: 'Dashboard', icon: 'home' },
     {
+      id: 'matter-board',
+      label: 'Matter Board',
+      icon: 'reports',
+      route: '/dashboard/junior/matter-board',
+    },
+    {
       id: 'assigned-consultations',
       label: 'Assigned Consultations',
       icon: 'consultations',
@@ -108,6 +128,12 @@ export const PORTAL_NAV_BY_ROLE = {
   ],
   PARALEGAL: [
     { id: 'dashboard', label: 'Dashboard', icon: 'home' },
+    {
+      id: 'matter-board',
+      label: 'Matter Board',
+      icon: 'reports',
+      route: '/dashboard/paralegal/matter-board',
+    },
     {
       id: 'cases',
       label: 'Supporting Cases',

@@ -292,3 +292,83 @@ class CaseTeamUpdateView(APIView):
         ).prefetch_related("assistant_lawyers").get(pk=updated_case.pk)
 
         return Response(CaseSerializer(full_case).data, status=status.HTTP_200_OK)
+
+
+class CaseMatterBoardView(APIView):
+    """
+    GET /api/cases/matter-board/
+    Returns matter summary counts and category-wise aggregated totals.
+    Respects user's role-based permissions:
+    - ADMIN: all matters
+    - LAWYER: responsible or assistant matters
+    - PARALEGAL: supporting matters
+    - CLIENT: client matters
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from django.db.models import Count, Q
+        from apps.cases.models import MatterCategory
+
+        user = request.user
+        queryset = Case.objects.all()
+
+        if user.role == UserRole.ADMIN:
+            pass
+        elif user.role in (UserRole.SENIOR_LAWYER, UserRole.JUNIOR_LAWYER):
+            queryset = queryset.filter(Q(responsible_lawyer=user) | Q(assistant_lawyers=user)).distinct()
+        elif user.role == UserRole.PARALEGAL:
+            queryset = queryset.filter(supporting_paralegal=user)
+        elif user.role == UserRole.CLIENT:
+            queryset = queryset.filter(client=user)
+        else:
+            queryset = queryset.none()
+
+        # Summary calculations
+        # Open matters: status in (OPEN, IN_PROGRESS, ON_HOLD)
+        # Closed matters: status == CLOSED
+        # Archived matters: status == ARCHIVED
+        summary = queryset.aggregate(
+            total=Count("id"),
+            open_count=Count("id", filter=Q(status__in=["OPEN", "IN_PROGRESS", "ON_HOLD"])),
+            closed_count=Count("id", filter=Q(status="CLOSED")),
+            archived_count=Count("id", filter=Q(status="ARCHIVED"))
+        )
+
+        summary_data = {
+            "total": summary["total"] or 0,
+            "open": summary["open_count"] or 0,
+            "closed": summary["closed_count"] or 0,
+            "archived": summary["archived_count"] or 0
+        }
+
+        # Categories list
+        categories_data = []
+
+        category_counts = (
+            queryset.values("matter_category")
+            .annotate(
+                total=Count("id"),
+                open_count=Count("id", filter=Q(status__in=["OPEN", "IN_PROGRESS", "ON_HOLD"])),
+                closed_count=Count("id", filter=Q(status="CLOSED"))
+            )
+        )
+
+        category_map = {c["matter_category"]: c for c in category_counts}
+
+        for cat_choice in MatterCategory.choices:
+            code = cat_choice[0]
+            label = cat_choice[1]
+            mapped = category_map.get(code, {})
+            categories_data.append({
+                "category": code,
+                "category_label": label,
+                "total": mapped.get("total", 0),
+                "open": mapped.get("open_count", 0),
+                "closed": mapped.get("closed_count", 0)
+            })
+
+        return Response({
+            "summary": summary_data,
+            "categories": categories_data
+        }, status=status.HTTP_200_OK)

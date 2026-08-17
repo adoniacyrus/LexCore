@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import PageHeader from '../../components/dashboard/PageHeader';
 import EmptyState from '../../components/dashboard/EmptyState';
 import { useAuth } from '../../context/AuthContext';
@@ -20,16 +20,30 @@ const STATUS_CHOICES = [
 function CaseListPage() {
   const { user, accessToken } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   // Admin filter states
-  const [statusFilter, setStatusFilter] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
-  const [stageFilter, setStageFilter] = useState('');
-  const [lawyerFilter, setLawyerFilter] = useState('');
-  const [practiceAreaFilter, setPracticeAreaFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '');
+  const [categoryFilter, setCategoryFilter] = useState(searchParams.get('category') || '');
+  const [stageFilter, setStageFilter] = useState(searchParams.get('stage') || '');
+  const [lawyerFilter, setLawyerFilter] = useState(searchParams.get('lawyer') || '');
+  const [practiceAreaFilter, setPracticeAreaFilter] = useState(searchParams.get('practiceArea') || '');
+
+  useEffect(() => {
+    const category = searchParams.get('category');
+    if (category !== null) setCategoryFilter(category);
+    const stage = searchParams.get('stage');
+    if (stage !== null) setStageFilter(stage);
+    const status = searchParams.get('status');
+    if (status !== null) setStatusFilter(status);
+    const lawyer = searchParams.get('lawyer');
+    if (lawyer !== null) setLawyerFilter(lawyer);
+    const practiceArea = searchParams.get('practiceArea');
+    if (practiceArea !== null) setPracticeAreaFilter(practiceArea);
+  }, [searchParams]);
 
   const load = useCallback(async () => {
     if (!accessToken) return;

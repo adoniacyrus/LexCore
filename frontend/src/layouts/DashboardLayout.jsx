@@ -15,6 +15,8 @@ function resolveActiveModule(pathname) {
   }
   if (pathname.includes('/consultations')) return 'consultations';
   if (pathname.includes('/account')) return 'account';
+  if (pathname.includes('/matter-board')) return 'matter-board';
+  if (pathname.includes('/cases')) return 'cases';
   return 'dashboard';
 }
 
@@ -49,7 +51,11 @@ function DashboardLayout({
 
   useEffect(() => {
     document.body.classList.toggle('lw-shell-fill-lock', fillHeight);
-    return () => document.body.classList.remove('lw-shell-fill-lock');
+    document.documentElement.classList.toggle('lw-shell-fill-lock', fillHeight);
+    return () => {
+      document.body.classList.remove('lw-shell-fill-lock');
+      document.documentElement.classList.remove('lw-shell-fill-lock');
+    };
   }, [fillHeight]);
 
   const handleMenuToggle = () => {

@@ -668,3 +668,118 @@ class CaseMilestoneTests(APITestCase):
 
         res_filtered_stage_none = self.client.get(f"{list_url}?matter_stage=UNDER_REVIEW")
         self.assertEqual(len(res_filtered_stage_none.data), 0)
+
+    def test_matter_board_endpoint(self):
+        """Test the /api/cases/matter-board/ API endpoint summary and categories logic."""
+        # Create different consultations to satisfy the OneToOne constraint on originating_consultation
+        from apps.consultations.models import Consultation, ConsultationStatus
+
+        cons2 = Consultation.objects.create(
+            client=self.client_user,
+            practice_area=self.practice_area,
+            assigned_lawyer=self.lawyer_a,
+            consultation_mode="OFFICE",
+            preferred_date="2026-08-20",
+            preferred_time="10:00:00",
+            subject="Matter Board Sample 2",
+            status=ConsultationStatus.ACCEPTED,
+        )
+        cons3 = Consultation.objects.create(
+            client=self.client_user,
+            practice_area=self.practice_area,
+            assigned_lawyer=self.lawyer_a,
+            consultation_mode="OFFICE",
+            preferred_date="2026-08-20",
+            preferred_time="10:00:00",
+            subject="Matter Board Sample 3",
+            status=ConsultationStatus.ACCEPTED,
+        )
+
+        # Case 1: ADVISORY, OPEN
+        Case.objects.create(
+            originating_consultation=self.consultation,
+            client=self.client_user,
+            practice_area=self.practice_area,
+            responsible_lawyer=self.lawyer_a,
+            title="Advisory Open Case",
+            case_type=CaseType.CIVIL,
+            start_date="2026-08-12",
+            status=CaseStatus.OPEN,
+            matter_category="ADVISORY",
+            matter_stage="UNDER_REVIEW",
+        )
+
+        # Case 2: DOCUMENTATION, CLOSED
+        Case.objects.create(
+            originating_consultation=cons2,
+            client=self.client_user,
+            practice_area=self.practice_area,
+            responsible_lawyer=self.lawyer_a,
+            title="Doc Closed Case",
+            case_type=CaseType.CIVIL,
+            start_date="2026-08-12",
+            status=CaseStatus.CLOSED,
+            matter_category="DOCUMENTATION",
+            matter_stage="CLOSED",
+        )
+
+        # Case 3: COURT_LITIGATION, ARCHIVED
+        Case.objects.create(
+            originating_consultation=cons3,
+            client=self.client_user,
+            practice_area=self.practice_area,
+            responsible_lawyer=self.lawyer_a,
+            title="Litigation Archived Case",
+            case_type=CaseType.CIVIL,
+            start_date="2026-08-12",
+            status=CaseStatus.ARCHIVED,
+            matter_category="COURT_LITIGATION",
+            matter_stage="ARCHIVED",
+        )
+
+        url = reverse("case-matter-board")
+
+        # 1. Admin user can fetch Matter Board
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Verify summaries
+        summary = response.data["summary"]
+        self.assertEqual(summary["total"], 3)
+        self.assertEqual(summary["open"], 1)
+        self.assertEqual(summary["closed"], 1)
+        self.assertEqual(summary["archived"], 1)
+
+        # Verify categories counts
+        categories = response.data["categories"]
+        # There should be exactly 11 categories returned
+        self.assertEqual(len(categories), 11)
+
+        advisory = next(c for c in categories if c["category"] == "ADVISORY")
+        self.assertEqual(advisory["total"], 1)
+        self.assertEqual(advisory["open"], 1)
+        self.assertEqual(advisory["closed"], 0)
+
+        documentation = next(c for c in categories if c["category"] == "DOCUMENTATION")
+        self.assertEqual(documentation["total"], 1)
+        self.assertEqual(documentation["open"], 0)
+        self.assertEqual(documentation["closed"], 1)
+
+        # 2. Responsible Lawyer user can fetch Matter Board (only their cases, which is 3)
+        self.client.force_authenticate(user=self.lawyer_a)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["summary"]["total"], 3)
+
+        # 3. Unassigned lawyer sees 0 cases
+        self.client.force_authenticate(user=self.lawyer_b)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["summary"]["total"], 0)
+
+        # 4. Paralegal (not supporting any of these) sees 0 cases
+        self.client.force_authenticate(user=self.paralegal)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["summary"]["total"], 0)

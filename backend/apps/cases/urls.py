@@ -9,11 +9,13 @@ from .views import (
     CaseDetailView,
     CaseListView,
     CaseTeamUpdateView,
+    CaseMatterBoardView,
 )
 
 urlpatterns = [
     path("", CaseListView.as_view(), name="case-list"),
     path("convert/", CaseConvertView.as_view(), name="case-convert"),
+    path("matter-board/", CaseMatterBoardView.as_view(), name="case-matter-board"),
     path("active-paralegals/", ActiveParalegalsListView.as_view(), name="active-paralegals"),
     path("active-lawyers/", ActiveLawyersListView.as_view(), name="active-lawyers"),
     path("<str:pk>/", CaseDetailView.as_view(), name="case-detail"),

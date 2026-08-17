@@ -29,6 +29,7 @@ import CaseListPage from '../pages/Cases/CaseListPage';
 import CaseDetailPage from '../pages/Cases/CaseDetailPage';
 import CaseConvertPage from '../pages/Cases/CaseConvertPage';
 import CaseEditPage from '../pages/Cases/CaseEditPage';
+import MatterBoardPage from '../pages/Cases/MatterBoardPage';
 
 function AppRouter() {
   return (
@@ -104,6 +105,14 @@ function AppRouter() {
               }
             />
             <Route
+              path="/dashboard/admin/matter-board"
+              element={
+                <RoleProtectedRoute roles={['ADMIN']}>
+                  <MatterBoardPage />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
               path="/dashboard/admin/cases/:caseReference"
               element={
                 <RoleProtectedRoute roles={['ADMIN']}>
@@ -132,6 +141,14 @@ function AppRouter() {
               element={
                 <RoleProtectedRoute roles={['SENIOR_LAWYER']}>
                   <CaseListPage />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/senior/matter-board"
+              element={
+                <RoleProtectedRoute roles={['SENIOR_LAWYER']}>
+                  <MatterBoardPage />
                 </RoleProtectedRoute>
               }
             />
@@ -184,6 +201,14 @@ function AppRouter() {
               }
             />
             <Route
+              path="/dashboard/junior/matter-board"
+              element={
+                <RoleProtectedRoute roles={['JUNIOR_LAWYER']}>
+                  <MatterBoardPage />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
               path="/dashboard/junior/cases/:caseReference"
               element={
                 <RoleProtectedRoute roles={['JUNIOR_LAWYER']}>
@@ -220,6 +245,14 @@ function AppRouter() {
               element={
                 <RoleProtectedRoute roles={['PARALEGAL']}>
                   <CaseListPage />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/paralegal/matter-board"
+              element={
+                <RoleProtectedRoute roles={['PARALEGAL']}>
+                  <MatterBoardPage />
                 </RoleProtectedRoute>
               }
             />
