@@ -27,12 +27,12 @@ function formatDate(value) {
 
 function ActionIcon({ name }) {
   const common = {
-    width: 15,
-    height: 15,
+    width: 16,
+    height: 16,
     viewBox: '0 0 24 24',
     fill: 'none',
     stroke: 'currentColor',
-    strokeWidth: 1.75,
+    strokeWidth: 2.2,
     strokeLinecap: 'round',
     strokeLinejoin: 'round',
     'aria-hidden': true,
