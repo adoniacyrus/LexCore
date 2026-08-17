@@ -23,6 +23,35 @@ class CaseStatus(models.TextChoices):
     ARCHIVED = "ARCHIVED", "Archived"
 
 
+class MatterCategory(models.TextChoices):
+    ADVISORY = "ADVISORY", "Advisory"
+    DOCUMENTATION = "DOCUMENTATION", "Documentation"
+    COMPLIANCE = "COMPLIANCE", "Compliance"
+    LEGAL_NOTICE = "LEGAL_NOTICE", "Legal Notice"
+    MEDIATION = "MEDIATION", "Mediation"
+    POLICE_MATTER = "POLICE_MATTER", "Police Matter"
+    COURT_LITIGATION = "COURT_LITIGATION", "Court Litigation"
+    APPEAL = "APPEAL", "Appeal"
+    ARBITRATION = "ARBITRATION", "Arbitration"
+    EXECUTION = "EXECUTION", "Execution"
+    RETAINER = "RETAINER", "Retainer"
+
+
+class MatterStage(models.TextChoices):
+    CONSULTATION = "CONSULTATION", "Consultation"
+    UNDER_REVIEW = "UNDER_REVIEW", "Under Review"
+    PRE_LITIGATION = "PRE_LITIGATION", "Pre-Litigation"
+    NOTICE_ISSUED = "NOTICE_ISSUED", "Notice Issued"
+    FIR_REGISTERED = "FIR_REGISTERED", "FIR Registered"
+    INVESTIGATION = "INVESTIGATION", "Investigation"
+    COURT_PROCEEDINGS = "COURT_PROCEEDINGS", "Court Proceedings"
+    APPEAL_PROCEEDINGS = "APPEAL_PROCEEDINGS", "Appeal Proceedings"
+    SETTLEMENT = "SETTLEMENT", "Settlement"
+    RESOLVED = "RESOLVED", "Resolved"
+    CLOSED = "CLOSED", "Closed"
+    ARCHIVED = "ARCHIVED", "Archived"
+
+
 class Case(models.Model):
     """
     Law-firm-side Case representation, originating from a client consultation.
@@ -84,6 +113,18 @@ class Case(models.Model):
         max_length=20,
         choices=CaseStatus.choices,
         default=CaseStatus.OPEN,
+        db_index=True,
+    )
+    matter_category = models.CharField(
+        max_length=50,
+        choices=MatterCategory.choices,
+        default=MatterCategory.COURT_LITIGATION,
+        db_index=True,
+    )
+    matter_stage = models.CharField(
+        max_length=50,
+        choices=MatterStage.choices,
+        default=MatterStage.UNDER_REVIEW,
         db_index=True,
     )
     start_date = models.DateField()

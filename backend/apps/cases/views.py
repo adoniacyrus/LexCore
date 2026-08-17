@@ -84,6 +84,13 @@ class CaseListView(APIView):
         else:
             queryset = queryset.none()
 
+        matter_category = request.query_params.get("matter_category")
+        matter_stage = request.query_params.get("matter_stage")
+        if matter_category:
+            queryset = queryset.filter(matter_category=matter_category)
+        if matter_stage:
+            queryset = queryset.filter(matter_stage=matter_stage)
+
         queryset = queryset.order_by("-created_at")
         serializer = CaseSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -150,14 +157,14 @@ class CaseDetailView(APIView):
 
         data = request.data.copy()
         if is_admin and not is_responsible_lawyer:
-            # Admins are restricted to supporting_paralegal and status updates
-            allowed_admin_fields = {"supporting_paralegal", "status"}
+            # Admins are restricted to supporting_paralegal, status, matter_category, and matter_stage updates
+            allowed_admin_fields = {"supporting_paralegal", "status", "matter_category", "matter_stage"}
             for key in list(data.keys()):
                 if key not in allowed_admin_fields:
                     data.pop(key)
             if not data:
                 return Response(
-                    {"detail": "Admins are only permitted to update administrative fields (supporting paralegal and status)."},
+                    {"detail": "Admins are only permitted to update administrative fields (supporting paralegal, status, matter category and matter stage)."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 

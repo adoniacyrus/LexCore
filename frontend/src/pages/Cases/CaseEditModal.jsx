@@ -7,6 +7,7 @@ import {
   getErrorMessage,
 } from '../../services/caseService';
 import { NavIcon } from '../../components/dashboard/icons';
+import { MATTER_CATEGORY_CHOICES, MATTER_STAGE_CHOICES } from './caseConstants';
 import './cases.css';
 
 const CASE_TYPE_CHOICES = [
@@ -46,6 +47,8 @@ function CaseEditModal({ open, caseId, onClose, onSuccess }) {
   const [statusValue, setStatusValue] = useState('OPEN');
   const [description, setDescription] = useState('');
   const [supportingParalegal, setSupportingParalegal] = useState('');
+  const [matterCategory, setMatterCategory] = useState('COURT_LITIGATION');
+  const [matterStage, setMatterStage] = useState('UNDER_REVIEW');
 
   // Court info
   const [court, setCourt] = useState('');
@@ -96,6 +99,8 @@ function CaseEditModal({ open, caseId, onClose, onSuccess }) {
         setStatusValue(detail.status || 'OPEN');
         setDescription(detail.description || '');
         setSupportingParalegal(detail.supporting_paralegal?.id || '');
+        setMatterCategory(detail.matter_category || 'COURT_LITIGATION');
+        setMatterStage(detail.matter_stage || 'UNDER_REVIEW');
 
         setCourt(detail.court || '');
         setJurisdiction(detail.jurisdiction || '');
@@ -146,6 +151,8 @@ function CaseEditModal({ open, caseId, onClose, onSuccess }) {
       filing_number: filingNumber.trim(),
       registration_number: registrationNumber.trim(),
       official_court_reference: officialCourtReference.trim(),
+      matter_category: matterCategory,
+      matter_stage: matterStage,
     };
 
     try {
@@ -296,6 +303,36 @@ function CaseEditModal({ open, caseId, onClose, onSuccess }) {
                     disabled={submitting}
                   >
                     {STATUS_CHOICES.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="auth-field">
+                  <span>Matter Category *</span>
+                  <select
+                    value={matterCategory}
+                    onChange={(e) => setMatterCategory(e.target.value)}
+                    disabled={submitting}
+                  >
+                    {MATTER_CATEGORY_CHOICES.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="auth-field">
+                  <span>Matter Stage *</span>
+                  <select
+                    value={matterStage}
+                    onChange={(e) => setMatterStage(e.target.value)}
+                    disabled={submitting}
+                  >
+                    {MATTER_STAGE_CHOICES.map((opt) => (
                       <option key={opt.value} value={opt.value}>
                         {opt.label}
                       </option>

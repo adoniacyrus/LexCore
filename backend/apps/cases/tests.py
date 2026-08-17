@@ -79,6 +79,8 @@ class CaseMilestoneTests(APITestCase):
             "supporting_paralegal": self.paralegal.id,
             "court": "District Court",
             "location": "New Delhi",
+            "matter_category": "COURT_LITIGATION",
+            "matter_stage": "UNDER_REVIEW",
         }
 
         response = self.client.post(url, payload)
@@ -104,6 +106,8 @@ class CaseMilestoneTests(APITestCase):
             "title": "Unauthorized Case",
             "case_type": CaseType.CIVIL,
             "start_date": "2026-08-15",
+            "matter_category": "COURT_LITIGATION",
+            "matter_stage": "UNDER_REVIEW",
         }
 
         response = self.client.post(url, payload)
@@ -131,6 +135,8 @@ class CaseMilestoneTests(APITestCase):
             "title": "Second Case Attempt",
             "case_type": CaseType.CIVIL,
             "start_date": "2026-08-15",
+            "matter_category": "COURT_LITIGATION",
+            "matter_stage": "UNDER_REVIEW",
         }
 
         response = self.client.post(url, payload)
@@ -145,6 +151,8 @@ class CaseMilestoneTests(APITestCase):
             "title": "Block Test",
             "case_type": CaseType.CIVIL,
             "start_date": "2026-08-15",
+            "matter_category": "COURT_LITIGATION",
+            "matter_stage": "UNDER_REVIEW",
         }
 
         for user in [self.admin, self.paralegal, self.client_user]:
@@ -585,3 +593,78 @@ class CaseMilestoneTests(APITestCase):
         self.client.force_authenticate(user=self.lawyer_a)
         response = self.client.get(active_lawyers_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_matter_classification(self):
+        """Test Case classification: validation, updates, permissions, listing filters."""
+        # Create case
+        case = Case.objects.create(
+            originating_consultation=self.consultation,
+            client=self.client_user,
+            practice_area=self.practice_area,
+            responsible_lawyer=self.lawyer_a,
+            supporting_paralegal=self.paralegal,
+            title="Classification Test Case",
+            case_type=CaseType.CIVIL,
+            start_date="2026-08-12",
+        )
+        detail_url = reverse("case-detail", kwargs={"pk": case.id})
+        list_url = reverse("case-list")
+
+        # 1. Check default values for created case
+        self.assertEqual(case.matter_category, "COURT_LITIGATION")
+        self.assertEqual(case.matter_stage, "UNDER_REVIEW")
+
+        # 2. Responsible Lawyer can update category and stage
+        self.client.force_authenticate(user=self.lawyer_a)
+        payload = {"matter_category": "ADVISORY", "matter_stage": "PRE_LITIGATION"}
+        response = self.client.patch(detail_url, payload)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["matter_category"], "ADVISORY")
+        self.assertEqual(response.data["matter_stage"], "PRE_LITIGATION")
+
+        # 3. Admin can update category and stage
+        self.client.force_authenticate(user=self.admin)
+        payload = {"matter_category": "COMPLIANCE", "matter_stage": "NOTICE_ISSUED"}
+        response = self.client.patch(detail_url, payload)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["matter_category"], "COMPLIANCE")
+        self.assertEqual(response.data["matter_stage"], "NOTICE_ISSUED")
+
+        # 4. Clients cannot update category and stage
+        self.client.force_authenticate(user=self.client_user)
+        payload = {"matter_category": "MEDIATION"}
+        response = self.client.patch(detail_url, payload)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 5. Paralegals cannot update category and stage
+        self.client.force_authenticate(user=self.paralegal)
+        payload = {"matter_category": "MEDIATION"}
+        response = self.client.patch(detail_url, payload)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 6. Invalid choices are rejected
+        self.client.force_authenticate(user=self.lawyer_a)
+        payload = {"matter_category": "INVALID_CATEGORY"}
+        response = self.client.patch(detail_url, payload)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # 7. Listing filters work
+        # Reset to compliance and notice_issued
+        case.matter_category = "COMPLIANCE"
+        case.matter_stage = "NOTICE_ISSUED"
+        case.save()
+
+        # Fetch cases with category filtering
+        self.client.force_authenticate(user=self.admin)
+        res_filtered = self.client.get(f"{list_url}?matter_category=COMPLIANCE")
+        self.assertEqual(len(res_filtered.data), 1)
+
+        res_filtered_none = self.client.get(f"{list_url}?matter_category=ADVISORY")
+        self.assertEqual(len(res_filtered_none.data), 0)
+
+        # Fetch cases with stage filtering
+        res_filtered_stage = self.client.get(f"{list_url}?matter_stage=NOTICE_ISSUED")
+        self.assertEqual(len(res_filtered_stage.data), 1)
+
+        res_filtered_stage_none = self.client.get(f"{list_url}?matter_stage=UNDER_REVIEW")
+        self.assertEqual(len(res_filtered_stage_none.data), 0)

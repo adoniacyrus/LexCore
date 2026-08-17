@@ -9,6 +9,7 @@ import {
 import { getDashboardPath } from '../../utils/roleRoutes';
 import { todayInputValue } from '../Consultations/consultationConstants';
 import { NavIcon } from '../../components/dashboard/icons';
+import { MATTER_CATEGORY_CHOICES, MATTER_STAGE_CHOICES } from './caseConstants';
 import './cases.css';
 
 const CASE_TYPE_CHOICES = [
@@ -39,6 +40,8 @@ function CaseConversionModal({ open, consultation, onClose, onSuccess }) {
   const [startDate, setStartDate] = useState(todayInputValue());
   const [description, setDescription] = useState('');
   const [supportingParalegal, setSupportingParalegal] = useState('');
+  const [matterCategory, setMatterCategory] = useState('COURT_LITIGATION');
+  const [matterStage, setMatterStage] = useState('UNDER_REVIEW');
 
   // Court info
   const [court, setCourt] = useState('');
@@ -70,6 +73,8 @@ function CaseConversionModal({ open, consultation, onClose, onSuccess }) {
     setStartDate(todayInputValue());
     setDescription('');
     setSupportingParalegal('');
+    setMatterCategory('COURT_LITIGATION');
+    setMatterStage('UNDER_REVIEW');
     setCourt('');
     setJurisdiction('');
     setBench('');
@@ -124,6 +129,8 @@ function CaseConversionModal({ open, consultation, onClose, onSuccess }) {
       filing_number: filingNumber.trim(),
       registration_number: registrationNumber.trim(),
       official_court_reference: officialCourtReference.trim(),
+      matter_category: matterCategory,
+      matter_stage: matterStage,
     };
 
     try {
@@ -275,6 +282,38 @@ function CaseConversionModal({ open, consultation, onClose, onSuccess }) {
                     {paralegals.map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.full_name} ({p.email})
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="auth-field">
+                  <span>Matter Category *</span>
+                  <select
+                    value={matterCategory}
+                    onChange={(e) => setMatterCategory(e.target.value)}
+                    disabled={submitting}
+                    required
+                  >
+                    {MATTER_CATEGORY_CHOICES.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="auth-field">
+                  <span>Matter Stage *</span>
+                  <select
+                    value={matterStage}
+                    onChange={(e) => setMatterStage(e.target.value)}
+                    disabled={submitting}
+                    required
+                  >
+                    {MATTER_STAGE_CHOICES.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
                       </option>
                     ))}
                   </select>

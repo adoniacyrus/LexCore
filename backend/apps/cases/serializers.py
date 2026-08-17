@@ -3,7 +3,7 @@ from rest_framework import serializers
 
 from apps.accounts.models import UserRole
 from apps.consultations.models import Consultation, ConsultationStatus, PracticeArea
-from .models import Case, CaseStatus, CaseType
+from .models import Case, CaseStatus, CaseType, MatterCategory, MatterStage
 
 User = get_user_model()
 
@@ -44,6 +44,14 @@ class CaseSerializer(serializers.ModelSerializer):
         source="get_status_display",
         read_only=True,
     )
+    matter_category_label = serializers.CharField(
+        source="get_matter_category_display",
+        read_only=True,
+    )
+    matter_stage_label = serializers.CharField(
+        source="get_matter_stage_display",
+        read_only=True,
+    )
 
     class Meta:
         model = Case
@@ -79,6 +87,14 @@ class CaseConvertSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True,
     )
+    matter_category = serializers.ChoiceField(
+        choices=MatterCategory.choices,
+        required=True,
+    )
+    matter_stage = serializers.ChoiceField(
+        choices=MatterStage.choices,
+        required=True,
+    )
 
     class Meta:
         model = Case
@@ -97,6 +113,8 @@ class CaseConvertSerializer(serializers.ModelSerializer):
             "filing_number",
             "registration_number",
             "official_court_reference",
+            "matter_category",
+            "matter_stage",
         )
 
     def validate_originating_consultation(self, value):

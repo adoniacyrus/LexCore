@@ -15,6 +15,7 @@ import { NavIcon } from '../../components/dashboard/icons';
 import CaseEditModal from './CaseEditModal';
 import ManageCaseTeamModal from './ManageCaseTeamModal';
 import ChangeCaseStatusModal from './ChangeCaseStatusModal';
+import ChangeMatterClassificationModal from './ChangeMatterClassificationModal';
 import UploadDocumentModal from './UploadDocumentModal';
 import DeleteDocumentConfirmModal from './DeleteDocumentConfirmModal';
 import CreateTaskModal from './CreateTaskModal';
@@ -43,6 +44,7 @@ function CaseDetailPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showTeamModal, setShowTeamModal] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showClassificationModal, setShowClassificationModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedDocToDelete, setSelectedDocToDelete] = useState(null);
@@ -180,6 +182,69 @@ function CaseDetailPage() {
         ) : (
           <div className="case-detail-container">
             <div className="case-detail-main">
+              {/* Classification Badges */}
+              <div className="matter-classification-header-card" style={{
+                display: 'flex',
+                gap: '1.5rem',
+                backgroundColor: '#FAF9F6',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--border-radius-sm)',
+                padding: '1rem',
+                marginBottom: '1rem',
+                alignItems: 'center',
+                flexWrap: 'wrap'
+              }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span className="case-label" style={{ marginBottom: '0.25rem' }}>Matter Category</span>
+                  <span className="matter-badge category-badge" style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    fontSize: '0.82rem',
+                    fontWeight: '600',
+                    color: 'var(--color-primary)',
+                    backgroundColor: '#f6eff1',
+                    border: '1px solid rgba(107, 30, 43, 0.15)',
+                    padding: '0.35rem 0.8rem',
+                    borderRadius: '12px'
+                  }}>
+                    {item.matter_category_label || item.matter_category}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span className="case-label" style={{ marginBottom: '0.25rem' }}>Matter Stage</span>
+                  <span className="matter-badge stage-badge" style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    fontSize: '0.82rem',
+                    fontWeight: '600',
+                    color: '#855b1b',
+                    backgroundColor: '#faf5ec',
+                    border: '1px solid rgba(133, 91, 27, 0.15)',
+                    padding: '0.35rem 0.8rem',
+                    borderRadius: '12px'
+                  }}>
+                    {item.matter_stage_label || item.matter_stage}
+                  </span>
+                </div>
+                {(role === 'ADMIN' || item.responsible_lawyer?.id === user?.id) && (
+                  <button
+                    type="button"
+                    className="btn btn-ghost-dark"
+                    style={{
+                      marginLeft: 'auto',
+                      fontSize: '0.78rem',
+                      padding: '0.35rem 0.75rem',
+                      height: 'auto',
+                      minHeight: 'auto',
+                      alignSelf: 'center'
+                    }}
+                    onClick={() => setShowClassificationModal(true)}
+                  >
+                    Update Classification
+                  </button>
+                )}
+              </div>
+
               <section className="case-section" aria-labelledby="section-case-info">
                 <h2 id="section-case-info" className="case-section__title">Case Information</h2>
                 <div className="case-grid">
@@ -596,6 +661,13 @@ function CaseDetailPage() {
         open={showStatusModal}
         caseObj={item}
         onClose={() => setShowStatusModal(false)}
+        onSuccess={() => load()}
+      />
+
+      <ChangeMatterClassificationModal
+        open={showClassificationModal}
+        caseObj={item}
+        onClose={() => setShowClassificationModal(false)}
         onSuccess={() => load()}
       />
 
