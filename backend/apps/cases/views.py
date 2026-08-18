@@ -76,7 +76,7 @@ class CaseListView(APIView):
             pass
         elif user.role in (UserRole.SENIOR_LAWYER, UserRole.JUNIOR_LAWYER):
             from django.db.models import Q
-            queryset = queryset.filter(Q(responsible_lawyer=user) | Q(assistant_lawyers=user)).distinct()
+            queryset = queryset.filter(Q(responsible_lawyer=user) | Q(supervising_lawyer=user) | Q(assistant_lawyers=user)).distinct()
         elif user.role == UserRole.PARALEGAL:
             queryset = queryset.filter(supporting_paralegal=user)
         elif user.role == UserRole.CLIENT:
@@ -316,7 +316,7 @@ class CaseMatterBoardView(APIView):
         if user.role == UserRole.ADMIN:
             pass
         elif user.role in (UserRole.SENIOR_LAWYER, UserRole.JUNIOR_LAWYER):
-            queryset = queryset.filter(Q(responsible_lawyer=user) | Q(assistant_lawyers=user)).distinct()
+            queryset = queryset.filter(Q(responsible_lawyer=user) | Q(supervising_lawyer=user) | Q(assistant_lawyers=user)).distinct()
         elif user.role == UserRole.PARALEGAL:
             queryset = queryset.filter(supporting_paralegal=user)
         elif user.role == UserRole.CLIENT:

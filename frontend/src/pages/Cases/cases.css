@@ -800,3 +800,35 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Counsel role badges */
+.counsel-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 12px;
+  line-height: 1;
+}
+
+.counsel-badge.is-lead {
+  background-color: #faf5ec;
+  color: #855b1b;
+  border: 1px solid rgba(133, 91, 27, 0.15);
+}
+
+.counsel-badge.is-supervising {
+  background-color: #f6eff1;
+  color: var(--color-primary);
+  border: 1px solid rgba(107, 30, 43, 0.15);
+}
+
+.counsel-badge.is-assistant {
+  background-color: #eaf4fc;
+  color: #31708f;
+  border: 1px solid #d9edf7;
+}
+

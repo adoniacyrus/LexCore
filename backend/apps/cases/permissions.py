@@ -19,7 +19,7 @@ class IsCaseParticipant(BasePermission):
         if user.role == UserRole.ADMIN:
             return True
         if user.role in (UserRole.SENIOR_LAWYER, UserRole.JUNIOR_LAWYER):
-            return obj.responsible_lawyer == user or obj.assistant_lawyers.filter(pk=user.pk).exists()
+            return obj.responsible_lawyer == user or obj.supervising_lawyer == user or obj.assistant_lawyers.filter(pk=user.pk).exists()
         if user.role == UserRole.PARALEGAL:
             return obj.supporting_paralegal == user
         if user.role == UserRole.CLIENT:

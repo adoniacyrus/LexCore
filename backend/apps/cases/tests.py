@@ -783,3 +783,123 @@ class CaseMilestoneTests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["summary"]["total"], 0)
+
+
+class CaseTeamHierarchyTests(APITestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(
+            email="admin_hier@lexcore.local",
+            full_name="Hier Admin",
+            password="password123",
+            role=UserRole.ADMIN,
+        )
+        self.senior_lawyer = User.objects.create_user(
+            email="senior_hier@lexcore.local",
+            full_name="Senior Hier",
+            password="password123",
+            role=UserRole.SENIOR_LAWYER,
+        )
+        self.junior_lawyer = User.objects.create_user(
+            email="junior_hier@lexcore.local",
+            full_name="Junior Hier",
+            password="password123",
+            role=UserRole.JUNIOR_LAWYER,
+        )
+        self.other_junior = User.objects.create_user(
+            email="other_junior_hier@lexcore.local",
+            full_name="Other Junior",
+            password="password123",
+            role=UserRole.JUNIOR_LAWYER,
+        )
+        self.client_user = User.objects.create_user(
+            email="client_hier@lexcore.local",
+            full_name="John Client",
+            password="password123",
+            role=UserRole.CLIENT,
+        )
+        self.practice_area = PracticeArea.objects.get(name="Family Law")
+        self.consultation = Consultation.objects.create(
+            client=self.client_user,
+            practice_area=self.practice_area,
+            assigned_lawyer=self.junior_lawyer,
+            consultation_mode="OFFICE",
+            preferred_date="2026-08-20",
+            preferred_time="10:00:00",
+            subject="Contract Dispute",
+            status=ConsultationStatus.ACCEPTED,
+        )
+        self.case = Case.objects.create(
+            originating_consultation=self.consultation,
+            client=self.client_user,
+            practice_area=self.practice_area,
+            responsible_lawyer=self.junior_lawyer,
+            title="Junior Led Case",
+            case_type=CaseType.CIVIL,
+            status=CaseStatus.OPEN,
+            start_date="2026-08-12",
+        )
+
+    def test_assign_junior_as_supervising_fails(self):
+        """Cannot assign a Junior Lawyer as Supervising Lawyer."""
+        self.client.force_authenticate(user=self.admin)
+        url = reverse("case-team-update", kwargs={"pk": self.case.id})
+        payload = {"supervising_lawyer": self.other_junior.id}
+        response = self.client.patch(url, payload)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("supervising_lawyer", response.data)
+        self.assertEqual(response.data["supervising_lawyer"][0], "Only Senior Advocates can act as Supervising Lawyers.")
+
+    def test_assign_senior_as_assistant_to_junior_led_fails(self):
+        """Cannot assign a Senior Lawyer as Assistant to a Junior Lawyer led case."""
+        self.client.force_authenticate(user=self.admin)
+        url = reverse("case-team-update", kwargs={"pk": self.case.id})
+        payload = {"assistant_lawyers": [self.senior_lawyer.id]}
+        response = self.client.patch(url, payload)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("assistant_lawyers", response.data)
+        self.assertEqual(response.data["assistant_lawyers"][0], "Senior Advocates cannot be assigned as Assistant Lawyers to a Junior-led matter. Assign them as Supervising Lawyer instead.")
+
+    def test_assign_senior_as_supervising_and_junior_as_assistant_success(self):
+        """Can assign Senior as Supervising Lawyer and Junior as Assistant to a Junior-led case."""
+        self.client.force_authenticate(user=self.admin)
+        url = reverse("case-team-update", kwargs={"pk": self.case.id})
+        payload = {
+            "supervising_lawyer": self.senior_lawyer.id,
+            "assistant_lawyers": [self.other_junior.id],
+        }
+        response = self.client.patch(url, payload)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Verify db
+        self.case.refresh_from_db()
+        self.assertEqual(self.case.supervising_lawyer, self.senior_lawyer)
+        self.assertIn(self.other_junior, self.case.assistant_lawyers.all())
+
+        # Verify activity timeline log
+        activities = self.case.activities.all()
+        self.assertTrue(activities.filter(activity_type="SUPERVISING_COUNSEL_ASSIGNED").exists())
+        self.assertTrue(activities.filter(activity_type="ASSISTANT_LAWYER_ADDED").exists())
+
+    def test_supervising_lawyer_permissions(self):
+        """Supervising lawyer has access to the case, tasks, and documents."""
+        # Setup supervising lawyer
+        self.case.supervising_lawyer = self.senior_lawyer
+        self.case.save()
+
+        self.client.force_authenticate(user=self.senior_lawyer)
+
+        # 1. Access Case Detail
+        detail_url = reverse("case-detail", kwargs={"pk": self.case.case_reference})
+        response = self.client.get(detail_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # 2. Access/Create Tasks
+        task_url = reverse("case-tasks", kwargs={"case_id": self.case.id})
+        task_payload = {
+            "title": "Supervisory strategy review",
+            "assigned_to_id": self.junior_lawyer.id,
+            "due_date": "2026-09-01",
+        }
+        response = self.client.post(task_url, task_payload)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+

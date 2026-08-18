@@ -91,6 +91,13 @@ class Case(models.Model):
         on_delete=models.PROTECT,
         related_name="responsible_cases",
     )
+    supervising_lawyer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="supervised_cases",
+    )
     supporting_paralegal = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -182,3 +189,30 @@ class Case(models.Model):
                 self.case_reference = self.next_case_reference()
                 return super().save(*args, **kwargs)
         return super().save(*args, **kwargs)
+
+
+class CaseActivity(models.Model):
+    """
+    Timeline/Activity feed log for Case modifications.
+    """
+    case = models.ForeignKey(
+        Case,
+        on_delete=models.CASCADE,
+        related_name="activities",
+    )
+    activity_type = models.CharField(max_length=64)
+    description = models.TextField()
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.case.case_reference} - {self.activity_type} - {self.created_at}"
+

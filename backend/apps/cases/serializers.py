@@ -3,7 +3,7 @@ from rest_framework import serializers
 
 from apps.accounts.models import UserRole
 from apps.consultations.models import Consultation, ConsultationStatus, PracticeArea
-from .models import Case, CaseStatus, CaseType, MatterCategory, MatterStage
+from .models import Case, CaseStatus, CaseType, MatterCategory, MatterStage, CaseActivity
 
 User = get_user_model()
 
@@ -22,15 +22,26 @@ class PracticeAreaBriefSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class CaseActivitySerializer(serializers.ModelSerializer):
+    user_name = serializers.CharField(source="user.full_name", read_only=True)
+
+    class Meta:
+        model = CaseActivity
+        fields = ("id", "activity_type", "description", "user_name", "created_at")
+        read_only_fields = fields
+
+
 class CaseSerializer(serializers.ModelSerializer):
     client = UserBriefSerializer(read_only=True)
     responsible_lawyer = UserBriefSerializer(read_only=True)
+    supervising_lawyer = UserBriefSerializer(read_only=True)
     supporting_paralegal = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.filter(role=UserRole.PARALEGAL, is_active=True),
         required=False,
         allow_null=True,
     )
     assistant_lawyers = UserBriefSerializer(many=True, read_only=True)
+    activities = CaseActivitySerializer(many=True, read_only=True)
     practice_area = PracticeAreaBriefSerializer(read_only=True)
     originating_consultation_ref = serializers.CharField(
         source="originating_consultation.consultation_id",
@@ -65,8 +76,10 @@ class CaseSerializer(serializers.ModelSerializer):
             "client",
             "practice_area",
             "responsible_lawyer",
+            "supervising_lawyer",
             "originating_consultation",
             "assistant_lawyers",
+            "activities",
         )
 
     def to_representation(self, instance):
@@ -181,6 +194,14 @@ class CaseTeamUpdateSerializer(serializers.ModelSerializer):
         ),
         required=False,
     )
+    supervising_lawyer = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.filter(
+            role__in=(UserRole.SENIOR_LAWYER, UserRole.JUNIOR_LAWYER),
+            is_active=True,
+        ),
+        required=False,
+        allow_null=True,
+    )
     supporting_paralegal = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.filter(role=UserRole.PARALEGAL, is_active=True),
         required=False,
@@ -197,13 +218,21 @@ class CaseTeamUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Case
-        fields = ("responsible_lawyer", "supporting_paralegal", "assistant_lawyers")
+        fields = ("responsible_lawyer", "supervising_lawyer", "supporting_paralegal", "assistant_lawyers")
 
     def validate_responsible_lawyer(self, value):
         if not value.is_active:
             raise serializers.ValidationError("Cannot assign an inactive lawyer.")
         if value.role not in (UserRole.SENIOR_LAWYER, UserRole.JUNIOR_LAWYER):
             raise serializers.ValidationError("Assigned user must be a lawyer.")
+        return value
+
+    def validate_supervising_lawyer(self, value):
+        if value is not None:
+            if not value.is_active:
+                raise serializers.ValidationError("Cannot assign an inactive lawyer.")
+            if value.role != UserRole.SENIOR_LAWYER:
+                raise serializers.ValidationError("Only Senior Advocates can act as Supervising Lawyers.")
         return value
 
     def validate_supporting_paralegal(self, value):
@@ -227,19 +256,79 @@ class CaseTeamUpdateSerializer(serializers.ModelSerializer):
         if resp_lawyer is None and self.instance:
             resp_lawyer = self.instance.responsible_lawyer
 
+        # Validation Rule: Senior Advocates cannot be assigned as Assistant Lawyers to a Junior-led matter
+        if resp_lawyer and resp_lawyer.role == UserRole.JUNIOR_LAWYER:
+            assistant_lawyers = attrs.get("assistant_lawyers")
+            if assistant_lawyers is not None:
+                for al in assistant_lawyers:
+                    if al.role == UserRole.SENIOR_LAWYER:
+                        raise serializers.ValidationError(
+                            {"assistant_lawyers": "Senior Advocates cannot be assigned as Assistant Lawyers to a Junior-led matter. Assign them as Supervising Lawyer instead."}
+                        )
+
+        # Basic validations to prevent overlap in roles
         assistant_lawyers = attrs.get("assistant_lawyers")
         if assistant_lawyers is not None and resp_lawyer in assistant_lawyers:
             raise serializers.ValidationError(
                 {"assistant_lawyers": "The responsible lawyer is already the lead lawyer for this case."}
             )
+
+        supervising_lawyer = attrs.get("supervising_lawyer")
+        if supervising_lawyer is None and self.instance:
+            supervising_lawyer = self.instance.supervising_lawyer
+
+        if supervising_lawyer:
+            if resp_lawyer and supervising_lawyer == resp_lawyer:
+                raise serializers.ValidationError(
+                    {"supervising_lawyer": "The supervising lawyer cannot be the responsible lawyer."}
+                )
+            if assistant_lawyers is not None and supervising_lawyer in assistant_lawyers:
+                raise serializers.ValidationError(
+                    {"supervising_lawyer": "The supervising lawyer cannot be an assistant lawyer."}
+                )
+
         return attrs
 
     def update(self, instance, validated_data):
         responsible_lawyer = validated_data.get("responsible_lawyer")
+        supervising_lawyer = validated_data.get("supervising_lawyer")
         assistant_lawyers = validated_data.get("assistant_lawyers")
+
+        # Track changes for timeline
+        request = self.context.get("request")
+        user = request.user if request else None
+
+        old_supervising = instance.supervising_lawyer
+        old_assistants = set(instance.assistant_lawyers.all())
 
         if responsible_lawyer and responsible_lawyer != instance.responsible_lawyer:
             instance.responsible_lawyer = responsible_lawyer
+
+        if "supervising_lawyer" in validated_data:
+            new_supervising = validated_data["supervising_lawyer"]
+            if old_supervising != new_supervising:
+                instance.supervising_lawyer = new_supervising
+                if old_supervising is None:
+                    CaseActivity.objects.create(
+                        case=instance,
+                        activity_type="SUPERVISING_COUNSEL_ASSIGNED",
+                        description=f"Supervising Counsel Assigned: {new_supervising.full_name}",
+                        user=user,
+                    )
+                elif new_supervising is None:
+                    CaseActivity.objects.create(
+                        case=instance,
+                        activity_type="SUPERVISING_COUNSEL_CHANGED",
+                        description=f"Supervising Counsel Removed (previously {old_supervising.full_name})",
+                        user=user,
+                    )
+                else:
+                    CaseActivity.objects.create(
+                        case=instance,
+                        activity_type="SUPERVISING_COUNSEL_CHANGED",
+                        description=f"Supervising Counsel Changed from {old_supervising.full_name} to {new_supervising.full_name}",
+                        user=user,
+                    )
 
         if "supporting_paralegal" in validated_data:
             instance.supporting_paralegal = validated_data["supporting_paralegal"]
@@ -247,11 +336,47 @@ class CaseTeamUpdateSerializer(serializers.ModelSerializer):
         instance.save()
 
         if assistant_lawyers is not None:
-            # Filter out the responsible lawyer to be absolutely safe
+            # Filter out responsible and supervising lawyers to be safe
             assistant_lawyers = [al for al in assistant_lawyers if al != instance.responsible_lawyer]
+            if instance.supervising_lawyer:
+                assistant_lawyers = [al for al in assistant_lawyers if al != instance.supervising_lawyer]
+            
+            new_assistants = set(assistant_lawyers)
             instance.assistant_lawyers.set(assistant_lawyers)
+
+            added_assistants = new_assistants - old_assistants
+            removed_assistants = old_assistants - new_assistants
+
+            for al in added_assistants:
+                CaseActivity.objects.create(
+                    case=instance,
+                    activity_type="ASSISTANT_LAWYER_ADDED",
+                    description=f"Assistant Lawyer Added: {al.full_name}",
+                    user=user,
+                )
+            for al in removed_assistants:
+                CaseActivity.objects.create(
+                    case=instance,
+                    activity_type="ASSISTANT_LAWYER_REMOVED",
+                    description=f"Assistant Lawyer Removed: {al.full_name}",
+                    user=user,
+                )
         else:
             if responsible_lawyer and instance.assistant_lawyers.filter(pk=responsible_lawyer.pk).exists():
                 instance.assistant_lawyers.remove(responsible_lawyer)
+                CaseActivity.objects.create(
+                    case=instance,
+                    activity_type="ASSISTANT_LAWYER_REMOVED",
+                    description=f"Assistant Lawyer Removed: {responsible_lawyer.full_name}",
+                    user=user,
+                )
+            if instance.supervising_lawyer and instance.assistant_lawyers.filter(pk=instance.supervising_lawyer.pk).exists():
+                instance.assistant_lawyers.remove(instance.supervising_lawyer)
+                CaseActivity.objects.create(
+                    case=instance,
+                    activity_type="ASSISTANT_LAWYER_REMOVED",
+                    description=f"Assistant Lawyer Removed: {instance.supervising_lawyer.full_name}",
+                    user=user,
+                )
 
         return instance

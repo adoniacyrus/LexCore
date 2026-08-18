@@ -9,12 +9,6 @@ export const PORTAL_NAV_BY_ROLE = {
       group: 'FIRM',
       items: [
         { id: 'dashboard', label: 'Dashboard', icon: 'home' },
-        {
-          id: 'matter-board',
-          label: 'Matter Board',
-          icon: 'reports',
-          route: '/dashboard/admin/matter-board',
-        },
       ],
     },
     {
@@ -48,6 +42,12 @@ export const PORTAL_NAV_BY_ROLE = {
           label: 'Cases',
           icon: 'cases',
           route: '/dashboard/admin/cases',
+        },
+        {
+          id: 'matter-board',
+          label: 'Matter Board',
+          icon: 'reports',
+          route: '/dashboard/admin/matter-board',
         },
       ],
     },

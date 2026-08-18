@@ -61,6 +61,7 @@ class CaseTaskListCreateView(APIView):
             # Filter by cases where the user is a team member
             accessible_cases = Case.objects.filter(
                 Q(responsible_lawyer=user) |
+                Q(supervising_lawyer=user) |
                 Q(supporting_paralegal=user) |
                 Q(assistant_lawyers=user)
             ).distinct()
@@ -110,13 +111,14 @@ class CaseTaskListCreateView(APIView):
 
         case = _get_case(target_case_id)
 
-        # Only Admin or Responsible Lawyer can create tasks for a case
+        # Only Admin, Responsible Lawyer, or Supervising Lawyer can create tasks for a case
         is_admin = user.role == UserRole.ADMIN
         is_responsible_lawyer = case.responsible_lawyer_id == user.id
+        is_supervising_lawyer = case.supervising_lawyer_id == user.id
 
-        if not (is_admin or is_responsible_lawyer):
+        if not (is_admin or is_responsible_lawyer or is_supervising_lawyer):
             return Response(
-                {"detail": "Only the Responsible Lawyer or an Administrator can create case tasks."},
+                {"detail": "Only the Responsible Lawyer, Supervising Lawyer, or an Administrator can create case tasks."},
                 status=status.HTTP_403_FORBIDDEN,
             )
 

@@ -22,7 +22,7 @@ class IsDocumentAuthorized(BasePermission):
         if user.role == UserRole.ADMIN:
             is_participant = True
         elif user.role in (UserRole.SENIOR_LAWYER, UserRole.JUNIOR_LAWYER):
-            is_participant = (case.responsible_lawyer == user)
+            is_participant = (case.responsible_lawyer == user or case.supervising_lawyer == user or case.assistant_lawyers.filter(pk=user.pk).exists())
         elif user.role == UserRole.PARALEGAL:
             is_participant = (case.supporting_paralegal == user)
         elif user.role == UserRole.CLIENT:

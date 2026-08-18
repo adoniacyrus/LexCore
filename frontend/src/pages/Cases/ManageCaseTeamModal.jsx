@@ -21,6 +21,7 @@ function ManageCaseTeamModal({ open, caseObj, onClose, onSuccess }) {
 
   // Form states
   const [selectedLawyer, setSelectedLawyer] = useState('');
+  const [selectedSupervising, setSelectedSupervising] = useState('');
   const [selectedParalegal, setSelectedParalegal] = useState('');
   const [selectedAssistantLawyers, setSelectedAssistantLawyers] = useState([]);
   
@@ -50,6 +51,7 @@ function ManageCaseTeamModal({ open, caseObj, onClose, onSuccess }) {
     setLoading(true);
 
     setSelectedLawyer(caseObj.responsible_lawyer?.id || '');
+    setSelectedSupervising(caseObj.supervising_lawyer?.id || '');
     setSelectedParalegal(caseObj.supporting_paralegal?.id || '');
     setSelectedAssistantLawyers(
       Array.isArray(caseObj.assistant_lawyers)
@@ -85,6 +87,29 @@ function ManageCaseTeamModal({ open, caseObj, onClose, onSuccess }) {
       return;
     }
 
+    // Validation 1: Supervising Counsel must be Senior Lawyer
+    if (selectedSupervising) {
+      const supervisingLawyerObj = lawyers.find(l => l.id === parseInt(selectedSupervising, 10));
+      if (supervisingLawyerObj && supervisingLawyerObj.role !== 'SENIOR_LAWYER') {
+        setError("Only Senior Advocates can act as Supervising Lawyers.");
+        return;
+      }
+    }
+
+    // Validation 2: Case led by Junior Lawyer cannot have Senior Lawyer as Assistant Lawyer
+    const currentLeadLawyerId = role === 'ADMIN' ? parseInt(selectedLawyer, 10) : caseObj.responsible_lawyer?.id;
+    const leadLawyerObj = lawyers.find(l => l.id === currentLeadLawyerId);
+    if (leadLawyerObj && leadLawyerObj.role === 'JUNIOR_LAWYER') {
+      const hasSeniorAssistant = selectedAssistantLawyers.some(id => {
+        const al = lawyers.find(l => l.id === id);
+        return al && al.role === 'SENIOR_LAWYER';
+      });
+      if (hasSeniorAssistant) {
+        setError("Senior Advocates cannot be assigned as Assistant Lawyers to a Junior-led matter. Assign them as Supervising Lawyer instead.");
+        return;
+      }
+    }
+
     const isLawyerChanged = role === 'ADMIN' && parseInt(selectedLawyer, 10) !== (caseObj.responsible_lawyer?.id || 0);
 
     if (isLawyerChanged) {
@@ -103,6 +128,7 @@ function ManageCaseTeamModal({ open, caseObj, onClose, onSuccess }) {
     if (role === 'ADMIN') {
       payload.responsible_lawyer = parseInt(selectedLawyer, 10);
     }
+    payload.supervising_lawyer = selectedSupervising ? parseInt(selectedSupervising, 10) : null;
     payload.supporting_paralegal = selectedParalegal ? parseInt(selectedParalegal, 10) : null;
     payload.assistant_lawyers = selectedAssistantLawyers;
 
@@ -144,9 +170,15 @@ function ManageCaseTeamModal({ open, caseObj, onClose, onSuccess }) {
 
   // Filter assistant selection candidates
   const currentLeadLawyerId = role === 'ADMIN' ? parseInt(selectedLawyer, 10) : caseObj.responsible_lawyer?.id;
+  const leadLawyerObj = lawyers.find(l => l.id === currentLeadLawyerId);
   const availableLawyersForAssistants = lawyers.filter(l => {
     if (l.id === currentLeadLawyerId) return false;
     if (selectedAssistantLawyers.includes(l.id)) return false;
+    if (selectedSupervising && l.id === parseInt(selectedSupervising, 10)) return false;
+    // If Lead is Junior, Assistants must be Junior only
+    if (leadLawyerObj && leadLawyerObj.role === 'JUNIOR_LAWYER') {
+      if (l.role === 'SENIOR_LAWYER') return false;
+    }
     return true;
   });
 
@@ -280,6 +312,31 @@ function ManageCaseTeamModal({ open, caseObj, onClose, onSuccess }) {
                     </div>
                   </div>
                 )}
+
+                {/* SUPERVISING COUNSEL SELECTOR */}
+                <label className="auth-field">
+                  <span>Supervising Counsel</span>
+                  <select
+                    value={selectedSupervising}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setSelectedSupervising(val);
+                      if (val) {
+                        setSelectedAssistantLawyers(prev => prev.filter(id => id !== parseInt(val, 10)));
+                      }
+                    }}
+                    disabled={submitting}
+                  >
+                    <option value="">No Supervising Counsel Assigned</option>
+                    {lawyers
+                      .filter((l) => l.role === 'SENIOR_LAWYER')
+                      .map((l) => (
+                        <option key={l.id} value={l.id}>
+                          {getLawyerLabel(l)}
+                        </option>
+                      ))}
+                  </select>
+                </label>
 
                 {/* ASSISTANT LAWYERS MULTI-SELECTOR */}
                 <label className="auth-field">

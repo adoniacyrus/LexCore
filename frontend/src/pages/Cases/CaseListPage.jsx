@@ -265,7 +265,24 @@ function CaseListPage() {
                     }}
                   >
                     <td className="cases-ref">{item.case_reference}</td>
-                    <td>{item.title}</td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <span>{item.title}</span>
+                        {(role === 'SENIOR_LAWYER' || role === 'JUNIOR_LAWYER') && (
+                          <>
+                            {item.responsible_lawyer?.id === user?.id && (
+                              <span className="counsel-badge is-lead">Lead Counsel</span>
+                            )}
+                            {item.supervising_lawyer?.id === user?.id && (
+                              <span className="counsel-badge is-supervising">Supervising Counsel</span>
+                            )}
+                            {Array.isArray(item.assistant_lawyers) && item.assistant_lawyers.some(al => al.id === user?.id) && (
+                              <span className="counsel-badge is-assistant">Assistant Counsel</span>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </td>
                     <td>{item.case_type_label || item.case_type}</td>
                     <td>{item.practice_area?.name || '—'}</td>
                     {role !== 'CLIENT' && <td>{item.client?.full_name || '—'}</td>}

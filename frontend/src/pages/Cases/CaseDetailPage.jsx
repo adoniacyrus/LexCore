@@ -141,7 +141,7 @@ function CaseDetailPage() {
   const inProgressCount = tasks.filter(t => t.status === 'IN_PROGRESS').length;
   const completedCount = tasks.filter(t => t.status === 'COMPLETED').length;
 
-  const canCreateTask = role === 'ADMIN' || item?.responsible_lawyer?.id === user?.id;
+  const canCreateTask = role === 'ADMIN' || item?.responsible_lawyer?.id === user?.id || item?.supervising_lawyer?.id === user?.id;
 
   return (
     <DashboardLayout showContext={false} activeModule="cases">
@@ -578,14 +578,20 @@ function CaseDetailPage() {
                 <h2 id="section-legal-team" className="case-section__title">Legal Team</h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   <div className="case-field">
-                    <span className="case-label">Responsible Lawyer</span>
+                    <span className="case-label">Lead Counsel</span>
                     <span className="case-value" style={{ fontWeight: 600, color: 'var(--color-primary)' }}>
                       {item.responsible_lawyer?.full_name || '—'}
                     </span>
-                    <span style={{ display: 'block', fontSize: '0.72rem', color: '#888280', marginTop: '0.1rem' }}>
-                      Lead Advocate
-                    </span>
                   </div>
+
+                  {item.supervising_lawyer && (
+                    <div className="case-field">
+                      <span className="case-label">Supervising Counsel</span>
+                      <span className="case-value" style={{ fontWeight: 600 }}>
+                        {item.supervising_lawyer.full_name}
+                      </span>
+                    </div>
+                  )}
 
                   <div className="case-field">
                     <span className="case-label">Assistant Lawyers</span>
@@ -594,9 +600,6 @@ function CaseDetailPage() {
                         {item.assistant_lawyers.map(al => (
                           <div key={al.id} style={{ display: 'flex', flexDirection: 'column' }}>
                             <span className="case-value" style={{ fontWeight: 500 }}>{al.full_name}</span>
-                            <span style={{ fontSize: '0.72rem', color: '#888280' }}>
-                              {al.role === 'SENIOR_LAWYER' ? 'Senior Advocate' : 'Junior Advocate'}
-                            </span>
                           </div>
                         ))}
                       </div>
@@ -607,24 +610,12 @@ function CaseDetailPage() {
                     )}
                   </div>
 
-                  {item.supporting_paralegal ? (
-                    <div className="case-field">
-                      <span className="case-label">Supporting Paralegal</span>
-                      <span className="case-value" style={{ fontWeight: 500 }}>
-                        {item.supporting_paralegal?.full_name}
-                      </span>
-                      <span style={{ display: 'block', fontSize: '0.72rem', color: '#888280', marginTop: '0.1rem' }}>
-                        Paralegal
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="case-field">
-                      <span className="case-label">Supporting Paralegal</span>
-                      <span className="case-value" style={{ color: '#aaa', fontStyle: 'italic', fontSize: '0.85rem' }}>
-                        None assigned
-                      </span>
-                    </div>
-                  )}
+                  <div className="case-field">
+                    <span className="case-label">Supporting Paralegal</span>
+                    <span className="case-value" style={{ fontWeight: 500 }}>
+                      {item.supporting_paralegal?.full_name || 'None assigned'}
+                    </span>
+                  </div>
 
                   {(role === 'ADMIN' || item.responsible_lawyer?.id === user?.id) && (
                     <button

@@ -51,7 +51,14 @@ function CreateTaskModal({ open, caseObj, onClose, onSuccess }) {
     teamMembers.push({
       id: caseObj.responsible_lawyer.id,
       name: caseObj.responsible_lawyer.full_name,
-      roleLabel: 'Responsible Lawyer',
+      roleLabel: 'Lead Counsel',
+    });
+  }
+  if (caseObj.supervising_lawyer) {
+    teamMembers.push({
+      id: caseObj.supervising_lawyer.id,
+      name: caseObj.supervising_lawyer.full_name,
+      roleLabel: 'Supervising Counsel',
     });
   }
   if (Array.isArray(caseObj.assistant_lawyers)) {

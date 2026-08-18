@@ -13,6 +13,8 @@ def is_user_in_case_team(user, case):
         return True
     if case.responsible_lawyer_id == user.id:
         return True
+    if case.supervising_lawyer_id == user.id:
+        return True
     if case.supporting_paralegal_id == user.id:
         return True
     if case.assistant_lawyers.filter(pk=user.pk).exists():
