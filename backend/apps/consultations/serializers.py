@@ -9,6 +9,7 @@ from .models import (
     LAWYER_ROLES,
     Consultation,
     ConsultationMode,
+    ConsultationPaymentStatus,
     ConsultationStatus,
     PracticeArea,
 )
@@ -82,11 +83,16 @@ class ConsultationSerializer(serializers.ModelSerializer):
         source="get_status_display",
         read_only=True,
     )
+    payment_status_label = serializers.CharField(
+        source="get_payment_status_display",
+        read_only=True,
+    )
     client = ClientBriefSerializer(read_only=True)
     assigned_lawyer = LawyerBriefSerializer(read_only=True)
     assigned_lawyer_name = serializers.SerializerMethodField()
     case_id = serializers.SerializerMethodField()
     case_reference = serializers.SerializerMethodField()
+    fee_amount = serializers.SerializerMethodField()
 
     class Meta:
         model = Consultation
@@ -107,12 +113,24 @@ class ConsultationSerializer(serializers.ModelSerializer):
             "issue_summary",
             "status",
             "status_label",
+            "payment_status",
+            "payment_status_label",
+            "fee_amount",
             "case_id",
             "case_reference",
             "created_at",
             "updated_at",
         )
         read_only_fields = fields
+
+    def get_fee_amount(self, obj):
+        latest_payment = getattr(obj, "payments", None)
+        if latest_payment is not None:
+            first_p = latest_payment.order_by("-created_at").first()
+            if first_p:
+                return first_p.amount_rupees
+        from django.conf import settings
+        return getattr(settings, "RAZORPAY_DEFAULT_CONSULTATION_FEE", 500)
 
     def get_practice_area_label(self, obj):
         if obj.practice_area_id and obj.practice_area:
@@ -208,7 +226,11 @@ class ConsultationCreateSerializer(serializers.Serializer):
     def create(self, validated_data):
         validated_data.pop("knows_practice_area", None)
         client = self.context["request"].user
-        return Consultation.objects.create(client=client, **validated_data)
+        return Consultation.objects.create(
+            client=client,
+            payment_status=ConsultationPaymentStatus.PENDING,
+            **validated_data,
+        )
 
 
 class AdminConsultationUpdateSerializer(serializers.Serializer):
@@ -248,6 +270,10 @@ class AdminConsultationUpdateSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         consultation = self.instance
+        if consultation and consultation.payment_status != ConsultationPaymentStatus.PAID:
+            raise serializers.ValidationError(
+                "Cannot review or assign an unpaid consultation. Payment must be captured first."
+            )
         practice_area = attrs.get(
             "practice_area",
             consultation.practice_area if consultation else None,

@@ -16,6 +16,7 @@ import {
   formatCreatedDate,
   formatPreferredDate,
   formatPreferredTime,
+  paymentStatusLabel,
   practiceAreaLabel,
   STATUS_LABELS,
 } from './consultationConstants';
@@ -115,6 +116,28 @@ function AdminManageModal({ open, item, practiceAreas, accessToken, onClose, onS
               {item.status_label || STATUS_LABELS[item.status] || item.status}
             </span>
           </p>
+          <p className="cons-detail__submitted">
+            Payment:{' '}
+            <span
+              className={`cons-status ${
+                item.payment_status === 'PAID'
+                  ? 'is-approved'
+                  : item.payment_status === 'FAILED'
+                  ? 'is-rejected'
+                  : 'is-pending'
+              }`}
+            >
+              {paymentStatusLabel(item)}
+            </span>
+          </p>
+
+          {item.payment_status !== 'PAID' ? (
+            <div className="cons-detail__unpaid-notice" style={{ marginTop: '0.4rem', marginBottom: '0.6rem' }}>
+              <p>
+                <strong>Unpaid Consultation:</strong> This consultation cannot be approved or assigned until payment is captured.
+              </p>
+            </div>
+          ) : null}
 
           <label className="auth-field">
             <span>Practice Area</span>
@@ -181,7 +204,13 @@ function AdminManageModal({ open, item, practiceAreas, accessToken, onClose, onS
           <button type="button" className="btn btn-ghost-dark" onClick={onClose} disabled={submitting}>
             Cancel
           </button>
-          <button type="button" className="btn btn-primary" onClick={handleSave} disabled={submitting}>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={handleSave}
+            disabled={submitting || item.payment_status !== 'PAID'}
+            title={item.payment_status !== 'PAID' ? 'Payment must be captured before assigning counsel' : ''}
+          >
             {submitting ? 'Saving…' : 'Save Changes'}
           </button>
         </div>
@@ -198,6 +227,7 @@ function AdminConsultationQueuePage() {
   const [error, setError] = useState('');
   const [q, setQ] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [paymentFilter, setPaymentFilter] = useState('');
   const [areaFilter, setAreaFilter] = useState('');
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState(null);
@@ -211,6 +241,7 @@ function AdminConsultationQueuePage() {
         listAdminConsultations(accessToken, {
           q: q.trim() || undefined,
           status: statusFilter || undefined,
+          payment_status: paymentFilter || undefined,
           practice_area: areaFilter || undefined,
         }),
         listPracticeAreas(accessToken),
@@ -233,7 +264,7 @@ function AdminConsultationQueuePage() {
 
   useEffect(() => {
     setPage(1);
-  }, [q, statusFilter, areaFilter]);
+  }, [q, statusFilter, paymentFilter, areaFilter]);
 
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
@@ -279,6 +310,16 @@ function AdminConsultationQueuePage() {
             ))}
           </select>
           <select
+            value={paymentFilter}
+            onChange={(e) => setPaymentFilter(e.target.value)}
+            aria-label="Filter by payment status"
+          >
+            <option value="">Paid (Review Queue)</option>
+            <option value="all">All consultations</option>
+            <option value="PENDING">Payment Pending</option>
+            <option value="FAILED">Payment Failed</option>
+          </select>
+          <select
             value={areaFilter}
             onChange={(e) => setAreaFilter(e.target.value)}
             aria-label="Filter by practice area"
@@ -316,6 +357,7 @@ function AdminConsultationQueuePage() {
                   <th>Client</th>
                   <th>Practice Area</th>
                   <th>Status</th>
+                  <th>Payment</th>
                   <th>Preferred Date</th>
                   <th>Preferred Time</th>
                   <th>Assigned Lawyer</th>
@@ -332,6 +374,19 @@ function AdminConsultationQueuePage() {
                     <td>
                       <span className={`cons-status is-${String(item.status).toLowerCase()}`}>
                         {item.status_label || STATUS_LABELS[item.status] || item.status}
+                      </span>
+                    </td>
+                    <td>
+                      <span
+                        className={`cons-status ${
+                          item.payment_status === 'PAID'
+                            ? 'is-approved'
+                            : item.payment_status === 'FAILED'
+                            ? 'is-rejected'
+                            : 'is-pending'
+                        }`}
+                      >
+                        {paymentStatusLabel(item)}
                       </span>
                     </td>
                     <td>{formatPreferredDate(item.preferred_date)}</td>

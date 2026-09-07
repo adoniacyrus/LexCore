@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "apps.cases",
     "apps.documents",
     "apps.tasks",
+    "apps.payments",
 ]
 
 MIDDLEWARE = [
@@ -197,3 +198,11 @@ FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:5173")
 # Media Files Settings
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+# Razorpay payment gateway
+RAZORPAY_KEY_ID = config("RAZORPAY_KEY_ID", default="")
+RAZORPAY_KEY_SECRET = config("RAZORPAY_KEY_SECRET", default="")
+RAZORPAY_WEBHOOK_SECRET = config("RAZORPAY_WEBHOOK_SECRET", default="")
+RAZORPAY_DEFAULT_CONSULTATION_FEE = config(
+    "RAZORPAY_DEFAULT_CONSULTATION_FEE", default=500, cast=int
+)

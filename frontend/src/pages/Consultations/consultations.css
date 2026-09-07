@@ -735,3 +735,228 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ==========================================================================
+   Consultation Checkout, Fee & Payment Feedback
+   ========================================================================== */
+
+.cons-modal--checkout {
+  width: min(520px, 100%);
+}
+
+.cons-review-step {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.cons-review-card {
+  background: var(--color-surface, #faf8f5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm, 6px);
+  padding: 0.85rem 1rem;
+}
+
+.cons-review-title {
+  font-family: var(--font-headings);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-dark);
+  margin: 0 0 0.65rem;
+  letter-spacing: -0.01em;
+}
+
+.cons-review-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem 0.85rem;
+}
+
+.cons-review-item {
+  min-width: 0;
+}
+
+.cons-review-label {
+  display: block;
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text);
+  margin-bottom: 0.15rem;
+  font-weight: 600;
+}
+
+.cons-review-value {
+  font-size: 0.86rem;
+  color: var(--color-dark);
+  font-weight: 500;
+  word-break: break-word;
+}
+
+.cons-review-summary-box {
+  margin-top: 0.65rem;
+  padding-top: 0.55rem;
+  border-top: 1px dashed var(--color-border);
+}
+
+.cons-review-summary-box p {
+  margin: 0.2rem 0 0;
+  font-size: 0.82rem;
+  color: var(--color-dark);
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.cons-fee-card {
+  background: #fff;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--border-radius-sm, 6px);
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.cons-fee-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.cons-fee-title {
+  display: block;
+  font-family: var(--font-headings);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-dark);
+  margin-bottom: 0.15rem;
+}
+
+.cons-fee-desc {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--color-text);
+  line-height: 1.35;
+}
+
+.cons-fee-amount {
+  font-family: var(--font-headings);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
+}
+
+.cons-fee-currency {
+  font-size: 0.9rem;
+  font-weight: 500;
+  opacity: 0.75;
+}
+
+.cons-fee-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--color-accent);
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.cons-fee-badge svg {
+  color: var(--color-accent);
+  flex-shrink: 0;
+}
+
+.cons-feedback-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 0.5rem 0.5rem 0.2rem;
+}
+
+.cons-feedback-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(47, 107, 58, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
+.cons-feedback-icon.is-danger {
+  background: rgba(180, 35, 24, 0.12);
+}
+
+.cons-feedback-title {
+  font-family: var(--font-headings);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-dark);
+  margin: 0 0 0.35rem;
+}
+
+.cons-feedback-desc {
+  margin: 0 0 0.85rem;
+  font-size: 0.85rem;
+  color: var(--color-text);
+  line-height: 1.4;
+  max-width: 380px;
+}
+
+.cons-receipt-card {
+  width: 100%;
+  background: var(--color-surface, #faf8f5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm, 6px);
+  padding: 0.75rem 0.95rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+  text-align: left;
+}
+
+.cons-receipt-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cons-receipt-label {
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.cons-receipt-value {
+  font-size: 0.88rem;
+  color: var(--color-dark);
+  font-weight: 500;
+}
+
+.cons-detail__unpaid-notice {
+  background: rgba(180, 35, 24, 0.06);
+  border: 1px solid rgba(180, 35, 24, 0.2);
+  border-left: 3px solid #b42318;
+  padding: 0.65rem 0.85rem;
+  border-radius: 4px;
+  margin-top: 0.75rem;
+}
+
+.cons-detail__unpaid-notice p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #7a1c13;
+  line-height: 1.4;
+}
+

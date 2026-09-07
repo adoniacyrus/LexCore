@@ -48,6 +48,12 @@ class ConsultationStatus(models.TextChoices):
     COMPLETED = "COMPLETED", "Completed"
 
 
+class ConsultationPaymentStatus(models.TextChoices):
+    PENDING = "PENDING", "Payment Pending"
+    PAID = "PAID", "Paid"
+    FAILED = "FAILED", "Payment Failed"
+
+
 LAWYER_ROLES = ("SENIOR_LAWYER", "JUNIOR_LAWYER")
 
 
@@ -95,6 +101,12 @@ class Consultation(models.Model):
         default=ConsultationStatus.PENDING,
         db_index=True,
     )
+    payment_status = models.CharField(
+        max_length=20,
+        choices=ConsultationPaymentStatus.choices,
+        default=ConsultationPaymentStatus.PENDING,
+        db_index=True,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -103,6 +115,7 @@ class Consultation(models.Model):
         indexes = [
             models.Index(fields=["client", "-created_at"]),
             models.Index(fields=["status", "-created_at"]),
+            models.Index(fields=["payment_status", "-created_at"]),
             models.Index(fields=["assigned_lawyer", "-created_at"]),
         ]
 

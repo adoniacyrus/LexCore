@@ -11,6 +11,7 @@ import {
   assignedLawyerLabel,
   formatPreferredDate,
   formatPreferredTime,
+  paymentStatusLabel,
   practiceAreaLabel,
   STATUS_LABELS,
 } from './consultationConstants';
@@ -125,6 +126,7 @@ function MyConsultationsPage() {
                   <th>Subject</th>
                   <th>Mode</th>
                   <th>Status</th>
+                  <th>Payment</th>
                   <th>Requested Date</th>
                   <th>Time</th>
                   <th>Practice Area</th>
@@ -153,6 +155,19 @@ function MyConsultationsPage() {
                         {item.status_label || STATUS_LABELS[item.status] || item.status}
                       </span>
                     </td>
+                    <td>
+                      <span
+                        className={`cons-status ${
+                          item.payment_status === 'PAID'
+                            ? 'is-approved'
+                            : item.payment_status === 'FAILED'
+                            ? 'is-rejected'
+                            : 'is-pending'
+                        }`}
+                      >
+                        {paymentStatusLabel(item)}
+                      </span>
+                    </td>
                     <td>{formatPreferredDate(item.preferred_date)}</td>
                     <td>{formatPreferredTime(item.preferred_time)}</td>
                     <td>{practiceAreaLabel(item)}</td>
@@ -175,6 +190,7 @@ function MyConsultationsPage() {
         open={Boolean(selected)}
         consultation={selected}
         onClose={() => setSelected(null)}
+        onUpdated={() => load()}
       />
     </DashboardLayout>
   );

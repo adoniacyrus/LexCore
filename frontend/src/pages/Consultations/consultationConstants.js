@@ -14,6 +14,12 @@ export const STATUS_LABELS = {
   COMPLETED: 'Completed',
 };
 
+export const PAYMENT_STATUS_LABELS = {
+  PENDING: 'Payment Pending',
+  PAID: 'Paid',
+  FAILED: 'Payment Failed',
+};
+
 export const ADMIN_STATUS_ACTIONS = [
   { value: 'UNDER_REVIEW', label: 'Mark Under Review' },
   { value: 'APPROVED', label: 'Approve' },
@@ -94,3 +100,14 @@ export function assignedLawyerLabel(item) {
     'Not Assigned'
   );
 }
+
+export function paymentStatusLabel(item) {
+  const status = item?.payment_status || 'PENDING';
+  return item?.payment_status_label || PAYMENT_STATUS_LABELS[status] || status;
+}
+
+export function formatFeeAmount(amount) {
+  if (amount == null) return '₹500';
+  return `₹${Number(amount).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+}
+

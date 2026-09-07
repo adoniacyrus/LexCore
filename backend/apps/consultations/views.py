@@ -6,7 +6,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Consultation, PracticeArea
+from .models import Consultation, ConsultationPaymentStatus, PracticeArea
 from .permissions import (
     IsAdminRole,
     IsAuthenticatedStaffOrClientReadPracticeAreas,
@@ -135,10 +135,16 @@ class ConsultationCreateView(APIView):
         )
         serializer.is_valid(raise_exception=True)
         consultation = serializer.save()
+
+        # Create Razorpay order and local payment record server-side
+        from apps.payments.services import PaymentService
+        order_data = PaymentService.create_consultation_order(consultation)
+
         payload = ConsultationSerializer(
             _consultation_qs().get(pk=consultation.pk)
         ).data
-        payload["message"] = "Consultation request submitted successfully."
+        payload["order"] = order_data
+        payload["message"] = "Consultation request created. Please complete payment to confirm your booking."
         return Response(payload, status=status.HTTP_201_CREATED)
 
 
@@ -185,6 +191,14 @@ class AdminConsultationListView(APIView):
         status_filter = (request.query_params.get("status") or "").strip()
         if status_filter:
             qs = qs.filter(status=status_filter)
+
+        payment_filter = (request.query_params.get("payment_status") or "").strip()
+        if payment_filter:
+            if payment_filter.lower() != "all":
+                qs = qs.filter(payment_status=payment_filter)
+        else:
+            # By default only paid consultations enter the firm review queue
+            qs = qs.filter(payment_status=ConsultationPaymentStatus.PAID)
 
         practice_area = (request.query_params.get("practice_area") or "").strip()
         if practice_area:
