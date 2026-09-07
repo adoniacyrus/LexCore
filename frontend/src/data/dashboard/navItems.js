@@ -68,6 +68,17 @@ export const PORTAL_NAV_BY_ROLE = {
         },
       ],
     },
+    {
+      group: 'FINANCIALS',
+      items: [
+        {
+          id: 'revenue',
+          label: 'Revenue',
+          icon: 'billing',
+          route: '/dashboard/admin/revenue',
+        },
+      ],
+    },
   ],
   CLIENT: [
     { id: 'dashboard', label: 'Dashboard', icon: 'home' },
@@ -213,4 +224,5 @@ export const MODULE_META = {
   calendar: { title: 'Calendar', summary: 'Firm-wide schedule across matters and courts.' },
   reports: { title: 'Reports', summary: 'Practice insights and compliance summaries.' },
   billing: { title: 'Billing', summary: 'Invoices, retainers, and fee notes.' },
+  revenue: { title: 'Revenue', summary: 'Track firm consultation and appointment revenue.' },
 };

@@ -74,12 +74,17 @@
   margin: 0;
 }
 
-/* —— KPI summary —— */
 .admin-dash__kpis {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.65rem;
   flex-shrink: 0;
+}
+
+@media (max-width: 1200px) {
+  .admin-dash__kpis {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
 }
 
 .admin-kpi {

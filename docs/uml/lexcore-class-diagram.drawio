@@ -1,0 +1,315 @@
+<?xml version="1.0" ?>
+<mxfile host="app.diagrams.net" modified="2026-09-08T00:20:00.000Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" version="24.7.17" type="device">
+  <diagram id="lexcore-domain-class-diagram" name="LexCore Domain Class Diagram">
+    <mxGraphModel dx="2200" dy="1400" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2800" pageHeight="1900" background="#FFFFFF" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="diagram_title" value="&amp;lt;div style=&amp;quot;text-align: center;&amp;quot;&amp;gt;&amp;lt;b style=&amp;quot;font-size: 20px; color: #581C26; font-family: Georgia, serif;&amp;quot;&amp;gt;LexCore — Legal Practice Management System&amp;lt;/b&amp;gt;&amp;lt;br/&amp;gt;&amp;lt;span style=&amp;quot;font-size: 13px; color: #475569; font-family: Helvetica, sans-serif;&amp;quot;&amp;gt;Detailed Domain UML Class Diagram &amp;amp;amp; Relationship Architecture&amp;lt;/span&amp;gt;&amp;lt;/div&amp;gt;" style="html=1;whiteSpace=wrap;rounded=1;arcSize=6;fillColor=#F8FAFC;strokeColor=#CBD5E1;strokeWidth=1.5;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="750" y="40" width="660" height="65" as="geometry"/>
+        </mxCell>
+        <mxCell id="cls_user" value="&amp;lt;div style=&amp;quot;background-color: #1E293B; color: #FFFFFF; text-align: center; padding: 6px 8px; border-bottom: 1px solid #334155;&amp;quot;&amp;gt;&amp;lt;span style=&amp;quot;font-size: 10px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85;&amp;quot;&amp;gt;&amp;amp;lt;&amp;amp;lt;accounts.models.User&amp;amp;gt;&amp;amp;gt;&amp;lt;/span&amp;gt;&amp;lt;br/&amp;gt;&amp;lt;b style=&amp;quot;font-size: 14px; font-family: Helvetica, sans-serif;&amp;quot;&amp;gt;User&amp;lt;/b&amp;gt;&amp;lt;/div&amp;gt;&amp;lt;div style=&amp;quot;padding: 8px 10px; font-size: 11px; font-family: 'Consolas', 'Courier New', monospace; color: #0F172A; line-height: 1.45; border-bottom: 1px solid #CBD5E1;&amp;quot;&amp;gt;- id : int &amp;lt;b&amp;gt;{PK}&amp;lt;/b&amp;gt;&lt;br/&gt;- email : EmailField &amp;lt;b&amp;gt;{unique}&amp;lt;/b&amp;gt;&lt;br/&gt;- full_name : CharField(255)&lt;br/&gt;- phone_number : CharField(20)&lt;br/&gt;- role : UserRole = CLIENT&lt;br/&gt;- registration_method : RegistrationMethod&lt;br/&gt;- is_active : boolean = True&lt;br/&gt;- is_staff : boolean = False&lt;br/&gt;- is_superuser : boolean = False&lt;br/&gt;- last_login : DateTime&lt;br/&gt;- created_at : DateTime&lt;br/&gt;- updated_at : DateTime&amp;lt;/div&amp;gt;&amp;lt;div style=&amp;quot;padding: 6px 10px; font-size: 11px; font-family: 'Consolas', 'Courier New', monospace; color: #334155; line-height: 1.45; background-color: #FDFCFB;&amp;quot;&amp;gt;+ get_full_name() : string&lt;br/&gt;+ get_short_name() : string&lt;br/&gt;+ clean() : void&lt;br/&gt;+ set_password(raw_pass) : void&amp;lt;/div&amp;gt;" style="html=1;whiteSpace=wrap;rounded=1;arcSize=3;fillColor=#FFFFFF;strokeColor=#334155;strokeWidth=1.5;align=left;verticalAlign=top;shadow=1;overflow=hidden;" vertex="1" parent="1">
+          <mxGeometry x="890" y="140" width="340" height="315" as="geometry"/>
+        </mxCell>
+        <mxCell id="cls_practice_area" value="&amp;lt;div style=&amp;quot;background-color: #581C26; color: #FFFFFF; text-align: center; padding: 6px 8px; border-bottom: 1px solid #334155;&amp;quot;&amp;gt;&amp;lt;span style=&amp;quot;font-size: 10px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85;&amp;quot;&amp;gt;&amp;amp;lt;&amp;amp;lt;consultations.models.PracticeArea&amp;amp;gt;&amp;amp;gt;&amp;lt;/span&amp;gt;&amp;lt;br/&amp;gt;&amp;lt;b style=&amp;quot;font-size: 14px; font-family: Helvetica, sans-serif;&amp;quot;&amp;gt;PracticeArea&amp;lt;/b&amp;gt;&amp;lt;/div&amp;gt;&amp;lt;div style=&amp;quot;padding: 8px 10px; font-size: 11px; font-family: 'Consolas', 'Courier New', monospace; color: #0F172A; line-height: 1.45; border-bottom: 1px solid #CBD5E1;&amp;quot;&amp;gt;- id : int &amp;lt;b&amp;gt;{PK}&amp;lt;/b&amp;gt;&lt;br/&gt;- name : CharField(120) &amp;lt;b&amp;gt;{unique}&amp;lt;/b&amp;gt;&lt;br/&gt;- description : TextField&lt;br/&gt;- is_active : boolean = True&lt;br/&gt;- created_at : DateTime&lt;br/&gt;- updated_at : DateTime&amp;lt;/div&amp;gt;&amp;lt;div style=&amp;quot;padding: 6px 10px; font-size: 11px; font-family: 'Consolas', 'Courier New', monospace; color: #334155; line-height: 1.45; background-color: #FDFCFB;&amp;quot;&amp;gt;+ is_general() : boolean&lt;br/&gt;+ __str__() : string&amp;lt;/div&amp;gt;" style="html=1;whiteSpace=wrap;rounded=1;arcSize=3;fillColor=#FFFFFF;strokeColor=#334155;strokeWidth=1.5;align=left;verticalAlign=top;shadow=1;overflow=hidden;" vertex="1" parent="1">
+          <mxGeometry x="380" y="160" width="310" height="210" as="geometry"/>
+        </mxCell>
+        <mxCell id="cls_consultation" value="&amp;lt;div style=&amp;quot;background-color: #581C26; color: #FFFFFF; text-align: center; padding: 6px 8px; border-bottom: 1px solid #334155;&amp;quot;&amp;gt;&amp;lt;span style=&amp;quot;font-size: 10px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85;&amp;quot;&amp;gt;&amp;amp;lt;&amp;amp;lt;consultations.models.Consultation&amp;amp;gt;&amp;amp;gt;&amp;lt;/span&amp;gt;&amp;lt;br/&amp;gt;&amp;lt;b style=&amp;quot;font-size: 14px; font-family: Helvetica, sans-serif;&amp;quot;&amp;gt;Consultation&amp;lt;/b&amp;gt;&amp;lt;/div&amp;gt;&amp;lt;div style=&amp;quot;padding: 8px 10px; font-size: 11px; font-family: 'Consolas', 'Courier New', monospace; color: #0F172A; line-height: 1.45; border-bottom: 1px solid #CBD5E1;&amp;quot;&amp;gt;- id : int &amp;lt;b&amp;gt;{PK}&amp;lt;/b&amp;gt;&lt;br/&gt;- consultation_id : CharField(32) &amp;lt;b&amp;gt;{unique}&amp;lt;/b&amp;gt;&lt;br/&gt;- consultation_type : ConsultationType&lt;br/&gt;- consultation_mode : ConsultationMode&lt;br/&gt;- preferred_date : DateField&lt;br/&gt;- preferred_time : TimeField&lt;br/&gt;- subject : CharField(255)&lt;br/&gt;- issue_summary : TextField&lt;br/&gt;- charged_fee : Decimal(10,2)&lt;br/&gt;- status : ConsultationStatus&lt;br/&gt;- payment_status : ConsultationPaymentStatus&lt;br/&gt;- created_at : DateTime&lt;br/&gt;- updated_at : DateTime&amp;lt;/div&amp;gt;&amp;lt;div style=&amp;quot;padding: 6px 10px; font-size: 11px; font-family: 'Consolas', 'Courier New', monospace; color: #334155; line-height: 1.45; background-color: #FDFCFB;&amp;quot;&amp;gt;+ next_consultation_id() : string&lt;br/&gt;+ save(*args, **kwargs) : void&lt;br/&gt;+ __str__() : string&amp;lt;/div&amp;gt;" style="html=1;whiteSpace=wrap;rounded=1;arcSize=3;fillColor=#FFFFFF;strokeColor=#334155;strokeWidth=1.5;align=left;verticalAlign=top;shadow=1;overflow=hidden;" vertex="1" parent="1">
+          <mxGeometry x="380" y="550" width="350" height="330" as="geometry"/>
+        </mxCell>
+        <mxCell id="cls_payment" value="&amp;lt;div style=&amp;quot;background-color: #581C26; color: #FFFFFF; text-align: center; padding: 6px 8px; border-bottom: 1px solid #334155;&amp;quot;&amp;gt;&amp;lt;span style=&amp;quot;font-size: 10px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85;&amp;quot;&amp;gt;&amp;amp;lt;&amp;amp;lt;payments.models.Payment&amp;amp;gt;&amp;amp;gt;&amp;lt;/span&amp;gt;&amp;lt;br/&amp;gt;&amp;lt;b style=&amp;quot;font-size: 14px; font-family: Helvetica, sans-serif;&amp;quot;&amp;gt;Payment&amp;lt;/b&amp;gt;&amp;lt;/div&amp;gt;&amp;lt;div style=&amp;quot;padding: 8px 10px; font-size: 11px; font-family: 'Consolas', 'Courier New', monospace; color: #0F172A; line-height: 1.45; border-bottom: 1px solid #CBD5E1;&amp;quot;&amp;gt;- id : BigAutoField &amp;lt;b&amp;gt;{PK}&amp;lt;/b&amp;gt;&lt;br/&gt;- amount : PositiveInteger &amp;lt;i&amp;gt;{paise}&amp;lt;/i&amp;gt;&lt;br/&gt;- currency : CharField(10) = 'INR'&lt;br/&gt;- status : PaymentStatus&lt;br/&gt;- razorpay_order_id : CharField(100) &amp;lt;b&amp;gt;{unique}&amp;lt;/b&amp;gt;&lt;br/&gt;- razorpay_payment_id : CharField(100) &amp;lt;b&amp;gt;{unique}&amp;lt;/b&amp;gt;&lt;br/&gt;- razorpay_signature : CharField(255)&lt;br/&gt;- paid_at : DateTime&lt;br/&gt;- created_at : DateTime&lt;br/&gt;- updated_at : DateTime&amp;lt;/div&amp;gt;&amp;lt;div style=&amp;quot;padding: 6px 10px; font-size: 11px; font-family: 'Consolas', 'Courier New', monospace; color: #334155; line-height: 1.45; background-color: #FDFCFB;&amp;quot;&amp;gt;+ amount_rupees : Decimal&lt;br/&gt;+ __str__() : string&amp;lt;/div&amp;gt;" style="html=1;whiteSpace=wrap;rounded=1;arcSize=3;fillColor=#FFFFFF;strokeColor=#334155;strokeWidth=1.5;align=left;verticalAlign=top;shadow=1;overflow=hidden;" vertex="1" parent="1">
+          <mxGeometry x="380" y="1030" width="350" height="270" as="geometry"/>
+        </mxCell>
+        <mxCell id="cls_case" value="&amp;lt;div style=&amp;quot;background-color: #581C26; color: #FFFFFF; text-align: center; padding: 6px 8px; border-bottom: 1px solid #334155;&amp;quot;&amp;gt;&amp;lt;span style=&amp;quot;font-size: 10px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85;&amp;quot;&amp;gt;&amp;amp;lt;&amp;amp;lt;cases.models.Case&amp;amp;gt;&amp;amp;gt;&amp;lt;/span&amp;gt;&amp;lt;br/&amp;gt;&amp;lt;b style=&amp;quot;font-size: 14px; font-family: Helvetica, sans-serif;&amp;quot;&amp;gt;Case&amp;lt;/b&amp;gt;&amp;lt;/div&amp;gt;&amp;lt;div style=&amp;quot;padding: 8px 10px; font-size: 11px; font-family: 'Consolas', 'Courier New', monospace; color: #0F172A; line-height: 1.45; border-bottom: 1px solid #CBD5E1;&amp;quot;&amp;gt;- id : int &amp;lt;b&amp;gt;{PK}&amp;lt;/b&amp;gt;&lt;br/&gt;- case_id : UUIDField &amp;lt;b&amp;gt;{unique}&amp;lt;/b&amp;gt;&lt;br/&gt;- case_reference : CharField(32) &amp;lt;b&amp;gt;{unique}&amp;lt;/b&amp;gt;&lt;br/&gt;- title : CharField(255)&lt;br/&gt;- description : TextField&lt;br/&gt;- case_type : CaseType&lt;br/&gt;- status : CaseStatus&lt;br/&gt;- matter_category : MatterCategory&lt;br/&gt;- matter_stage : MatterStage&lt;br/&gt;- start_date : DateField&lt;br/&gt;- court : CharField(255)&lt;br/&gt;- jurisdiction : CharField(255)&lt;br/&gt;- bench : CharField(255)&lt;br/&gt;- location : CharField(255)&lt;br/&gt;- cnr_number : CharField(50)&lt;br/&gt;- filing_number : CharField(50)&lt;br/&gt;- registration_number : CharField(50)&lt;br/&gt;- official_court_reference : CharField(255)&lt;br/&gt;- appointment_fee : Decimal(10,2)&lt;br/&gt;- created_at : DateTime&lt;br/&gt;- updated_at : DateTime&amp;lt;/div&amp;gt;&amp;lt;div style=&amp;quot;padding: 6px 10px; font-size: 11px; font-family: 'Consolas', 'Courier New', monospace; color: #334155; line-height: 1.45; background-color: #FDFCFB;&amp;quot;&amp;gt;+ next_case_reference() : string&lt;br/&gt;+ save(*args, **kwargs) : void&lt;br/&gt;+ __str__() : string&amp;lt;/div&amp;gt;" style="html=1;whiteSpace=wrap;rounded=1;arcSize=3;fillColor=#FFFFFF;strokeColor=#334155;strokeWidth=1.5;align=left;verticalAlign=top;shadow=1;overflow=hidden;" vertex="1" parent="1">
+          <mxGeometry x="930" y="550" width="390" height="470" as="geometry"/>
+        </mxCell>
+        <mxCell id="cls_case_activity" value="&amp;lt;div style=&amp;quot;background-color: #581C26; color: #FFFFFF; text-align: center; padding: 6px 8px; border-bottom: 1px solid #334155;&amp;quot;&amp;gt;&amp;lt;span style=&amp;quot;font-size: 10px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85;&amp;quot;&amp;gt;&amp;amp;lt;&amp;amp;lt;cases.models.CaseActivity&amp;amp;gt;&amp;amp;gt;&amp;lt;/span&amp;gt;&amp;lt;br/&amp;gt;&amp;lt;b style=&amp;quot;font-size: 14px; font-family: Helvetica, sans-serif;&amp;quot;&amp;gt;CaseActivity&amp;lt;/b&amp;gt;&amp;lt;/div&amp;gt;&amp;lt;div style=&amp;quot;padding: 8px 10px; font-size: 11px; font-family: 'Consolas', 'Courier New', monospace; color: #0F172A; line-height: 1.45; border-bottom: 1px solid #CBD5E1;&amp;quot;&amp;gt;- id : int &amp;lt;b&amp;gt;{PK}&amp;lt;/b&amp;gt;&lt;br/&gt;- activity_type : CharField(64)&lt;br/&gt;- description : TextField&lt;br/&gt;- created_at : DateTime&amp;lt;/div&amp;gt;&amp;lt;div style=&amp;quot;padding: 6px 10px; font-size: 11px; font-family: 'Consolas', 'Courier New', monospace; color: #334155; line-height: 1.45; background-color: #FDFCFB;&amp;quot;&amp;gt;+ __str__() : string&amp;lt;/div&amp;gt;" style="html=1;whiteSpace=wrap;rounded=1;arcSize=3;fillColor=#FFFFFF;strokeColor=#334155;strokeWidth=1.5;align=left;verticalAlign=top;shadow=1;overflow=hidden;" vertex="1" parent="1">
+          <mxGeometry x="1490" y="490" width="300" height="175" as="geometry"/>
+        </mxCell>
+        <mxCell id="cls_court_proceeding" value="&amp;lt;div style=&amp;quot;background-color: #581C26; color: #FFFFFF; text-align: center; padding: 6px 8px; border-bottom: 1px solid #334155;&amp;quot;&amp;gt;&amp;lt;span style=&amp;quot;font-size: 10px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85;&amp;quot;&amp;gt;&amp;amp;lt;&amp;amp;lt;cases.models.CourtProceeding&amp;amp;gt;&amp;amp;gt;&amp;lt;/span&amp;gt;&amp;lt;br/&amp;gt;&amp;lt;b style=&amp;quot;font-size: 14px; font-family: Helvetica, sans-serif;&amp;quot;&amp;gt;CourtProceeding&amp;lt;/b&amp;gt;&amp;lt;/div&amp;gt;&amp;lt;div style=&amp;quot;padding: 8px 10px; font-size: 11px; font-family: 'Consolas', 'Courier New', monospace; color: #0F172A; line-height: 1.45; border-bottom: 1px solid #CBD5E1;&amp;quot;&amp;gt;- id : int &amp;lt;b&amp;gt;{PK}&amp;lt;/b&amp;gt;&lt;br/&gt;- event_date : DateField&lt;br/&gt;- event_type : CharField(100)&lt;br/&gt;- court_name : CharField(255)&lt;br/&gt;- bench : CharField(255)&lt;br/&gt;- next_hearing_date : DateField&lt;br/&gt;- notes : TextField&lt;br/&gt;- created_at : DateTime&lt;br/&gt;- updated_at : DateTime&amp;lt;/div&amp;gt;&amp;lt;div style=&amp;quot;padding: 6px 10px; font-size: 11px; font-family: 'Consolas', 'Courier New', monospace; color: #334155; line-height: 1.45; background-color: #FDFCFB;&amp;quot;&amp;gt;+ hearing_status : string&lt;br/&gt;+ __str__() : string&amp;lt;/div&amp;gt;" style="html=1;whiteSpace=wrap;rounded=1;arcSize=3;fillColor=#FFFFFF;strokeColor=#334155;strokeWidth=1.5;align=left;verticalAlign=top;shadow=1;overflow=hidden;" vertex="1" parent="1">
+          <mxGeometry x="1490" y="730" width="300" height="230" as="geometry"/>
+        </mxCell>
+        <mxCell id="cls_notification" value="&amp;lt;div style=&amp;quot;background-color: #581C26; color: #FFFFFF; text-align: center; padding: 6px 8px; border-bottom: 1px solid #334155;&amp;quot;&amp;gt;&amp;lt;span style=&amp;quot;font-size: 10px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85;&amp;quot;&amp;gt;&amp;amp;lt;&amp;amp;lt;cases.models.Notification&amp;amp;gt;&amp;amp;gt;&amp;lt;/span&amp;gt;&amp;lt;br/&amp;gt;&amp;lt;b style=&amp;quot;font-size: 14px; font-family: Helvetica, sans-serif;&amp;quot;&amp;gt;Notification&amp;lt;/b&amp;gt;&amp;lt;/div&amp;gt;&amp;lt;div style=&amp;quot;padding: 8px 10px; font-size: 11px; font-family: 'Consolas', 'Courier New', monospace; color: #0F172A; line-height: 1.45; border-bottom: 1px solid #CBD5E1;&amp;quot;&amp;gt;- id : int &amp;lt;b&amp;gt;{PK}&amp;lt;/b&amp;gt;&lt;br/&gt;- title : CharField(255)&lt;br/&gt;- message : TextField&lt;br/&gt;- alert_type : CharField(50)&lt;br/&gt;- is_read : boolean = False&lt;br/&gt;- created_at : DateTime&amp;lt;/div&amp;gt;&amp;lt;div style=&amp;quot;padding: 6px 10px; font-size: 11px; font-family: 'Consolas', 'Courier New', monospace; color: #334155; line-height: 1.45; background-color: #FDFCFB;&amp;quot;&amp;gt;+ __str__() : string&amp;lt;/div&amp;gt;" style="html=1;whiteSpace=wrap;rounded=1;arcSize=3;fillColor=#FFFFFF;strokeColor=#334155;strokeWidth=1.5;align=left;verticalAlign=top;shadow=1;overflow=hidden;" vertex="1" parent="1">
+          <mxGeometry x="1490" y="180" width="300" height="185" as="geometry"/>
+        </mxCell>
+        <mxCell id="cls_case_task" value="&amp;lt;div style=&amp;quot;background-color: #581C26; color: #FFFFFF; text-align: center; padding: 6px 8px; border-bottom: 1px solid #334155;&amp;quot;&amp;gt;&amp;lt;span style=&amp;quot;font-size: 10px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85;&amp;quot;&amp;gt;&amp;amp;lt;&amp;amp;lt;tasks.models.CaseTask&amp;amp;gt;&amp;amp;gt;&amp;lt;/span&amp;gt;&amp;lt;br/&amp;gt;&amp;lt;b style=&amp;quot;font-size: 14px; font-family: Helvetica, sans-serif;&amp;quot;&amp;gt;CaseTask&amp;lt;/b&amp;gt;&amp;lt;/div&amp;gt;&amp;lt;div style=&amp;quot;padding: 8px 10px; font-size: 11px; font-family: 'Consolas', 'Courier New', monospace; color: #0F172A; line-height: 1.45; border-bottom: 1px solid #CBD5E1;&amp;quot;&amp;gt;- id : int &amp;lt;b&amp;gt;{PK}&amp;lt;/b&amp;gt;&lt;br/&gt;- task_id : CharField(64) &amp;lt;b&amp;gt;{unique}&amp;lt;/b&amp;gt;&lt;br/&gt;- title : CharField(255)&lt;br/&gt;- description : TextField&lt;br/&gt;- due_date : DateField&lt;br/&gt;- status : TaskStatus = PENDING&lt;br/&gt;- created_at : DateTime&lt;br/&gt;- updated_at : DateTime&lt;br/&gt;- completed_at : DateTime&amp;lt;/div&amp;gt;&amp;lt;div style=&amp;quot;padding: 6px 10px; font-size: 11px; font-family: 'Consolas', 'Courier New', monospace; color: #334155; line-height: 1.45; background-color: #FDFCFB;&amp;quot;&amp;gt;+ save(*args, **kwargs) : void&lt;br/&gt;+ __str__() : string&amp;lt;/div&amp;gt;" style="html=1;whiteSpace=wrap;rounded=1;arcSize=3;fillColor=#FFFFFF;strokeColor=#334155;strokeWidth=1.5;align=left;verticalAlign=top;shadow=1;overflow=hidden;" vertex="1" parent="1">
+          <mxGeometry x="930" y="1120" width="340" height="240" as="geometry"/>
+        </mxCell>
+        <mxCell id="cls_document" value="&amp;lt;div style=&amp;quot;background-color: #581C26; color: #FFFFFF; text-align: center; padding: 6px 8px; border-bottom: 1px solid #334155;&amp;quot;&amp;gt;&amp;lt;span style=&amp;quot;font-size: 10px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85;&amp;quot;&amp;gt;&amp;amp;lt;&amp;amp;lt;documents.models.Document&amp;amp;gt;&amp;amp;gt;&amp;lt;/span&amp;gt;&amp;lt;br/&amp;gt;&amp;lt;b style=&amp;quot;font-size: 14px; font-family: Helvetica, sans-serif;&amp;quot;&amp;gt;Document&amp;lt;/b&amp;gt;&amp;lt;/div&amp;gt;&amp;lt;div style=&amp;quot;padding: 8px 10px; font-size: 11px; font-family: 'Consolas', 'Courier New', monospace; color: #0F172A; line-height: 1.45; border-bottom: 1px solid #CBD5E1;&amp;quot;&amp;gt;- id : int &amp;lt;b&amp;gt;{PK}&amp;lt;/b&amp;gt;&lt;br/&gt;- document_id : UUIDField &amp;lt;b&amp;gt;{unique}&amp;lt;/b&amp;gt;&lt;br/&gt;- title : CharField(255)&lt;br/&gt;- file : FileField&lt;br/&gt;- category : DocumentCategory&lt;br/&gt;- description : TextField&lt;br/&gt;- uploaded_at : DateTime&lt;br/&gt;- updated_at : DateTime&amp;lt;/div&amp;gt;&amp;lt;div style=&amp;quot;padding: 6px 10px; font-size: 11px; font-family: 'Consolas', 'Courier New', monospace; color: #334155; line-height: 1.45; background-color: #FDFCFB;&amp;quot;&amp;gt;+ __str__() : string&amp;lt;/div&amp;gt;" style="html=1;whiteSpace=wrap;rounded=1;arcSize=3;fillColor=#FFFFFF;strokeColor=#334155;strokeWidth=1.5;align=left;verticalAlign=top;shadow=1;overflow=hidden;" vertex="1" parent="1">
+          <mxGeometry x="1430" y="1120" width="320" height="230" as="geometry"/>
+        </mxCell>
+        <mxCell id="enum_user_role" value="&amp;lt;div style=&amp;quot;background-color: #B45309; color: #FFFFFF; text-align: center; padding: 4px 6px;&amp;quot;&amp;gt;&amp;lt;span style=&amp;quot;font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px;&amp;quot;&amp;gt;&amp;amp;lt;&amp;amp;lt;enumeration&amp;amp;gt;&amp;amp;gt;&amp;lt;/span&amp;gt;&amp;lt;br/&amp;gt;&amp;lt;b style=&amp;quot;font-size: 12px;&amp;quot;&amp;gt;UserRole&amp;lt;/b&amp;gt;&amp;lt;/div&amp;gt;&amp;lt;div style=&amp;quot;padding: 6px 8px; font-size: 10.5px; font-family: 'Consolas', monospace; color: #451A03; line-height: 1.4;&amp;quot;&amp;gt;&amp;bull; ADMIN&lt;br/&gt;&amp;bull; SENIOR_LAWYER&lt;br/&gt;&amp;bull; JUNIOR_LAWYER&lt;br/&gt;&amp;bull; PARALEGAL&lt;br/&gt;&amp;bull; CLIENT&amp;lt;/div&amp;gt;" style="html=1;whiteSpace=wrap;rounded=1;arcSize=4;fillColor=#FEF3C7;strokeColor=#D97706;strokeWidth=1.2;align=left;verticalAlign=top;shadow=0;overflow=hidden;" vertex="1" parent="1">
+          <mxGeometry x="1920" y="140" width="210" height="140" as="geometry"/>
+        </mxCell>
+        <mxCell id="enum_cons_status" value="&amp;lt;div style=&amp;quot;background-color: #B45309; color: #FFFFFF; text-align: center; padding: 4px 6px;&amp;quot;&amp;gt;&amp;lt;span style=&amp;quot;font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px;&amp;quot;&amp;gt;&amp;amp;lt;&amp;amp;lt;enumeration&amp;amp;gt;&amp;amp;gt;&amp;lt;/span&amp;gt;&amp;lt;br/&amp;gt;&amp;lt;b style=&amp;quot;font-size: 12px;&amp;quot;&amp;gt;ConsultationStatus&amp;lt;/b&amp;gt;&amp;lt;/div&amp;gt;&amp;lt;div style=&amp;quot;padding: 6px 8px; font-size: 10.5px; font-family: 'Consolas', monospace; color: #451A03; line-height: 1.4;&amp;quot;&amp;gt;&amp;bull; PENDING&lt;br/&gt;&amp;bull; UNDER_REVIEW&lt;br/&gt;&amp;bull; APPROVED&lt;br/&gt;&amp;bull; ACCEPTED&lt;br/&gt;&amp;bull; REJECTED&lt;br/&gt;&amp;bull; CANCELLED&lt;br/&gt;&amp;bull; COMPLETED&amp;lt;/div&amp;gt;" style="html=1;whiteSpace=wrap;rounded=1;arcSize=4;fillColor=#FEF3C7;strokeColor=#D97706;strokeWidth=1.2;align=left;verticalAlign=top;shadow=0;overflow=hidden;" vertex="1" parent="1">
+          <mxGeometry x="1920" y="305" width="210" height="160" as="geometry"/>
+        </mxCell>
+        <mxCell id="enum_cons_type" value="&amp;lt;div style=&amp;quot;background-color: #B45309; color: #FFFFFF; text-align: center; padding: 4px 6px;&amp;quot;&amp;gt;&amp;lt;span style=&amp;quot;font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px;&amp;quot;&amp;gt;&amp;amp;lt;&amp;amp;lt;enumeration&amp;amp;gt;&amp;amp;gt;&amp;lt;/span&amp;gt;&amp;lt;br/&amp;gt;&amp;lt;b style=&amp;quot;font-size: 12px;&amp;quot;&amp;gt;ConsultationType&amp;lt;/b&amp;gt;&amp;lt;/div&amp;gt;&amp;lt;div style=&amp;quot;padding: 6px 8px; font-size: 10.5px; font-family: 'Consolas', monospace; color: #451A03; line-height: 1.4;&amp;quot;&amp;gt;&amp;bull; NEW_MATTER&lt;br/&gt;&amp;bull; EXISTING_CASE&amp;lt;/div&amp;gt;" style="html=1;whiteSpace=wrap;rounded=1;arcSize=4;fillColor=#FEF3C7;strokeColor=#D97706;strokeWidth=1.2;align=left;verticalAlign=top;shadow=0;overflow=hidden;" vertex="1" parent="1">
+          <mxGeometry x="1920" y="490" width="210" height="85" as="geometry"/>
+        </mxCell>
+        <mxCell id="enum_cons_mode" value="&amp;lt;div style=&amp;quot;background-color: #B45309; color: #FFFFFF; text-align: center; padding: 4px 6px;&amp;quot;&amp;gt;&amp;lt;span style=&amp;quot;font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px;&amp;quot;&amp;gt;&amp;amp;lt;&amp;amp;lt;enumeration&amp;amp;gt;&amp;amp;gt;&amp;lt;/span&amp;gt;&amp;lt;br/&amp;gt;&amp;lt;b style=&amp;quot;font-size: 12px;&amp;quot;&amp;gt;ConsultationMode&amp;lt;/b&amp;gt;&amp;lt;/div&amp;gt;&amp;lt;div style=&amp;quot;padding: 6px 8px; font-size: 10.5px; font-family: 'Consolas', monospace; color: #451A03; line-height: 1.4;&amp;quot;&amp;gt;&amp;bull; OFFICE&lt;br/&gt;&amp;bull; PHONE&lt;br/&gt;&amp;bull; VIDEO&amp;lt;/div&amp;gt;" style="html=1;whiteSpace=wrap;rounded=1;arcSize=4;fillColor=#FEF3C7;strokeColor=#D97706;strokeWidth=1.2;align=left;verticalAlign=top;shadow=0;overflow=hidden;" vertex="1" parent="1">
+          <mxGeometry x="1920" y="600" width="210" height="95" as="geometry"/>
+        </mxCell>
+        <mxCell id="enum_pmt_status" value="&amp;lt;div style=&amp;quot;background-color: #B45309; color: #FFFFFF; text-align: center; padding: 4px 6px;&amp;quot;&amp;gt;&amp;lt;span style=&amp;quot;font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px;&amp;quot;&amp;gt;&amp;amp;lt;&amp;amp;lt;enumeration&amp;amp;gt;&amp;amp;gt;&amp;lt;/span&amp;gt;&amp;lt;br/&amp;gt;&amp;lt;b style=&amp;quot;font-size: 12px;&amp;quot;&amp;gt;PaymentStatus&amp;lt;/b&amp;gt;&amp;lt;/div&amp;gt;&amp;lt;div style=&amp;quot;padding: 6px 8px; font-size: 10.5px; font-family: 'Consolas', monospace; color: #451A03; line-height: 1.4;&amp;quot;&amp;gt;&amp;bull; PENDING&lt;br/&gt;&amp;bull; AUTHORIZED&lt;br/&gt;&amp;bull; CAPTURED&lt;br/&gt;&amp;bull; FAILED&lt;br/&gt;&amp;bull; REFUNDED&amp;lt;/div&amp;gt;" style="html=1;whiteSpace=wrap;rounded=1;arcSize=4;fillColor=#FEF3C7;strokeColor=#D97706;strokeWidth=1.2;align=left;verticalAlign=top;shadow=0;overflow=hidden;" vertex="1" parent="1">
+          <mxGeometry x="1920" y="720" width="210" height="130" as="geometry"/>
+        </mxCell>
+        <mxCell id="enum_case_status" value="&amp;lt;div style=&amp;quot;background-color: #B45309; color: #FFFFFF; text-align: center; padding: 4px 6px;&amp;quot;&amp;gt;&amp;lt;span style=&amp;quot;font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px;&amp;quot;&amp;gt;&amp;amp;lt;&amp;amp;lt;enumeration&amp;amp;gt;&amp;amp;gt;&amp;lt;/span&amp;gt;&amp;lt;br/&amp;gt;&amp;lt;b style=&amp;quot;font-size: 12px;&amp;quot;&amp;gt;CaseStatus&amp;lt;/b&amp;gt;&amp;lt;/div&amp;gt;&amp;lt;div style=&amp;quot;padding: 6px 8px; font-size: 10.5px; font-family: 'Consolas', monospace; color: #451A03; line-height: 1.4;&amp;quot;&amp;gt;&amp;bull; OPEN&lt;br/&gt;&amp;bull; IN_PROGRESS&lt;br/&gt;&amp;bull; ON_HOLD&lt;br/&gt;&amp;bull; CLOSED&lt;br/&gt;&amp;bull; ARCHIVED&amp;lt;/div&amp;gt;" style="html=1;whiteSpace=wrap;rounded=1;arcSize=4;fillColor=#FEF3C7;strokeColor=#D97706;strokeWidth=1.2;align=left;verticalAlign=top;shadow=0;overflow=hidden;" vertex="1" parent="1">
+          <mxGeometry x="1920" y="875" width="210" height="130" as="geometry"/>
+        </mxCell>
+        <mxCell id="enum_case_type" value="&amp;lt;div style=&amp;quot;background-color: #B45309; color: #FFFFFF; text-align: center; padding: 4px 6px;&amp;quot;&amp;gt;&amp;lt;span style=&amp;quot;font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px;&amp;quot;&amp;gt;&amp;amp;lt;&amp;amp;lt;enumeration&amp;amp;gt;&amp;amp;gt;&amp;lt;/span&amp;gt;&amp;lt;br/&amp;gt;&amp;lt;b style=&amp;quot;font-size: 12px;&amp;quot;&amp;gt;CaseType&amp;lt;/b&amp;gt;&amp;lt;/div&amp;gt;&amp;lt;div style=&amp;quot;padding: 6px 8px; font-size: 10.5px; font-family: 'Consolas', monospace; color: #451A03; line-height: 1.4;&amp;quot;&amp;gt;&amp;bull; CIVIL&lt;br/&gt;&amp;bull; CRIMINAL&lt;br/&gt;&amp;bull; FAMILY&lt;br/&gt;&amp;bull; PROPERTY&lt;br/&gt;&amp;bull; CORPORATE&lt;br/&gt;&amp;bull; CONSUMER&lt;br/&gt;&amp;bull; TAX&lt;br/&gt;&amp;bull; OTHER&amp;lt;/div&amp;gt;" style="html=1;whiteSpace=wrap;rounded=1;arcSize=4;fillColor=#FEF3C7;strokeColor=#D97706;strokeWidth=1.2;align=left;verticalAlign=top;shadow=0;overflow=hidden;" vertex="1" parent="1">
+          <mxGeometry x="1920" y="1030" width="210" height="175" as="geometry"/>
+        </mxCell>
+        <mxCell id="enum_matter_stage" value="&amp;lt;div style=&amp;quot;background-color: #B45309; color: #FFFFFF; text-align: center; padding: 4px 6px;&amp;quot;&amp;gt;&amp;lt;span style=&amp;quot;font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px;&amp;quot;&amp;gt;&amp;amp;lt;&amp;amp;lt;enumeration&amp;amp;gt;&amp;amp;gt;&amp;lt;/span&amp;gt;&amp;lt;br/&amp;gt;&amp;lt;b style=&amp;quot;font-size: 12px;&amp;quot;&amp;gt;MatterStage&amp;lt;/b&amp;gt;&amp;lt;/div&amp;gt;&amp;lt;div style=&amp;quot;padding: 6px 8px; font-size: 10.5px; font-family: 'Consolas', monospace; color: #451A03; line-height: 1.4;&amp;quot;&amp;gt;&amp;bull; CONSULTATION&lt;br/&gt;&amp;bull; UNDER_REVIEW&lt;br/&gt;&amp;bull; PRE_LITIGATION&lt;br/&gt;&amp;bull; NOTICE_ISSUED&lt;br/&gt;&amp;bull; FIR_REGISTERED&lt;br/&gt;&amp;bull; INVESTIGATION&lt;br/&gt;&amp;bull; COURT_PROCEEDINGS&lt;br/&gt;&amp;bull; APPEAL_PROCEEDINGS&lt;br/&gt;&amp;bull; SETTLEMENT&lt;br/&gt;&amp;bull; RESOLVED&lt;br/&gt;&amp;bull; CLOSED&lt;br/&gt;&amp;bull; ARCHIVED&amp;lt;/div&amp;gt;" style="html=1;whiteSpace=wrap;rounded=1;arcSize=4;fillColor=#FEF3C7;strokeColor=#D97706;strokeWidth=1.2;align=left;verticalAlign=top;shadow=0;overflow=hidden;" vertex="1" parent="1">
+          <mxGeometry x="1920" y="1230" width="210" height="230" as="geometry"/>
+        </mxCell>
+        <mxCell id="enum_task_status" value="&amp;lt;div style=&amp;quot;background-color: #B45309; color: #FFFFFF; text-align: center; padding: 4px 6px;&amp;quot;&amp;gt;&amp;lt;span style=&amp;quot;font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px;&amp;quot;&amp;gt;&amp;amp;lt;&amp;amp;lt;enumeration&amp;amp;gt;&amp;amp;gt;&amp;lt;/span&amp;gt;&amp;lt;br/&amp;gt;&amp;lt;b style=&amp;quot;font-size: 12px;&amp;quot;&amp;gt;TaskStatus&amp;lt;/b&amp;gt;&amp;lt;/div&amp;gt;&amp;lt;div style=&amp;quot;padding: 6px 8px; font-size: 10.5px; font-family: 'Consolas', monospace; color: #451A03; line-height: 1.4;&amp;quot;&amp;gt;&amp;bull; PENDING&lt;br/&gt;&amp;bull; IN_PROGRESS&lt;br/&gt;&amp;bull; COMPLETED&lt;br/&gt;&amp;bull; CANCELLED&amp;lt;/div&amp;gt;" style="html=1;whiteSpace=wrap;rounded=1;arcSize=4;fillColor=#FEF3C7;strokeColor=#D97706;strokeWidth=1.2;align=left;verticalAlign=top;shadow=0;overflow=hidden;" vertex="1" parent="1">
+          <mxGeometry x="2150" y="140" width="210" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="enum_doc_category" value="&amp;lt;div style=&amp;quot;background-color: #B45309; color: #FFFFFF; text-align: center; padding: 4px 6px;&amp;quot;&amp;gt;&amp;lt;span style=&amp;quot;font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px;&amp;quot;&amp;gt;&amp;amp;lt;&amp;amp;lt;enumeration&amp;amp;gt;&amp;amp;gt;&amp;lt;/span&amp;gt;&amp;lt;br/&amp;gt;&amp;lt;b style=&amp;quot;font-size: 12px;&amp;quot;&amp;gt;DocumentCategory&amp;lt;/b&amp;gt;&amp;lt;/div&amp;gt;&amp;lt;div style=&amp;quot;padding: 6px 8px; font-size: 10.5px; font-family: 'Consolas', monospace; color: #451A03; line-height: 1.4;&amp;quot;&amp;gt;&amp;bull; CLIENT_DOCUMENT&lt;br/&gt;&amp;bull; LEGAL_DOCUMENT&lt;br/&gt;&amp;bull; EVIDENCE&lt;br/&gt;&amp;bull; COURT_DOCUMENT&lt;br/&gt;&amp;bull; OTHER&amp;lt;/div&amp;gt;" style="html=1;whiteSpace=wrap;rounded=1;arcSize=4;fillColor=#FEF3C7;strokeColor=#D97706;strokeWidth=1.2;align=left;verticalAlign=top;shadow=0;overflow=hidden;" vertex="1" parent="1">
+          <mxGeometry x="2150" y="285" width="210" height="140" as="geometry"/>
+        </mxCell>
+        <mxCell id="enum_matter_cat" value="&amp;lt;div style=&amp;quot;background-color: #B45309; color: #FFFFFF; text-align: center; padding: 4px 6px;&amp;quot;&amp;gt;&amp;lt;span style=&amp;quot;font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px;&amp;quot;&amp;gt;&amp;amp;lt;&amp;amp;lt;enumeration&amp;amp;gt;&amp;amp;gt;&amp;lt;/span&amp;gt;&amp;lt;br/&amp;gt;&amp;lt;b style=&amp;quot;font-size: 12px;&amp;quot;&amp;gt;MatterCategory&amp;lt;/b&amp;gt;&amp;lt;/div&amp;gt;&amp;lt;div style=&amp;quot;padding: 6px 8px; font-size: 10.5px; font-family: 'Consolas', monospace; color: #451A03; line-height: 1.4;&amp;quot;&amp;gt;&amp;bull; ADVISORY&lt;br/&gt;&amp;bull; DOCUMENTATION&lt;br/&gt;&amp;bull; COMPLIANCE&lt;br/&gt;&amp;bull; LEGAL_NOTICE&lt;br/&gt;&amp;bull; MEDIATION&lt;br/&gt;&amp;bull; POLICE_MATTER&lt;br/&gt;&amp;bull; COURT_LITIGATION&lt;br/&gt;&amp;bull; APPEAL&lt;br/&gt;&amp;bull; ARBITRATION&lt;br/&gt;&amp;bull; EXECUTION&lt;br/&gt;&amp;bull; RETAINER&amp;lt;/div&amp;gt;" style="html=1;whiteSpace=wrap;rounded=1;arcSize=4;fillColor=#FEF3C7;strokeColor=#D97706;strokeWidth=1.2;align=left;verticalAlign=top;shadow=0;overflow=hidden;" vertex="1" parent="1">
+          <mxGeometry x="2150" y="450" width="210" height="230" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_user_practice" value="specializes in &amp;gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#334155;strokeWidth=1.5;fontColor=#475569;fontSize=11;fontFamily=Helvetica;exitX=0.0;exitY=0.25;exitDx=0;exitDy=0;entryX=1.0;entryY=0.25;entryDx=0;entryDy=0;" edge="1" parent="1" source="cls_user" target="cls_practice_area">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_user_practice_sm" value="0..*" style="edgeLabel;html=1;align=left;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_user_practice">
+          <mxGeometry x="-0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_user_practice_tm" value="0..*" style="edgeLabel;html=1;align=right;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_user_practice">
+          <mxGeometry x="0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_practice_consultation" value="categorizes &amp;gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#334155;strokeWidth=1.5;fontColor=#475569;fontSize=11;fontFamily=Helvetica;exitX=0.5;exitY=1.0;exitDx=0;exitDy=0;entryX=0.5;entryY=0.0;entryDx=0;entryDy=0;" edge="1" parent="1" source="cls_practice_area" target="cls_consultation">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_practice_consultation_sm" value="0..1" style="edgeLabel;html=1;align=left;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_practice_consultation">
+          <mxGeometry x="-0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_practice_consultation_tm" value="0..*" style="edgeLabel;html=1;align=right;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_practice_consultation">
+          <mxGeometry x="0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_user_consultation_client" value="requests &amp;gt; (client)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#334155;strokeWidth=1.5;fontColor=#475569;fontSize=11;fontFamily=Helvetica;exitX=0.0;exitY=0.75;exitDx=0;exitDy=0;entryX=0.75;entryY=0.0;entryDx=0;entryDy=0;" edge="1" parent="1" source="cls_user" target="cls_consultation">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="760" y="375"/>
+              <mxPoint x="760" y="500"/>
+              <mxPoint x="642" y="500"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_user_consultation_client_sm" value="1" style="edgeLabel;html=1;align=left;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_user_consultation_client">
+          <mxGeometry x="-0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_user_consultation_client_tm" value="0..*" style="edgeLabel;html=1;align=right;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_user_consultation_client">
+          <mxGeometry x="0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_user_consultation_lawyer" value="assigned lawyer &amp;gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#334155;strokeWidth=1.5;fontColor=#475569;fontSize=11;fontFamily=Helvetica;exitX=0.0;exitY=0.9;exitDx=0;exitDy=0;entryX=0.95;entryY=0.0;entryDx=0;entryDy=0;" edge="1" parent="1" source="cls_user" target="cls_consultation">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="810" y="423"/>
+              <mxPoint x="810" y="525"/>
+              <mxPoint x="712" y="525"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_user_consultation_lawyer_sm" value="0..1" style="edgeLabel;html=1;align=left;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_user_consultation_lawyer">
+          <mxGeometry x="-0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_user_consultation_lawyer_tm" value="0..*" style="edgeLabel;html=1;align=right;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_user_consultation_lawyer">
+          <mxGeometry x="0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_consultation_payment" value="settled by &amp;gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#334155;strokeWidth=1.5;fontColor=#475569;fontSize=11;fontFamily=Helvetica;exitX=0.5;exitY=1.0;exitDx=0;exitDy=0;entryX=0.5;entryY=0.0;entryDx=0;entryDy=0;" edge="1" parent="1" source="cls_consultation" target="cls_payment">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_consultation_payment_sm" value="1" style="edgeLabel;html=1;align=left;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_consultation_payment">
+          <mxGeometry x="-0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_consultation_payment_tm" value="0..*" style="edgeLabel;html=1;align=right;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_consultation_payment">
+          <mxGeometry x="0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_consultation_case_origin" value="originates / converts to &amp;gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#334155;strokeWidth=1.5;fontColor=#475569;fontSize=11;fontFamily=Helvetica;exitX=1.0;exitY=0.3;exitDx=0;exitDy=0;entryX=0.0;entryY=0.3;entryDx=0;entryDy=0;" edge="1" parent="1" source="cls_consultation" target="cls_case">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_consultation_case_origin_sm" value="1" style="edgeLabel;html=1;align=left;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_consultation_case_origin">
+          <mxGeometry x="-0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_consultation_case_origin_tm" value="0..1" style="edgeLabel;html=1;align=right;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_consultation_case_origin">
+          <mxGeometry x="0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_case_consultation_appt" value="&amp;lt; follow-up appointment" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#334155;strokeWidth=1.5;fontColor=#475569;fontSize=11;fontFamily=Helvetica;exitX=0.0;exitY=0.6;exitDx=0;exitDy=0;entryX=1.0;entryY=0.6;entryDx=0;entryDy=0;" edge="1" parent="1" source="cls_case" target="cls_consultation">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_case_consultation_appt_sm" value="0..1" style="edgeLabel;html=1;align=left;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_case_consultation_appt">
+          <mxGeometry x="-0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_case_consultation_appt_tm" value="0..*" style="edgeLabel;html=1;align=right;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_case_consultation_appt">
+          <mxGeometry x="0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_user_case_responsible" value="responsible lawyer (leads) &amp;gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#334155;strokeWidth=1.5;fontColor=#475569;fontSize=11;fontFamily=Helvetica;exitX=0.45;exitY=1.0;exitDx=0;exitDy=0;entryX=0.35;entryY=0.0;entryDx=0;entryDy=0;" edge="1" parent="1" source="cls_user" target="cls_case">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_user_case_responsible_sm" value="1" style="edgeLabel;html=1;align=left;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_user_case_responsible">
+          <mxGeometry x="-0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_user_case_responsible_tm" value="0..*" style="edgeLabel;html=1;align=right;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_user_case_responsible">
+          <mxGeometry x="0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_user_case_client" value="retains (client) &amp;gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#334155;strokeWidth=1.5;fontColor=#475569;fontSize=11;fontFamily=Helvetica;exitX=0.25;exitY=1.0;exitDx=0;exitDy=0;entryX=0.15;entryY=0.0;entryDx=0;entryDy=0;" edge="1" parent="1" source="cls_user" target="cls_case">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_user_case_client_sm" value="1" style="edgeLabel;html=1;align=left;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_user_case_client">
+          <mxGeometry x="-0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_user_case_client_tm" value="0..*" style="edgeLabel;html=1;align=right;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_user_case_client">
+          <mxGeometry x="0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_user_case_assistant" value="assistant lawyers &amp;gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#334155;strokeWidth=1.5;fontColor=#475569;fontSize=11;fontFamily=Helvetica;exitX=0.65;exitY=1.0;exitDx=0;exitDy=0;entryX=0.55;entryY=0.0;entryDx=0;entryDy=0;" edge="1" parent="1" source="cls_user" target="cls_case">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_user_case_assistant_sm" value="0..*" style="edgeLabel;html=1;align=left;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_user_case_assistant">
+          <mxGeometry x="-0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_user_case_assistant_tm" value="0..*" style="edgeLabel;html=1;align=right;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_user_case_assistant">
+          <mxGeometry x="0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_user_case_paralegal" value="supporting paralegal &amp;gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#334155;strokeWidth=1.5;fontColor=#475569;fontSize=11;fontFamily=Helvetica;exitX=0.85;exitY=1.0;exitDx=0;exitDy=0;entryX=0.75;entryY=0.0;entryDx=0;entryDy=0;" edge="1" parent="1" source="cls_user" target="cls_case">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_user_case_paralegal_sm" value="0..1" style="edgeLabel;html=1;align=left;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_user_case_paralegal">
+          <mxGeometry x="-0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_user_case_paralegal_tm" value="0..*" style="edgeLabel;html=1;align=right;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_user_case_paralegal">
+          <mxGeometry x="0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_practice_case" value="classifies &amp;gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#334155;strokeWidth=1.5;fontColor=#475569;fontSize=11;fontFamily=Helvetica;exitX=0.8;exitY=1.0;exitDx=0;exitDy=0;entryX=0.05;entryY=0.0;entryDx=0;entryDy=0;" edge="1" parent="1" source="cls_practice_area" target="cls_case">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="628" y="485"/>
+              <mxPoint x="950" y="485"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_practice_case_sm" value="0..1" style="edgeLabel;html=1;align=left;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_practice_case">
+          <mxGeometry x="-0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_practice_case_tm" value="0..*" style="edgeLabel;html=1;align=right;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_practice_case">
+          <mxGeometry x="0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_case_activity" value="logs timeline &amp;gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#334155;strokeWidth=1.5;fontColor=#475569;fontSize=11;fontFamily=Helvetica;exitX=1.0;exitY=0.15;exitDx=0;exitDy=0;entryX=0.0;entryY=0.3;entryDx=0;entryDy=0;" edge="1" parent="1" source="cls_case" target="cls_case_activity">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_case_activity_sm" value="1" style="edgeLabel;html=1;align=left;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_case_activity">
+          <mxGeometry x="-0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_case_activity_tm" value="0..*" style="edgeLabel;html=1;align=right;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_case_activity">
+          <mxGeometry x="0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_user_activity" value="performed by &amp;gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#334155;strokeWidth=1.5;fontColor=#475569;fontSize=11;fontFamily=Helvetica;exitX=1.0;exitY=0.65;exitDx=0;exitDy=0;entryX=0.5;entryY=0.0;entryDx=0;entryDy=0;" edge="1" parent="1" source="cls_user" target="cls_case_activity">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1380" y="345"/>
+              <mxPoint x="1640" y="345"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_user_activity_sm" value="0..1" style="edgeLabel;html=1;align=left;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_user_activity">
+          <mxGeometry x="-0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_user_activity_tm" value="0..*" style="edgeLabel;html=1;align=right;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_user_activity">
+          <mxGeometry x="0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_case_court_proceeding" value="schedules hearings &amp;gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#334155;strokeWidth=1.5;fontColor=#475569;fontSize=11;fontFamily=Helvetica;exitX=1.0;exitY=0.55;exitDx=0;exitDy=0;entryX=0.0;entryY=0.4;entryDx=0;entryDy=0;" edge="1" parent="1" source="cls_case" target="cls_court_proceeding">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_case_court_proceeding_sm" value="1" style="edgeLabel;html=1;align=left;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_case_court_proceeding">
+          <mxGeometry x="-0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_case_court_proceeding_tm" value="0..*" style="edgeLabel;html=1;align=right;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_case_court_proceeding">
+          <mxGeometry x="0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_proceeding_notification" value="triggers alert &amp;gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#334155;strokeWidth=1.5;fontColor=#475569;fontSize=11;fontFamily=Helvetica;exitX=0.5;exitY=0.0;exitDx=0;exitDy=0;entryX=0.5;entryY=1.0;entryDx=0;entryDy=0;" edge="1" parent="1" source="cls_court_proceeding" target="cls_notification">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_proceeding_notification_sm" value="0..1" style="edgeLabel;html=1;align=left;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_proceeding_notification">
+          <mxGeometry x="-0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_proceeding_notification_tm" value="0..*" style="edgeLabel;html=1;align=right;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_proceeding_notification">
+          <mxGeometry x="0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_user_notification" value="notifies &amp;gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#334155;strokeWidth=1.5;fontColor=#475569;fontSize=11;fontFamily=Helvetica;exitX=1.0;exitY=0.3;exitDx=0;exitDy=0;entryX=0.0;entryY=0.3;entryDx=0;entryDy=0;" edge="1" parent="1" source="cls_user" target="cls_notification">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_user_notification_sm" value="1" style="edgeLabel;html=1;align=left;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_user_notification">
+          <mxGeometry x="-0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_user_notification_tm" value="0..*" style="edgeLabel;html=1;align=right;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_user_notification">
+          <mxGeometry x="0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_case_task" value="allocates tasks &amp;gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#334155;strokeWidth=1.5;fontColor=#475569;fontSize=11;fontFamily=Helvetica;exitX=0.4;exitY=1.0;exitDx=0;exitDy=0;entryX=0.4;entryY=0.0;entryDx=0;entryDy=0;" edge="1" parent="1" source="cls_case" target="cls_case_task">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_case_task_sm" value="1" style="edgeLabel;html=1;align=left;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_case_task">
+          <mxGeometry x="-0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_case_task_tm" value="0..*" style="edgeLabel;html=1;align=right;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_case_task">
+          <mxGeometry x="0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_user_task_assigned" value="assigned to &amp;gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#334155;strokeWidth=1.5;fontColor=#475569;fontSize=11;fontFamily=Helvetica;exitX=0.05;exitY=1.0;exitDx=0;exitDy=0;entryX=0.05;entryY=0.0;entryDx=0;entryDy=0;" edge="1" parent="1" source="cls_user" target="cls_case_task">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="907" y="480"/>
+              <mxPoint x="870" y="480"/>
+              <mxPoint x="870" y="1080"/>
+              <mxPoint x="947" y="1080"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_user_task_assigned_sm" value="1" style="edgeLabel;html=1;align=left;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_user_task_assigned">
+          <mxGeometry x="-0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_user_task_assigned_tm" value="0..*" style="edgeLabel;html=1;align=right;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_user_task_assigned">
+          <mxGeometry x="0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_case_document" value="case files repository &amp;gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#334155;strokeWidth=1.5;fontColor=#475569;fontSize=11;fontFamily=Helvetica;exitX=0.85;exitY=1.0;exitDx=0;exitDy=0;entryX=0.2;entryY=0.0;entryDx=0;entryDy=0;" edge="1" parent="1" source="cls_case" target="cls_document">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1261" y="1070"/>
+              <mxPoint x="1494" y="1070"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_case_document_sm" value="1" style="edgeLabel;html=1;align=left;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_case_document">
+          <mxGeometry x="-0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_case_document_tm" value="0..*" style="edgeLabel;html=1;align=right;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_case_document">
+          <mxGeometry x="0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_task_document" value="task attachments &amp;gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#334155;strokeWidth=1.5;fontColor=#475569;fontSize=11;fontFamily=Helvetica;exitX=1.0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="cls_case_task" target="cls_document">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_task_document_sm" value="0..1" style="edgeLabel;html=1;align=left;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_task_document">
+          <mxGeometry x="-0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_task_document_tm" value="0..*" style="edgeLabel;html=1;align=right;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_task_document">
+          <mxGeometry x="0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_user_document" value="uploaded by &amp;gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#334155;strokeWidth=1.5;fontColor=#475569;fontSize=11;fontFamily=Helvetica;exitX=1.0;exitY=0.85;exitDx=0;exitDy=0;entryX=0.8;entryY=0.0;entryDx=0;entryDy=0;" edge="1" parent="1" source="cls_user" target="cls_document">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1840" y="408"/>
+              <mxPoint x="1840" y="1060"/>
+              <mxPoint x="1686" y="1060"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_user_document_sm" value="1" style="edgeLabel;html=1;align=left;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_user_document">
+          <mxGeometry x="-0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge_user_document_tm" value="0..*" style="edgeLabel;html=1;align=right;verticalAlign=bottom;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#1E293B;" vertex="1" connectable="0" parent="edge_user_document">
+          <mxGeometry x="0.8" y="-10" relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

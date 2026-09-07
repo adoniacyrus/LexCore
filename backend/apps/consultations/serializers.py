@@ -11,6 +11,7 @@ from .models import (
     ConsultationMode,
     ConsultationPaymentStatus,
     ConsultationStatus,
+    ConsultationType,
     PracticeArea,
 )
 
@@ -68,6 +69,10 @@ class ClientBriefSerializer(serializers.ModelSerializer):
 class ConsultationSerializer(serializers.ModelSerializer):
     """Unified read serializer for client, admin, and lawyer views."""
 
+    consultation_type_label = serializers.CharField(
+        source="get_consultation_type_display",
+        read_only=True,
+    )
     practice_area = PracticeAreaSerializer(read_only=True)
     practice_area_id = serializers.IntegerField(
         source="practice_area.id",
@@ -92,6 +97,8 @@ class ConsultationSerializer(serializers.ModelSerializer):
     assigned_lawyer_name = serializers.SerializerMethodField()
     case_id = serializers.SerializerMethodField()
     case_reference = serializers.SerializerMethodField()
+    case_appointment_id = serializers.SerializerMethodField()
+    case_appointment_ref = serializers.SerializerMethodField()
     fee_amount = serializers.SerializerMethodField()
 
     class Meta:
@@ -99,6 +106,8 @@ class ConsultationSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "consultation_id",
+            "consultation_type",
+            "consultation_type_label",
             "client",
             "practice_area",
             "practice_area_id",
@@ -115,15 +124,20 @@ class ConsultationSerializer(serializers.ModelSerializer):
             "status_label",
             "payment_status",
             "payment_status_label",
+            "charged_fee",
             "fee_amount",
             "case_id",
             "case_reference",
+            "case_appointment_id",
+            "case_appointment_ref",
             "created_at",
             "updated_at",
         )
         read_only_fields = fields
 
     def get_fee_amount(self, obj):
+        if obj.charged_fee is not None:
+            return obj.charged_fee
         latest_payment = getattr(obj, "payments", None)
         if latest_payment is not None:
             first_p = latest_payment.order_by("-created_at").first()
@@ -143,6 +157,8 @@ class ConsultationSerializer(serializers.ModelSerializer):
         return "Not Assigned"
 
     def get_case_id(self, obj):
+        if obj.case_appointment_id:
+            return obj.case_appointment_id
         try:
             if hasattr(obj, "case") and obj.case:
                 return obj.case.id
@@ -151,6 +167,8 @@ class ConsultationSerializer(serializers.ModelSerializer):
         return None
 
     def get_case_reference(self, obj):
+        if obj.case_appointment_id and obj.case_appointment:
+            return obj.case_appointment.case_reference
         try:
             if hasattr(obj, "case") and obj.case:
                 return obj.case.case_reference
@@ -158,11 +176,29 @@ class ConsultationSerializer(serializers.ModelSerializer):
             pass
         return None
 
+    def get_case_appointment_id(self, obj):
+        return obj.case_appointment_id
+
+    def get_case_appointment_ref(self, obj):
+        if obj.case_appointment_id and obj.case_appointment:
+            return obj.case_appointment.case_reference
+        return None
+
 
 class ConsultationCreateSerializer(serializers.Serializer):
-    """Create a consultation request for the authenticated client."""
+    """Create a consultation request or existing case appointment for the authenticated client."""
 
-    knows_practice_area = serializers.BooleanField(required=True)
+    consultation_type = serializers.ChoiceField(
+        choices=ConsultationType.choices,
+        default=ConsultationType.NEW_MATTER,
+        required=False,
+    )
+    case_id = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+    )
+    knows_practice_area = serializers.BooleanField(required=False, allow_null=True)
     practice_area = serializers.PrimaryKeyRelatedField(
         queryset=PracticeArea.objects.filter(is_active=True),
         required=False,
@@ -171,18 +207,12 @@ class ConsultationCreateSerializer(serializers.Serializer):
     consultation_mode = serializers.ChoiceField(choices=ConsultationMode.choices)
     preferred_date = serializers.DateField()
     preferred_time = serializers.TimeField()
-    subject = serializers.CharField(max_length=255)
+    subject = serializers.CharField(max_length=255, required=False, allow_blank=True)
     issue_summary = serializers.CharField(
         required=False,
         allow_blank=True,
         default="",
     )
-
-    def validate_subject(self, value: str) -> str:
-        subject = value.strip()
-        if not subject:
-            raise serializers.ValidationError("Subject is required.")
-        return subject
 
     def validate_preferred_date(self, value):
         today = timezone.localdate()
@@ -193,38 +223,109 @@ class ConsultationCreateSerializer(serializers.Serializer):
         return value
 
     def validate(self, attrs):
-        knows = attrs.get("knows_practice_area")
-        practice_area = attrs.get("practice_area")
+        request = self.context.get("request")
+        client = getattr(request, "user", None)
+        cons_type = attrs.get("consultation_type", ConsultationType.NEW_MATTER)
 
-        if knows:
-            if not practice_area:
+        if cons_type == ConsultationType.EXISTING_CASE:
+            from apps.cases.models import Case, CaseStatus
+            case_identifier = attrs.get("case_id")
+            if not case_identifier:
                 raise serializers.ValidationError(
-                    {
+                    {"case_id": "Please select an existing case for this appointment."}
+                )
+
+            # Find case by numeric PK, case_reference, or UUID
+            case = None
+            if str(case_identifier).isdigit():
+                case = Case.objects.filter(pk=int(case_identifier)).select_related("responsible_lawyer", "client", "practice_area").first()
+            if not case:
+                case = Case.objects.filter(case_reference=case_identifier).select_related("responsible_lawyer", "client", "practice_area").first()
+            if not case:
+                case = Case.objects.filter(case_id=case_identifier).select_related("responsible_lawyer", "client", "practice_area").first()
+
+            if not case:
+                raise serializers.ValidationError({"case_id": "The specified case could not be found."})
+
+            # Check client ownership
+            if client and case.client != client:
+                raise serializers.ValidationError({"case_id": "You can only book appointments for your own cases."})
+
+            # Case status rules (OPEN, IN_PROGRESS allowed; CLOSED, ARCHIVED, ON_HOLD disallowed)
+            if case.status not in (CaseStatus.OPEN, CaseStatus.IN_PROGRESS):
+                raise serializers.ValidationError({
+                    "case_id": f"Appointments cannot be booked for a case with status '{case.get_status_display()}'. Only active cases are eligible."
+                })
+
+            # Responsible lawyer requirement
+            if not case.responsible_lawyer:
+                raise serializers.ValidationError({
+                    "case_id": "This case currently has no responsible lawyer assigned. Please contact the firm."
+                })
+
+            # Fee configured requirement
+            if case.appointment_fee is None or case.appointment_fee <= 0:
+                raise serializers.ValidationError({
+                    "case_id": "An appointment fee has not yet been configured for this case. Please contact the firm."
+                })
+
+            # Default subject if empty
+            subject = (attrs.get("subject") or "").strip()
+            if not subject:
+                subject = f"Appointment for {case.case_reference}: {case.title}"
+            attrs["subject"] = subject
+
+            # Server-side authoritative assignment
+            attrs["case_appointment"] = case
+            attrs["assigned_lawyer"] = case.responsible_lawyer
+            attrs["practice_area"] = case.practice_area
+            attrs["charged_fee"] = case.appointment_fee
+
+        else:
+            # NEW_MATTER flow
+            subject = (attrs.get("subject") or "").strip()
+            if not subject:
+                raise serializers.ValidationError({"subject": "Subject is required."})
+            attrs["subject"] = subject
+
+            knows = attrs.get("knows_practice_area")
+            if knows is None:
+                raise serializers.ValidationError({
+                    "knows_practice_area": "Please indicate whether you know the legal service required."
+                })
+
+            practice_area = attrs.get("practice_area")
+            if knows:
+                if not practice_area:
+                    raise serializers.ValidationError({
                         "practice_area": (
                             "Please select a practice area, or choose "
                             "“I'm not sure”."
                         )
-                    }
-                )
-            # Clients should not self-select General Consultation as a specialty.
-            if practice_area.is_general:
-                raise serializers.ValidationError(
-                    {
+                    })
+                if practice_area.is_general:
+                    raise serializers.ValidationError({
                         "practice_area": (
                             "Please select a specific practice area, "
                             "or choose “I'm not sure”."
                         )
-                    }
-                )
-        else:
-            practice_area = None
+                    })
+            else:
+                practice_area = None
 
-        attrs["practice_area"] = practice_area
+            from django.conf import settings
+            default_fee = getattr(settings, "RAZORPAY_DEFAULT_CONSULTATION_FEE", 500)
+            attrs["practice_area"] = practice_area
+            attrs["charged_fee"] = default_fee
+            attrs["case_appointment"] = None
+            attrs["assigned_lawyer"] = None
+
         attrs["issue_summary"] = (attrs.get("issue_summary") or "").strip()
         return attrs
 
     def create(self, validated_data):
         validated_data.pop("knows_practice_area", None)
+        validated_data.pop("case_id", None)
         client = self.context["request"].user
         return Consultation.objects.create(
             client=client,

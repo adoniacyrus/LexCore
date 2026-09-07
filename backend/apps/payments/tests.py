@@ -3,6 +3,7 @@ Automated test suite for Razorpay payments module.
 Covers all 18 test specifications including checkout, verification, idempotency, retry, security, and webhooks.
 """
 
+from decimal import Decimal
 import hashlib
 import hmac
 import json
@@ -14,11 +15,13 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from apps.accounts.models import User, UserRole
+from apps.cases.models import Case, CaseActivity, CaseStatus, CaseType
 from apps.consultations.models import (
     Consultation,
     ConsultationMode,
     ConsultationPaymentStatus,
     ConsultationStatus,
+    ConsultationType,
     PracticeArea,
 )
 from apps.payments.models import Payment, PaymentStatus
@@ -532,3 +535,543 @@ class PaymentIntegrationTests(APITestCase):
         cons.refresh_from_db()
         self.assertEqual(cons.assigned_lawyer, self.lawyer_user)
         self.assertEqual(cons.status, ConsultationStatus.APPROVED)
+
+
+class CaseAppointmentAndRevenueTests(APITestCase):
+    """
+    Test suite for:
+    - Lawyer case appointment fee configuration and activity logging
+    - Role-based permissions for fee setting
+    - Client eligible cases discovery
+    - Case appointment booking with server-side lawyer and fee derivation
+    - Razorpay order fee calculations
+    - Appointment confirmation upon payment capture
+    - Historical fee preservation
+    - Admin firm revenue reporting, filtering, and aggregations
+    """
+
+    def setUp(self):
+        self.key_id = "rzp_test_mock_123"
+        self.key_secret = "test_key_secret_abc123"
+        self.webhook_secret = "test_webhook_secret_xyz789"
+        settings.RAZORPAY_KEY_ID = self.key_id
+        settings.RAZORPAY_KEY_SECRET = self.key_secret
+        settings.RAZORPAY_WEBHOOK_SECRET = self.webhook_secret
+        settings.RAZORPAY_DEFAULT_CONSULTATION_FEE = 500
+
+        self.practice_area = PracticeArea.objects.create(
+            name="Intellectual Property",
+            is_active=True,
+        )
+
+        self.admin = User.objects.create_user(
+            email="firm_admin@lexcore.local",
+            full_name="Firm Administrator",
+            password="Password123!",
+            role=UserRole.ADMIN,
+        )
+        self.responsible_lawyer = User.objects.create_user(
+            email="partner_ip@lexcore.local",
+            full_name="Senior Partner IP",
+            password="Password123!",
+            role=UserRole.SENIOR_LAWYER,
+        )
+        self.responsible_lawyer.practice_areas.add(self.practice_area)
+
+        self.assistant_lawyer = User.objects.create_user(
+            email="assistant_ip@lexcore.local",
+            full_name="Associate Lawyer",
+            password="Password123!",
+            role=UserRole.JUNIOR_LAWYER,
+        )
+        self.paralegal = User.objects.create_user(
+            email="paralegal_ip@lexcore.local",
+            full_name="Legal Assistant",
+            password="Password123!",
+            role=UserRole.PARALEGAL,
+        )
+
+        self.client_user = User.objects.create_user(
+            email="acme_client@lexcore.local",
+            full_name="Acme Corp Rep",
+            password="Password123!",
+            role=UserRole.CLIENT,
+        )
+        self.other_client = User.objects.create_user(
+            email="other_client@lexcore.local",
+            full_name="Other Client",
+            password="Password123!",
+            role=UserRole.CLIENT,
+        )
+
+        # Base consultation originating the case
+        self.orig_cons = Consultation.objects.create(
+            client=self.client_user,
+            practice_area=self.practice_area,
+            consultation_mode=ConsultationMode.OFFICE,
+            preferred_date=timezone.localdate(),
+            preferred_time="10:00:00",
+            subject="Initial Trademark Discussion",
+            payment_status=ConsultationPaymentStatus.PAID,
+            status=ConsultationStatus.ACCEPTED,
+        )
+
+        # Base case
+        self.case = Case.objects.create(
+            originating_consultation=self.orig_cons,
+            client=self.client_user,
+            practice_area=self.practice_area,
+            responsible_lawyer=self.responsible_lawyer,
+            supporting_paralegal=self.paralegal,
+            title="Acme Trademark Infringement",
+            case_type=CaseType.CORPORATE,
+            status=CaseStatus.OPEN,
+            start_date=timezone.localdate(),
+            appointment_fee=Decimal("1500.00"),
+        )
+        self.case.assistant_lawyers.add(self.assistant_lawyer)
+
+    def _auth(self, user):
+        self.client.force_authenticate(user=user)
+
+    def test_responsible_lawyer_can_set_appointment_fee_and_logs_activity(self):
+        """Responsible lawyer can set case appointment fee, which records CaseActivity."""
+        self._auth(self.responsible_lawyer)
+        url = f"/api/cases/{self.case.id}/appointment-fee/"
+        res = self.client.patch(url, {"appointment_fee": "1800.00"}, format="json")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(Decimal(str(res.data["appointment_fee"])), Decimal("1800.00"))
+
+        self.case.refresh_from_db()
+        self.assertEqual(self.case.appointment_fee, Decimal("1800.00"))
+
+        activity = CaseActivity.objects.filter(case=self.case, activity_type="FEE_CHANGED").first()
+        self.assertIsNotNone(activity)
+        self.assertEqual(activity.user, self.responsible_lawyer)
+        self.assertIn("1800.00", activity.description)
+
+    def test_admin_can_set_appointment_fee(self):
+        """Admin can also update case appointment fee."""
+        self._auth(self.admin)
+        url = f"/api/cases/{self.case.id}/appointment-fee/"
+        res = self.client.patch(url, {"appointment_fee": "2200.00"}, format="json")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(Decimal(str(res.data["appointment_fee"])), Decimal("2200.00"))
+
+    def test_assistant_lawyer_paralegal_client_cannot_set_fee(self):
+        """Assistant lawyers, paralegals, and clients receive 403 when attempting to edit fee."""
+        url = f"/api/cases/{self.case.id}/appointment-fee/"
+
+        # Assistant lawyer
+        self._auth(self.assistant_lawyer)
+        res1 = self.client.patch(url, {"appointment_fee": "2000.00"}, format="json")
+        self.assertEqual(res1.status_code, status.HTTP_403_FORBIDDEN)
+
+        # Paralegal
+        self._auth(self.paralegal)
+        res2 = self.client.patch(url, {"appointment_fee": "2000.00"}, format="json")
+        self.assertEqual(res2.status_code, status.HTTP_403_FORBIDDEN)
+
+        # Client
+        self._auth(self.client_user)
+        res3 = self.client.patch(url, {"appointment_fee": "2000.00"}, format="json")
+        self.assertEqual(res3.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_client_eligible_cases_endpoint(self):
+        """Eligible cases endpoint returns only eligible active cases belonging to the requesting client."""
+        # Create an ineligible case: no fee configured
+        orig_cons2 = Consultation.objects.create(
+            client=self.client_user,
+            practice_area=self.practice_area,
+            consultation_mode=ConsultationMode.OFFICE,
+            preferred_date=timezone.localdate(),
+            preferred_time="11:00:00",
+            subject="No fee matter",
+            payment_status=ConsultationPaymentStatus.PAID,
+            status=ConsultationStatus.ACCEPTED,
+        )
+        case_no_fee = Case.objects.create(
+            originating_consultation=orig_cons2,
+            client=self.client_user,
+            practice_area=self.practice_area,
+            responsible_lawyer=self.responsible_lawyer,
+            title="Case Without Fee",
+            case_type=CaseType.CIVIL,
+            status=CaseStatus.OPEN,
+            start_date=timezone.localdate(),
+            appointment_fee=None,
+        )
+
+        # Create closed case
+        orig_cons3 = Consultation.objects.create(
+            client=self.client_user,
+            practice_area=self.practice_area,
+            consultation_mode=ConsultationMode.OFFICE,
+            preferred_date=timezone.localdate(),
+            preferred_time="11:00:00",
+            subject="Closed matter",
+            payment_status=ConsultationPaymentStatus.PAID,
+            status=ConsultationStatus.ACCEPTED,
+        )
+        case_closed = Case.objects.create(
+            originating_consultation=orig_cons3,
+            client=self.client_user,
+            practice_area=self.practice_area,
+            responsible_lawyer=self.responsible_lawyer,
+            title="Closed Case",
+            case_type=CaseType.CIVIL,
+            status=CaseStatus.CLOSED,
+            start_date=timezone.localdate(),
+            appointment_fee=Decimal("1000.00"),
+        )
+
+        # Create other client's case
+        orig_cons4 = Consultation.objects.create(
+            client=self.other_client,
+            practice_area=self.practice_area,
+            consultation_mode=ConsultationMode.OFFICE,
+            preferred_date=timezone.localdate(),
+            preferred_time="11:00:00",
+            subject="Other client matter",
+            payment_status=ConsultationPaymentStatus.PAID,
+            status=ConsultationStatus.ACCEPTED,
+        )
+        case_other = Case.objects.create(
+            originating_consultation=orig_cons4,
+            client=self.other_client,
+            practice_area=self.practice_area,
+            responsible_lawyer=self.responsible_lawyer,
+            title="Other Client Case",
+            case_type=CaseType.CIVIL,
+            status=CaseStatus.OPEN,
+            start_date=timezone.localdate(),
+            appointment_fee=Decimal("1200.00"),
+        )
+
+        self._auth(self.client_user)
+        res = self.client.get("/api/consultations/eligible-cases/")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        eligible_ids = [c["id"] for c in res.data if c["is_eligible"]]
+        all_returned_ids = [c["id"] for c in res.data]
+
+        self.assertIn(self.case.id, eligible_ids)
+        self.assertNotIn(case_no_fee.id, eligible_ids)
+        self.assertNotIn(case_closed.id, eligible_ids)
+        self.assertNotIn(case_other.id, all_returned_ids)
+
+    @patch("apps.payments.services.RazorpayService.create_order")
+    def test_book_case_appointment_server_side_derivation(self, mock_order):
+        """Booking an existing case appointment derives lawyer and fee server-side, ignoring spoofed values."""
+        mock_order.return_value = {
+            "id": "order_case_mock_001",
+            "amount": 150000,
+            "currency": "INR",
+            "status": "created",
+        }
+        self._auth(self.client_user)
+        payload = {
+            "consultation_type": ConsultationType.EXISTING_CASE,
+            "case_id": self.case.id,
+            "consultation_mode": ConsultationMode.VIDEO,
+            "preferred_date": str(timezone.localdate()),
+            "preferred_time": "14:00:00",
+            "subject": "Injunction Briefing",
+            "description": "Discussing upcoming motion hearing",
+            # Spoof attempts:
+            "appointment_fee": 10,
+            "assigned_lawyer": self.admin.id,
+        }
+        res = self.client.post("/api/consultations/", payload, format="json")
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+
+        cons = Consultation.objects.get(consultation_id=res.data["consultation_id"])
+        self.assertEqual(cons.consultation_type, ConsultationType.EXISTING_CASE)
+        self.assertEqual(cons.case_appointment, self.case)
+        # Verify server-side derived lawyer and fee
+        self.assertEqual(cons.assigned_lawyer, self.responsible_lawyer)
+        self.assertEqual(cons.charged_fee, Decimal("1500.00"))
+        self.assertEqual(cons.practice_area, self.practice_area)
+        self.assertEqual(cons.payment_status, ConsultationPaymentStatus.PENDING)
+        self.assertEqual(cons.status, ConsultationStatus.PENDING)
+
+    def test_cannot_book_appointment_for_unauthorized_or_ineligible_case(self):
+        """Client cannot book for another client's case or a case without configured fee."""
+        self._auth(self.client_user)
+
+        # Other client's case
+        orig_cons_other = Consultation.objects.create(
+            client=self.other_client,
+            practice_area=self.practice_area,
+            consultation_mode=ConsultationMode.OFFICE,
+            preferred_date=timezone.localdate(),
+            preferred_time="11:00:00",
+            subject="Other client",
+            payment_status=ConsultationPaymentStatus.PAID,
+            status=ConsultationStatus.ACCEPTED,
+        )
+        other_case = Case.objects.create(
+            originating_consultation=orig_cons_other,
+            client=self.other_client,
+            practice_area=self.practice_area,
+            responsible_lawyer=self.responsible_lawyer,
+            title="Secret Dispute",
+            case_type=CaseType.CORPORATE,
+            status=CaseStatus.OPEN,
+            start_date=timezone.localdate(),
+            appointment_fee=Decimal("1500.00"),
+        )
+
+        res = self.client.post(
+            "/api/consultations/",
+            {
+                "consultation_type": ConsultationType.EXISTING_CASE,
+                "case_id": other_case.id,
+                "consultation_mode": ConsultationMode.VIDEO,
+                "preferred_date": str(timezone.localdate()),
+                "preferred_time": "14:00:00",
+                "subject": "Unauthorized Booking",
+            },
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @patch("apps.payments.services.RazorpayService.create_order")
+    def test_razorpay_order_uses_case_appointment_fee(self, mock_create_order):
+        """Booking an existing case appointment creates Razorpay order with the case's appointment fee in paise."""
+        mock_create_order.return_value = {
+            "id": "order_case_appt_999",
+            "amount": 150000,
+            "currency": "INR",
+            "status": "created",
+        }
+
+        self._auth(self.client_user)
+        payload = {
+            "consultation_type": ConsultationType.EXISTING_CASE,
+            "case_id": self.case.id,
+            "consultation_mode": ConsultationMode.VIDEO,
+            "preferred_date": str(timezone.localdate()),
+            "preferred_time": "15:00:00",
+            "subject": "Fee Verification Appointment",
+        }
+        res = self.client.post("/api/consultations/", payload, format="json")
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+
+        # Verify that create_order was called with 150000 paise (₹1,500.00), not default 50000 paise
+        call_kwargs = mock_create_order.call_args.kwargs
+        self.assertEqual(call_kwargs["amount_paise"], 150000)
+        self.assertEqual(res.data["order"]["amount"], 150000)
+
+        # Also test retry payment creates order with 150000 paise
+        mock_create_order.return_value = {
+            "id": "order_case_retry_999",
+            "amount": 150000,
+            "currency": "INR",
+            "status": "created",
+        }
+        res_retry = self.client.post(
+            "/api/payments/retry/",
+            {"consultation_id": res.data["consultation_id"]},
+            format="json",
+        )
+        self.assertEqual(res_retry.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_retry.data["order"]["amount"], 150000)
+
+    def test_case_appointment_payment_verification_confirms_appointment(self):
+        """Verifying payment for an existing case appointment auto-accepts it with responsible lawyer."""
+        cons = Consultation.objects.create(
+            client=self.client_user,
+            practice_area=self.practice_area,
+            consultation_mode=ConsultationMode.OFFICE,
+            preferred_date=timezone.localdate(),
+            preferred_time="15:00:00",
+            subject="Verification Test Case Appt",
+            payment_status=ConsultationPaymentStatus.PENDING,
+            status=ConsultationStatus.PENDING,
+            consultation_type=ConsultationType.EXISTING_CASE,
+            case_appointment=self.case,
+            assigned_lawyer=self.responsible_lawyer,
+            charged_fee=Decimal("1500.00"),
+        )
+
+        order_id = "order_case_verify_777"
+        payment_id = "pay_case_verify_888"
+        Payment.objects.create(
+            consultation=cons,
+            amount=150000,
+            status=PaymentStatus.PENDING,
+            razorpay_order_id=order_id,
+        )
+
+        sig = _generate_sig(order_id, payment_id, self.key_secret)
+
+        self._auth(self.client_user)
+        res = self.client.post(
+            "/api/payments/verify/",
+            {
+                "consultation_id": cons.consultation_id,
+                "razorpay_order_id": order_id,
+                "razorpay_payment_id": payment_id,
+                "razorpay_signature": sig,
+            },
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data["payment"]["status"], "CAPTURED")
+        self.assertEqual(res.data["consultation"]["payment_status"], "PAID")
+        self.assertEqual(res.data["consultation"]["status"], "ACCEPTED")
+
+        cons.refresh_from_db()
+        self.assertEqual(cons.payment_status, ConsultationPaymentStatus.PAID)
+        self.assertEqual(cons.status, ConsultationStatus.ACCEPTED)
+        self.assertEqual(cons.assigned_lawyer, self.responsible_lawyer)
+
+        pmt = Payment.objects.get(razorpay_order_id=order_id)
+        self.assertEqual(pmt.status, PaymentStatus.CAPTURED)
+        self.assertEqual(pmt.amount, 150000)
+
+    def test_historical_appointment_fee_integrity(self):
+        """Updating a case fee later does not change historical charged_fee on existing appointments."""
+        cons = Consultation.objects.create(
+            client=self.client_user,
+            practice_area=self.practice_area,
+            consultation_mode=ConsultationMode.OFFICE,
+            preferred_date=timezone.localdate(),
+            preferred_time="15:00:00",
+            subject="Historical Fee Check",
+            payment_status=ConsultationPaymentStatus.PAID,
+            status=ConsultationStatus.ACCEPTED,
+            consultation_type=ConsultationType.EXISTING_CASE,
+            case_appointment=self.case,
+            assigned_lawyer=self.responsible_lawyer,
+            charged_fee=Decimal("1500.00"),
+        )
+
+        # Responsible lawyer changes fee
+        self._auth(self.responsible_lawyer)
+        self.client.patch(
+            f"/api/cases/{self.case.id}/appointment-fee/",
+            {"appointment_fee": "3500.00"},
+            format="json",
+        )
+
+        self.case.refresh_from_db()
+        self.assertEqual(self.case.appointment_fee, Decimal("3500.00"))
+
+        cons.refresh_from_db()
+        self.assertEqual(cons.charged_fee, Decimal("1500.00"))
+
+    def test_admin_revenue_endpoint_access_and_aggregations(self):
+        """Admin revenue endpoint provides accurate aggregations counting only captured payments."""
+        # 1. Captured payment for new matter (₹500 -> 50000 paise)
+        cons_new = Consultation.objects.create(
+            client=self.client_user,
+            practice_area=self.practice_area,
+            consultation_mode=ConsultationMode.OFFICE,
+            preferred_date=timezone.localdate(),
+            preferred_time="10:00:00",
+            subject="New Matter Rev Test",
+            payment_status=ConsultationPaymentStatus.PAID,
+            consultation_type=ConsultationType.NEW_MATTER,
+            assigned_lawyer=self.responsible_lawyer,
+        )
+        Payment.objects.create(
+            consultation=cons_new,
+            amount=50000,
+            status=PaymentStatus.CAPTURED,
+            razorpay_order_id="order_rev_new",
+            razorpay_payment_id="pay_rev_new",
+        )
+
+        # 2. Captured payment for existing case appointment (₹1500 -> 150000 paise)
+        cons_case = Consultation.objects.create(
+            client=self.client_user,
+            practice_area=self.practice_area,
+            consultation_mode=ConsultationMode.VIDEO,
+            preferred_date=timezone.localdate(),
+            preferred_time="11:00:00",
+            subject="Case Appt Rev Test",
+            payment_status=ConsultationPaymentStatus.PAID,
+            consultation_type=ConsultationType.EXISTING_CASE,
+            case_appointment=self.case,
+            assigned_lawyer=self.responsible_lawyer,
+            charged_fee=Decimal("1500.00"),
+        )
+        Payment.objects.create(
+            consultation=cons_case,
+            amount=150000,
+            status=PaymentStatus.CAPTURED,
+            razorpay_order_id="order_rev_case",
+            razorpay_payment_id="pay_rev_case",
+        )
+
+        # 3. Failed payment - MUST be ignored in revenue
+        cons_failed = Consultation.objects.create(
+            client=self.client_user,
+            practice_area=self.practice_area,
+            consultation_mode=ConsultationMode.OFFICE,
+            preferred_date=timezone.localdate(),
+            preferred_time="12:00:00",
+            subject="Failed Rev Test",
+            payment_status=ConsultationPaymentStatus.FAILED,
+        )
+        Payment.objects.create(
+            consultation=cons_failed,
+            amount=50000,
+            status=PaymentStatus.FAILED,
+            razorpay_order_id="order_rev_failed",
+            razorpay_payment_id="pay_rev_failed",
+        )
+
+        # 4. Pending payment - MUST be ignored in revenue
+        cons_pending = Consultation.objects.create(
+            client=self.client_user,
+            practice_area=self.practice_area,
+            consultation_mode=ConsultationMode.OFFICE,
+            preferred_date=timezone.localdate(),
+            preferred_time="13:00:00",
+            subject="Pending Rev Test",
+            payment_status=ConsultationPaymentStatus.PENDING,
+        )
+        Payment.objects.create(
+            consultation=cons_pending,
+            amount=50000,
+            status=PaymentStatus.PENDING,
+            razorpay_order_id="order_rev_pending",
+        )
+
+        # Verify access control: Lawyer is forbidden
+        self._auth(self.responsible_lawyer)
+        res_lawyer = self.client.get("/api/payments/revenue/")
+        self.assertEqual(res_lawyer.status_code, status.HTTP_403_FORBIDDEN)
+
+        # Verify access control: Client is forbidden
+        self._auth(self.client_user)
+        res_client = self.client.get("/api/payments/revenue/")
+        self.assertEqual(res_client.status_code, status.HTTP_403_FORBIDDEN)
+
+        # Admin access: Success
+        self._auth(self.admin)
+        res_admin = self.client.get("/api/payments/revenue/")
+        self.assertEqual(res_admin.status_code, status.HTTP_200_OK)
+
+        metrics = res_admin.data["metrics"]
+        self.assertEqual(Decimal(str(metrics["total_revenue"])), Decimal("2000.00"))
+        self.assertEqual(metrics["paid_consultations_count"], 2)
+        self.assertEqual(Decimal(str(metrics["new_matter_revenue"])), Decimal("500.00"))
+        self.assertEqual(metrics["new_matter_count"], 1)
+        self.assertEqual(Decimal(str(metrics["existing_case_revenue"])), Decimal("1500.00"))
+        self.assertEqual(metrics["existing_case_count"], 1)
+
+        # Filter by consultation_type=EXISTING_CASE
+        res_filtered_case = self.client.get("/api/payments/revenue/?consultation_type=EXISTING_CASE")
+        self.assertEqual(res_filtered_case.status_code, status.HTTP_200_OK)
+        self.assertEqual(Decimal(str(res_filtered_case.data["metrics"]["total_revenue"])), Decimal("1500.00"))
+        self.assertEqual(res_filtered_case.data["metrics"]["paid_consultations_count"], 1)
+
+        # Filter by consultation_type=NEW_MATTER
+        res_filtered_new = self.client.get("/api/payments/revenue/?consultation_type=NEW_MATTER")
+        self.assertEqual(res_filtered_new.status_code, status.HTTP_200_OK)
+        self.assertEqual(Decimal(str(res_filtered_new.data["metrics"]["total_revenue"])), Decimal("500.00"))
+        self.assertEqual(res_filtered_new.data["metrics"]["paid_consultations_count"], 1)
+

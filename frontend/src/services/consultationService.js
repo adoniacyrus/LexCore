@@ -63,6 +63,11 @@ export async function listMyConsultations(access) {
   return data;
 }
 
+export async function listEligibleCasesForAppointment(access) {
+  const { data } = await api.get('/consultations/eligible-cases/', authHeaders(access));
+  return data;
+}
+
 /* ---- Admin ---- */
 
 export async function listAdminConsultations(access, params = {}) {

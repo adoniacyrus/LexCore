@@ -31,6 +31,7 @@ import CaseConvertPage from '../pages/Cases/CaseConvertPage';
 import CaseEditPage from '../pages/Cases/CaseEditPage';
 import MatterBoardPage from '../pages/Cases/MatterBoardPage';
 import CourtCalendarPage from '../pages/Calendar/CourtCalendarPage';
+import RevenuePage from '../pages/Admin/RevenuePage';
 
 function AppRouter() {
   return (
@@ -94,6 +95,14 @@ function AppRouter() {
               element={
                 <RoleProtectedRoute roles={['ADMIN']}>
                   <AdminPracticeAreasPage />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/admin/revenue"
+              element={
+                <RoleProtectedRoute roles={['ADMIN']}>
+                  <RevenuePage />
                 </RoleProtectedRoute>
               }
             />

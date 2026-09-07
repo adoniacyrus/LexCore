@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import {
   createConsultation,
   getErrorMessage,
+  listEligibleCasesForAppointment,
   listPracticeAreas,
 } from '../../services/consultationService';
 import {
@@ -31,8 +32,12 @@ const EMPTY = {
 function BookConsultationModal({ open, onClose, onSubmitted }) {
   const { accessToken, user } = useAuth();
   const [step, setStep] = useState('form'); // 'form' | 'review' | 'success' | 'failed'
+  const [bookingType, setBookingType] = useState('NEW_MATTER'); // 'NEW_MATTER' | 'EXISTING_CASE'
   const [form, setForm] = useState(EMPTY);
   const [practiceAreas, setPracticeAreas] = useState([]);
+  const [clientCases, setClientCases] = useState([]);
+  const [loadingCases, setLoadingCases] = useState(false);
+  const [selectedCase, setSelectedCase] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -44,7 +49,9 @@ function BookConsultationModal({ open, onClose, onSubmitted }) {
   useEffect(() => {
     if (!open) return;
     setStep('form');
+    setBookingType('NEW_MATTER');
     setForm(EMPTY);
+    setSelectedCase(null);
     setFieldErrors({});
     setError('');
     setSubmitting(false);
@@ -58,11 +65,23 @@ function BookConsultationModal({ open, onClose, onSubmitted }) {
     if (!open || !accessToken) return undefined;
     let cancelled = false;
     (async () => {
+      setLoadingCases(true);
       try {
-        const data = await listPracticeAreas(accessToken);
-        if (!cancelled) setPracticeAreas(Array.isArray(data) ? data : []);
+        const [areasData, casesData] = await Promise.all([
+          listPracticeAreas(accessToken),
+          listEligibleCasesForAppointment(accessToken),
+        ]);
+        if (!cancelled) {
+          setPracticeAreas(Array.isArray(areasData) ? areasData : []);
+          setClientCases(Array.isArray(casesData) ? casesData : []);
+        }
       } catch {
-        if (!cancelled) setPracticeAreas([]);
+        if (!cancelled) {
+          setPracticeAreas([]);
+          setClientCases([]);
+        }
+      } finally {
+        if (!cancelled) setLoadingCases(false);
       }
     })();
     return () => {
@@ -80,17 +99,27 @@ function BookConsultationModal({ open, onClose, onSubmitted }) {
   }, [open, submitting, verifying, onClose]);
 
   const selectedPracticeAreaName = useMemo(() => {
+    if (bookingType === 'EXISTING_CASE') {
+      return selectedCase?.practice_area_name || 'General Legal Matter';
+    }
     if (form.knowsPracticeArea === false) {
       return 'General Consultation (Specialist to be assigned)';
     }
     const found = practiceAreas.find((a) => String(a.id) === String(form.practice_area));
     return found ? found.name : '—';
-  }, [form.knowsPracticeArea, form.practice_area, practiceAreas]);
+  }, [bookingType, selectedCase, form.knowsPracticeArea, form.practice_area, practiceAreas]);
 
   const selectedModeLabel = useMemo(() => {
     const found = CONSULTATION_MODES.find((m) => m.value === form.consultation_mode);
     return found ? found.label : form.consultation_mode;
   }, [form.consultation_mode]);
+
+  const effectiveFee = useMemo(() => {
+    if (bookingType === 'EXISTING_CASE' && selectedCase) {
+      return Number(selectedCase.appointment_fee) || 0;
+    }
+    return 500;
+  }, [bookingType, selectedCase]);
 
   if (!open) return null;
 
@@ -109,21 +138,39 @@ function BookConsultationModal({ open, onClose, onSubmitted }) {
     setFieldErrors((prev) => ({ ...prev, practice_area: '', knowsPracticeArea: '' }));
   };
 
+  const handleSelectCase = (c) => {
+    if (!c.is_eligible) return;
+    setSelectedCase(c);
+    setFieldErrors((prev) => ({ ...prev, case_id: '' }));
+    setError('');
+  };
+
   const validate = () => {
     const next = {};
-    if (form.knowsPracticeArea === null) {
-      next.knowsPracticeArea = 'Please indicate whether you know the legal service required.';
+
+    if (bookingType === 'EXISTING_CASE') {
+      if (!selectedCase) {
+        next.case_id = 'Please select an existing case for this appointment.';
+      } else if (!selectedCase.is_eligible) {
+        next.case_id = selectedCase.ineligible_reason || 'This case is currently not eligible for booking.';
+      }
+    } else {
+      if (form.knowsPracticeArea === null) {
+        next.knowsPracticeArea = 'Please indicate whether you know the legal service required.';
+      }
+      if (form.knowsPracticeArea === true && !form.practice_area) {
+        next.practice_area = 'Please select a practice area.';
+      }
+      if (!form.subject.trim()) next.subject = 'Subject is required.';
     }
-    if (form.knowsPracticeArea === true && !form.practice_area) {
-      next.practice_area = 'Please select a practice area.';
-    }
-    if (!form.subject.trim()) next.subject = 'Subject is required.';
+
     if (!form.preferred_date) next.preferred_date = 'Preferred date is required.';
     else if (form.preferred_date < todayInputValue()) {
       next.preferred_date = 'Preferred date cannot be before today.';
     }
     if (!form.preferred_time) next.preferred_time = 'Preferred time is required.';
     if (!form.consultation_mode) next.consultation_mode = 'Consultation mode is required.';
+
     setFieldErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -142,12 +189,17 @@ function BookConsultationModal({ open, onClose, onSubmitted }) {
       return;
     }
 
+    const desc =
+      bookingType === 'EXISTING_CASE' && selectedCase
+        ? `Case Appointment Fee — ${selectedCase.case_reference}`
+        : `Consultation Fee — ${consultation.consultation_id}`;
+
     const options = {
       key: order.key_id,
       amount: order.amount,
       currency: order.currency || 'INR',
       name: 'LexCore Chambers',
-      description: `Consultation Fee — ${consultation.consultation_id}`,
+      description: desc,
       order_id: order.order_id,
       prefill: {
         name: user?.full_name || '',
@@ -217,16 +269,29 @@ function BookConsultationModal({ open, onClose, onSubmitted }) {
       let order = pendingOrder;
 
       if (!consultation || !order) {
-        // Create consultation + initial order server-side
-        const responseData = await createConsultation(accessToken, {
-          knows_practice_area: form.knowsPracticeArea,
-          practice_area: form.knowsPracticeArea ? Number(form.practice_area) : null,
-          subject: form.subject.trim(),
-          preferred_date: form.preferred_date,
-          preferred_time: form.preferred_time,
-          consultation_mode: form.consultation_mode,
-          issue_summary: form.issue_summary.trim(),
-        });
+        const payload =
+          bookingType === 'EXISTING_CASE'
+            ? {
+                consultation_type: 'EXISTING_CASE',
+                case_id: selectedCase.case_reference || selectedCase.id,
+                preferred_date: form.preferred_date,
+                preferred_time: form.preferred_time,
+                consultation_mode: form.consultation_mode,
+                issue_summary: form.issue_summary.trim(),
+                subject: form.subject.trim() || `Appointment: ${selectedCase.case_reference}`,
+              }
+            : {
+                consultation_type: 'NEW_MATTER',
+                knows_practice_area: form.knowsPracticeArea,
+                practice_area: form.knowsPracticeArea ? Number(form.practice_area) : null,
+                subject: form.subject.trim(),
+                preferred_date: form.preferred_date,
+                preferred_time: form.preferred_time,
+                consultation_mode: form.consultation_mode,
+                issue_summary: form.issue_summary.trim(),
+              };
+
+        const responseData = await createConsultation(accessToken, payload);
 
         consultation = responseData;
         order = responseData.order;
@@ -265,7 +330,6 @@ function BookConsultationModal({ open, onClose, onSubmitted }) {
         throw new Error('Unable to connect to Razorpay payment gateway.');
       }
 
-      // Retry payment for the EXISTING consultation (no duplicate created!)
       const retryRes = await retryConsultationPayment(accessToken, createdConsultation.consultation_id);
       const order = retryRes.order;
       setPendingOrder(order);
@@ -300,11 +364,11 @@ function BookConsultationModal({ open, onClose, onSubmitted }) {
       >
         <header className="cons-modal__header">
           <div>
-            <p className="section-tag-gold">Appointments</p>
+            <p className="section-tag-gold">Legal Services</p>
             <h2 id="cons-book-title">
-              {step === 'form' && 'Book Consultation'}
-              {step === 'review' && 'Consultation & Fee Review'}
-              {step === 'success' && 'Payment Successful'}
+              {step === 'form' && (bookingType === 'EXISTING_CASE' ? 'Book Case Appointment' : 'Book Consultation')}
+              {step === 'review' && (bookingType === 'EXISTING_CASE' ? 'Review & Pay Appointment Fee' : 'Consultation & Fee Review')}
+              {step === 'success' && 'Appointment Confirmed'}
               {step === 'failed' && 'Payment Incomplete'}
             </h2>
           </div>
@@ -322,71 +386,254 @@ function BookConsultationModal({ open, onClose, onSubmitted }) {
         {/* STEP 1: FORM INPUTS */}
         {step === 'form' && (
           <form className="cons-form auth-form cons-modal__form" onSubmit={handleProceedToReview} noValidate>
-            <div className="cons-choice-group">
-              <p className="cons-choice-label">Do you know which legal service you require?</p>
-              <div className="cons-choice-options">
-                <label className={`cons-choice ${form.knowsPracticeArea === true ? 'is-selected' : ''}`}>
-                  <input
-                    type="radio"
-                    name="knowsPracticeArea"
-                    checked={form.knowsPracticeArea === true}
-                    onChange={() => setKnows(true)}
-                  />
-                  Yes
-                </label>
-                <label className={`cons-choice ${form.knowsPracticeArea === false ? 'is-selected' : ''}`}>
-                  <input
-                    type="radio"
-                    name="knowsPracticeArea"
-                    checked={form.knowsPracticeArea === false}
-                    onChange={() => setKnows(false)}
-                  />
-                  I&apos;m not sure
-                </label>
+            
+            {/* BOOKING TYPE SELECTOR */}
+            <div className="cons-category-selector" style={{ marginBottom: '1.25rem' }}>
+              <p className="cons-choice-label" style={{ marginBottom: '0.45rem', fontWeight: 600 }}>
+                What would you like to book?
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBookingType('NEW_MATTER');
+                    setError('');
+                    setFieldErrors({});
+                  }}
+                  style={{
+                    padding: '0.75rem 0.9rem',
+                    borderRadius: '6px',
+                    border: bookingType === 'NEW_MATTER' ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+                    backgroundColor: bookingType === 'NEW_MATTER' ? '#fdf8f9' : '#fff',
+                    color: bookingType === 'NEW_MATTER' ? 'var(--color-primary)' : '#444',
+                    fontWeight: bookingType === 'NEW_MATTER' ? '600' : '500',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <div style={{ fontSize: '0.88rem', marginBottom: '0.15rem' }}>New Legal Matter</div>
+                  <div style={{ fontSize: '0.72rem', color: '#777' }}>Intake consultation for a new legal dispute or advisory</div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBookingType('EXISTING_CASE');
+                    setError('');
+                    setFieldErrors({});
+                  }}
+                  style={{
+                    padding: '0.75rem 0.9rem',
+                    borderRadius: '6px',
+                    border: bookingType === 'EXISTING_CASE' ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+                    backgroundColor: bookingType === 'EXISTING_CASE' ? '#fdf8f9' : '#fff',
+                    color: bookingType === 'EXISTING_CASE' ? 'var(--color-primary)' : '#444',
+                    fontWeight: bookingType === 'EXISTING_CASE' ? '600' : '500',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <div style={{ fontSize: '0.88rem', marginBottom: '0.15rem' }}>Appointment for Existing Case</div>
+                  <div style={{ fontSize: '0.72rem', color: '#777' }}>Meet with the assigned lead counsel on your active matter</div>
+                </button>
               </div>
-              {fieldErrors.knowsPracticeArea ? (
-                <p className="cons-error" role="alert">{fieldErrors.knowsPracticeArea}</p>
-              ) : null}
             </div>
 
-            {form.knowsPracticeArea === true ? (
-              <label className="auth-field">
-                <span>Practice Area</span>
-                <select name="practice_area" value={form.practice_area} onChange={onChange}>
-                  <option value="">Select a practice area</option>
-                  {practiceAreas.map((area) => (
-                    <option key={area.id} value={area.id}>
-                      {area.name}
-                    </option>
-                  ))}
-                </select>
-                {fieldErrors.practice_area ? (
-                  <span className="invalid-feedback d-block">{fieldErrors.practice_area}</span>
+            {/* FLOW A: NEW LEGAL MATTER */}
+            {bookingType === 'NEW_MATTER' && (
+              <>
+                <div className="cons-choice-group">
+                  <p className="cons-choice-label">Do you know which legal service you require?</p>
+                  <div className="cons-choice-options">
+                    <label className={`cons-choice ${form.knowsPracticeArea === true ? 'is-selected' : ''}`}>
+                      <input
+                        type="radio"
+                        name="knowsPracticeArea"
+                        checked={form.knowsPracticeArea === true}
+                        onChange={() => setKnows(true)}
+                      />
+                      Yes
+                    </label>
+                    <label className={`cons-choice ${form.knowsPracticeArea === false ? 'is-selected' : ''}`}>
+                      <input
+                        type="radio"
+                        name="knowsPracticeArea"
+                        checked={form.knowsPracticeArea === false}
+                        onChange={() => setKnows(false)}
+                      />
+                      I&apos;m not sure
+                    </label>
+                  </div>
+                  {fieldErrors.knowsPracticeArea ? (
+                    <p className="cons-error" role="alert">{fieldErrors.knowsPracticeArea}</p>
+                  ) : null}
+                </div>
+
+                {form.knowsPracticeArea === true ? (
+                  <label className="auth-field">
+                    <span>Practice Area</span>
+                    <select name="practice_area" value={form.practice_area} onChange={onChange}>
+                      <option value="">Select a practice area</option>
+                      {practiceAreas.map((area) => (
+                        <option key={area.id} value={area.id}>
+                          {area.name}
+                        </option>
+                      ))}
+                    </select>
+                    {fieldErrors.practice_area ? (
+                      <span className="invalid-feedback d-block">{fieldErrors.practice_area}</span>
+                    ) : null}
+                  </label>
                 ) : null}
-              </label>
-            ) : null}
 
-            {form.knowsPracticeArea === false ? (
-              <p className="cons-hint cons-hint--compact">
-                Our team will review your matter and assign the appropriate specialist.
-              </p>
-            ) : null}
+                {form.knowsPracticeArea === false ? (
+                  <p className="cons-hint cons-hint--compact">
+                    Our team will review your matter and assign the appropriate specialist.
+                  </p>
+                ) : null}
 
-            <label className="auth-field">
-              <span>Subject</span>
-              <input
-                name="subject"
-                type="text"
-                value={form.subject}
-                onChange={onChange}
-                placeholder="Brief title for your consultation"
-                required
-              />
-              {fieldErrors.subject ? (
-                <span className="invalid-feedback d-block">{fieldErrors.subject}</span>
-              ) : null}
-            </label>
+                <label className="auth-field">
+                  <span>Subject</span>
+                  <input
+                    name="subject"
+                    type="text"
+                    value={form.subject}
+                    onChange={onChange}
+                    placeholder="Brief title for your consultation"
+                    required
+                  />
+                  {fieldErrors.subject ? (
+                    <span className="invalid-feedback d-block">{fieldErrors.subject}</span>
+                  ) : null}
+                </label>
+              </>
+            )}
 
+            {/* FLOW B: EXISTING CASE APPOINTMENT */}
+            {bookingType === 'EXISTING_CASE' && (
+              <div style={{ marginBottom: '1.25rem' }}>
+                <p className="cons-choice-label" style={{ marginBottom: '0.45rem', fontWeight: 600 }}>
+                  Select Your Case
+                </p>
+
+                {loadingCases ? (
+                  <p className="cons-hint" style={{ padding: '1rem', textAlign: 'center' }}>
+                    Loading your cases…
+                  </p>
+                ) : clientCases.length === 0 ? (
+                  <div style={{ padding: '1rem', border: '1px dashed var(--color-border)', borderRadius: '6px', background: '#faf9f6', textAlign: 'center' }}>
+                    <p style={{ fontSize: '0.85rem', color: '#666', margin: 0 }}>
+                      No active cases found in your account. To open a new legal file, please book a New Legal Matter.
+                    </p>
+                  </div>
+                ) : !selectedCase ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', maxHeight: '220px', overflowY: 'auto', paddingRight: '0.25rem' }}>
+                    {clientCases.map((c) => {
+                      const isEligible = c.is_eligible;
+                      return (
+                        <div
+                          key={c.id}
+                          onClick={() => isEligible && handleSelectCase(c)}
+                          style={{
+                            padding: '0.75rem 0.9rem',
+                            border: '1px solid var(--color-border)',
+                            borderRadius: '6px',
+                            background: isEligible ? '#fff' : '#f9f8f7',
+                            cursor: isEligible ? 'pointer' : 'not-allowed',
+                            opacity: isEligible ? 1 : 0.7,
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <span style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--color-primary)' }}>
+                                {c.case_reference}
+                              </span>
+                              <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#222' }}>
+                                {c.title}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: '0.74rem', color: '#666' }}>
+                              Lead Counsel: <strong>{c.responsible_lawyer ? c.responsible_lawyer.full_name : 'None assigned'}</strong>
+                            </div>
+                            {!isEligible && (
+                              <span style={{ fontSize: '0.72rem', color: '#c0392b', fontWeight: 500 }}>
+                                {c.ineligible_reason}
+                              </span>
+                            )}
+                          </div>
+
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.35rem' }}>
+                            {c.appointment_fee !== null && c.appointment_fee !== undefined ? (
+                              <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--color-primary)' }}>
+                                ₹{Number(c.appointment_fee).toLocaleString('en-IN')}
+                              </span>
+                            ) : (
+                              <span style={{ fontSize: '0.72rem', color: '#888', fontStyle: 'italic' }}>Fee not set</span>
+                            )}
+                            <button
+                              type="button"
+                              className={`btn ${isEligible ? 'btn-ghost-dark' : 'btn-ghost-dark disabled'}`}
+                              style={{ fontSize: '0.72rem', padding: '0.2rem 0.6rem', height: 'auto', minHeight: 'auto' }}
+                              disabled={!isEligible}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSelectCase(c);
+                              }}
+                            >
+                              Select
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  /* SELECTED CASE BANNER */
+                  <div style={{ padding: '0.85rem 1rem', background: '#fcfaf6', border: '1px solid #ebdcc5', borderRadius: '6px', marginBottom: '0.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                          <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-primary)' }}>
+                            {selectedCase.case_reference}
+                          </span>
+                          <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>
+                            {selectedCase.title}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '0.78rem', color: '#555', marginBottom: '0.2rem' }}>
+                          Responsible Lawyer: <strong>{selectedCase.responsible_lawyer?.full_name}</strong>
+                        </div>
+                        <div style={{ fontSize: '0.78rem', color: '#555' }}>
+                          Configured Appointment Fee: <strong style={{ color: 'var(--color-primary)' }}>₹{Number(selectedCase.appointment_fee).toLocaleString('en-IN')}</strong>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-ghost-dark"
+                        style={{ fontSize: '0.72rem', padding: '0.2rem 0.55rem', height: 'auto', minHeight: 'auto' }}
+                        onClick={() => setSelectedCase(null)}
+                      >
+                        Change Case
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {fieldErrors.case_id ? (
+                  <p className="cons-error" role="alert" style={{ marginTop: '0.5rem' }}>
+                    {fieldErrors.case_id}
+                  </p>
+                ) : null}
+              </div>
+            )}
+
+            {/* COMMON APPOINTMENT DATE & TIME */}
             <div className="cons-grid-2">
               <label className="auth-field">
                 <span>Preferred Date</span>
@@ -439,14 +686,19 @@ function BookConsultationModal({ open, onClose, onSubmitted }) {
 
             <label className="auth-field">
               <span>
-                Issue Summary <em style={{ fontStyle: 'normal', opacity: 0.7 }}>(optional)</em>
+                {bookingType === 'EXISTING_CASE' ? 'Reason / Notes for Appointment' : 'Issue Summary'}{' '}
+                <em style={{ fontStyle: 'normal', opacity: 0.7 }}>(optional)</em>
               </span>
               <textarea
                 name="issue_summary"
                 rows={2}
                 value={form.issue_summary}
                 onChange={onChange}
-                placeholder="Optional background for preparation"
+                placeholder={
+                  bookingType === 'EXISTING_CASE'
+                    ? 'Notes or questions regarding this case for the advocate'
+                    : 'Optional background for preparation'
+                }
               />
             </label>
 
@@ -472,43 +724,80 @@ function BookConsultationModal({ open, onClose, onSubmitted }) {
         {step === 'review' && (
           <div className="cons-review-step">
             <div className="cons-review-card">
-              <h3 className="cons-review-title">Consultation Summary</h3>
+              <h3 className="cons-review-title">
+                {bookingType === 'EXISTING_CASE' ? 'Case Appointment Summary' : 'Consultation Summary'}
+              </h3>
               <div className="cons-review-grid">
+                {bookingType === 'EXISTING_CASE' ? (
+                  <>
+                    <div className="cons-review-item">
+                      <span className="cons-review-label">Case Reference</span>
+                      <span className="cons-review-value" style={{ fontWeight: 700, color: 'var(--color-primary)' }}>
+                        {selectedCase?.case_reference}
+                      </span>
+                    </div>
+                    <div className="cons-review-item">
+                      <span className="cons-review-label">Case Title</span>
+                      <span className="cons-review-value">{selectedCase?.title}</span>
+                    </div>
+                    <div className="cons-review-item">
+                      <span className="cons-review-label">Assigned Lawyer</span>
+                      <span className="cons-review-value">{selectedCase?.responsible_lawyer?.full_name}</span>
+                    </div>
+                    <div className="cons-review-item">
+                      <span className="cons-review-label">Mode</span>
+                      <span className="cons-review-value">{selectedModeLabel}</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="cons-review-item">
+                      <span className="cons-review-label">Practice Area</span>
+                      <span className="cons-review-value">{selectedPracticeAreaName}</span>
+                    </div>
+                    <div className="cons-review-item">
+                      <span className="cons-review-label">Subject</span>
+                      <span className="cons-review-value">{form.subject}</span>
+                    </div>
+                    <div className="cons-review-item">
+                      <span className="cons-review-label">Mode</span>
+                      <span className="cons-review-value">{selectedModeLabel}</span>
+                    </div>
+                  </>
+                )}
                 <div className="cons-review-item">
-                  <span className="cons-review-label">Practice Area</span>
-                  <span className="cons-review-value">{selectedPracticeAreaName}</span>
-                </div>
-                <div className="cons-review-item">
-                  <span className="cons-review-label">Subject</span>
-                  <span className="cons-review-value">{form.subject}</span>
-                </div>
-                <div className="cons-review-item">
-                  <span className="cons-review-label">Date &amp; Time</span>
+                  <span className="cons-review-label">Preferred Slot</span>
                   <span className="cons-review-value">
                     {formatPreferredDate(form.preferred_date)} at {formatPreferredTime(form.preferred_time)}
                   </span>
                 </div>
-                <div className="cons-review-item">
-                  <span className="cons-review-label">Mode</span>
-                  <span className="cons-review-value">{selectedModeLabel}</span>
-                </div>
               </div>
+
               {form.issue_summary?.trim() ? (
                 <div className="cons-review-summary-box">
-                  <span className="cons-review-label">Summary</span>
+                  <span className="cons-review-label">
+                    {bookingType === 'EXISTING_CASE' ? 'Reason / Notes' : 'Summary'}
+                  </span>
                   <p>{form.issue_summary}</p>
                 </div>
               ) : null}
             </div>
 
+            {/* FEE CARD */}
             <div className="cons-fee-card">
               <div className="cons-fee-row">
                 <div>
-                  <span className="cons-fee-title">Consultation Fee</span>
-                  <p className="cons-fee-desc">Standard 45-minute consultation with legal counsel</p>
+                  <span className="cons-fee-title">
+                    {bookingType === 'EXISTING_CASE' ? 'Case Appointment Fee' : 'Consultation Fee'}
+                  </span>
+                  <p className="cons-fee-desc">
+                    {bookingType === 'EXISTING_CASE'
+                      ? `Configured by lead counsel ${selectedCase?.responsible_lawyer?.full_name || 'Advocate'}`
+                      : 'Standard initial consultation with legal counsel'}
+                  </p>
                 </div>
                 <div className="cons-fee-amount">
-                  ₹500<span className="cons-fee-currency">.00</span>
+                  ₹{Number(effectiveFee).toLocaleString('en-IN')}<span className="cons-fee-currency">.00</span>
                 </div>
               </div>
               <div className="cons-fee-badge">
@@ -542,7 +831,7 @@ function BookConsultationModal({ open, onClose, onSubmitted }) {
                     {verifying ? 'Verifying Payment…' : 'Opening Checkout…'}
                   </>
                 ) : (
-                  'Pay & Submit Consultation'
+                  bookingType === 'EXISTING_CASE' ? 'Pay & Book Appointment' : 'Pay & Submit Consultation'
                 )}
               </button>
             </div>
@@ -558,27 +847,39 @@ function BookConsultationModal({ open, onClose, onSubmitted }) {
               </svg>
             </div>
             <p className="section-tag-gold" style={{ marginTop: '0.5rem', marginBottom: '0.2rem' }}>
-              Consultation Request Submitted
+              {bookingType === 'EXISTING_CASE' ? 'Case Appointment Confirmed' : 'Consultation Request Submitted'}
             </p>
             <h3 className="cons-feedback-title">Payment Successful</h3>
             <p className="cons-feedback-desc">
-              Your consultation request has been confirmed and submitted to our chambers.
+              {bookingType === 'EXISTING_CASE'
+                ? `Your appointment with ${selectedCase?.responsible_lawyer?.full_name || 'counsel'} regarding ${selectedCase?.case_reference} is confirmed.`
+                : 'Your consultation request has been confirmed and submitted to our chambers.'}
             </p>
 
             <div className="cons-receipt-card">
               <div className="cons-receipt-row">
-                <span className="cons-receipt-label">Reference</span>
+                <span className="cons-receipt-label">Booking Reference</span>
                 <span className="cons-receipt-value cons-ref">
                   {createdConsultation?.consultation_id || 'CONS-2026-XXXX'}
                 </span>
               </div>
+              {bookingType === 'EXISTING_CASE' && selectedCase && (
+                <div className="cons-receipt-row">
+                  <span className="cons-receipt-label">Case</span>
+                  <span className="cons-receipt-value" style={{ fontWeight: 600 }}>
+                    {selectedCase.case_reference}
+                  </span>
+                </div>
+              )}
               <div className="cons-receipt-row">
-                <span className="cons-receipt-label">Payment</span>
-                <span className="cons-status is-approved">PAID</span>
+                <span className="cons-receipt-label">Amount Paid</span>
+                <span className="cons-receipt-value" style={{ fontWeight: 700 }}>
+                  ₹{Number(createdConsultation?.charged_fee || effectiveFee).toLocaleString('en-IN')}
+                </span>
               </div>
               <div className="cons-receipt-row">
-                <span className="cons-receipt-label">Status</span>
-                <span className="cons-receipt-value">Awaiting Firm Review</span>
+                <span className="cons-receipt-label">Payment Status</span>
+                <span className="cons-status is-approved">PAID</span>
               </div>
             </div>
 
@@ -591,7 +892,7 @@ function BookConsultationModal({ open, onClose, onSubmitted }) {
                   onClose?.();
                 }}
               >
-                View Consultation
+                View Details
               </button>
             </div>
           </div>
@@ -607,7 +908,7 @@ function BookConsultationModal({ open, onClose, onSubmitted }) {
             </div>
             <h3 className="cons-feedback-title">Payment Failed</h3>
             <p className="cons-feedback-desc">
-              Payment could not be completed. Your consultation details are saved. You can retry payment now without resubmitting the form.
+              Payment could not be completed. Your booking details are saved. You can retry payment now without re-entering the form.
             </p>
 
             {createdConsultation?.consultation_id ? (

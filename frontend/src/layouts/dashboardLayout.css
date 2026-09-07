@@ -101,10 +101,10 @@ body.lw-shell-fill-lock {
   height: 100dvh;
   background: #fff;
   border-right: 1px solid var(--color-border);
-  padding: 1rem 0.75rem 1.15rem;
+  padding: 0.65rem 0.6rem 0.65rem;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.35rem;
   z-index: 50;
   transition: width var(--transition-normal);
 }
@@ -112,8 +112,8 @@ body.lw-shell-fill-lock {
 .lw-sidebar__brand {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  padding: 0 0.45rem 0.15rem;
+  gap: 0.55rem;
+  padding: 0 0.35rem 0.1rem;
   text-decoration: none;
   color: inherit;
 }
@@ -128,7 +128,7 @@ body.lw-shell-fill-lock {
 
 .lw-sidebar__product {
   font-family: var(--font-headings);
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   color: var(--color-primary);
   font-weight: 600;
   letter-spacing: -0.02em;
@@ -137,29 +137,41 @@ body.lw-shell-fill-lock {
 
 .lw-sidebar__tag {
   font-family: var(--font-sans);
-  font-size: 0.62rem;
-  letter-spacing: 0.04em;
+  font-size: 0.6rem;
+  letter-spacing: 0.03em;
   color: var(--color-text);
   font-weight: 400;
-  margin-top: 0.15rem;
-  line-height: 1.3;
+  margin-top: 0.1rem;
+  line-height: 1.25;
 }
 
 .lw-sidebar__nav {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.08rem;
   overflow-y: auto;
-  padding-right: 0.15rem;
+  overflow-x: hidden;
+  padding-right: 0.1rem;
   flex: 1;
   min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(107, 30, 43, 0.2) transparent;
+}
+
+.lw-sidebar__nav::-webkit-scrollbar {
+  width: 3px;
+}
+
+.lw-sidebar__nav::-webkit-scrollbar-thumb {
+  background: rgba(107, 30, 43, 0.2);
+  border-radius: 3px;
 }
 
 .lw-sidebar__group {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
-  margin-bottom: 0.75rem;
+  gap: 0.08rem;
+  margin-bottom: 0.3rem;
 }
 
 .lw-sidebar__group:last-child {
@@ -167,10 +179,10 @@ body.lw-shell-fill-lock {
 }
 
 .lw-sidebar__group-title {
-  margin: 0.25rem 0 0.15rem;
-  padding: 0.2rem 0.7rem;
+  margin: 0.15rem 0 0.05rem;
+  padding: 0.1rem 0.6rem;
   font-family: var(--font-sans);
-  font-size: 0.65rem;
+  font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -186,12 +198,12 @@ body.lw-shell-fill-lock {
 
 .lw-shell--collapsed .lw-sidebar__group,
 .is-collapsed .lw-sidebar__group {
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.25rem;
 }
 
 .lw-sidebar__footer {
-  margin-top: 0.85rem;
-  padding-top: 0.65rem;
+  margin-top: 0.25rem;
+  padding-top: 0.35rem;
   border-top: 1px solid var(--color-border);
 }
 
@@ -207,16 +219,16 @@ body.lw-shell-fill-lock {
 .lw-sidebar__link {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.55rem;
   width: 100%;
   border: 0;
   background: transparent;
   color: var(--color-text);
   font: inherit;
-  font-size: 0.88rem;
+  font-size: 0.84rem;
   font-weight: 500;
   text-align: left;
-  padding: 0.58rem 0.7rem;
+  padding: 0.36rem 0.6rem;
   border-radius: var(--lw-radius);
   cursor: pointer;
   text-decoration: none;

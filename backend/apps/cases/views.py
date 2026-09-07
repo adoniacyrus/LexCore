@@ -7,13 +7,14 @@ from rest_framework.views import APIView
 from apps.accounts.models import User, UserRole
 from apps.consultations.permissions import IsLawyerRole
 from .models import Case
-from .permissions import IsCaseParticipant
+from .permissions import IsCaseParticipant, IsCaseResponsibleLawyerOrAdmin
 from .serializers import (
     CaseConvertSerializer,
     CaseSerializer,
     UserBriefSerializer,
     LawyerBriefSerializer,
     CaseTeamUpdateSerializer,
+    CaseAppointmentFeeUpdateSerializer,
 )
 
 
@@ -292,6 +293,52 @@ class CaseTeamUpdateView(APIView):
         ).prefetch_related("assistant_lawyers").get(pk=updated_case.pk)
 
         return Response(CaseSerializer(full_case).data, status=status.HTTP_200_OK)
+
+
+class CaseAppointmentFeeView(APIView):
+    """
+    PATCH /api/cases/<pk>/appointment-fee/
+    Updates the appointment fee for an existing case.
+    Restricted to the case's responsible lawyer or Admin.
+    Assistant lawyers, paralegals, and clients are forbidden.
+    """
+
+    permission_classes = [IsCaseResponsibleLawyerOrAdmin]
+
+    def patch(self, request, pk):
+        queryset = Case.objects.select_related(
+            "client",
+            "practice_area",
+            "responsible_lawyer",
+        )
+        case_obj = _get_case_or_404(queryset, pk)
+        self.check_object_permissions(request, case_obj)
+
+        serializer = CaseAppointmentFeeUpdateSerializer(
+            case_obj,
+            data=request.data,
+            partial=True,
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        updated_case = serializer.save()
+
+        full_case = Case.objects.select_related(
+            "client",
+            "practice_area",
+            "responsible_lawyer",
+            "supporting_paralegal",
+            "originating_consultation",
+        ).prefetch_related("assistant_lawyers", "activities").get(pk=updated_case.pk)
+
+        return Response(
+            {
+                "appointment_fee": updated_case.appointment_fee,
+                "case": CaseSerializer(full_case).data,
+                "message": f"Case appointment fee updated to ₹{updated_case.appointment_fee}.",
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class CaseMatterBoardView(APIView):

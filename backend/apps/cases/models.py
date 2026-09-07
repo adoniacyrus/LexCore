@@ -146,6 +146,14 @@ class Case(models.Model):
     registration_number = models.CharField(max_length=50, blank=True, default="")
     official_court_reference = models.CharField(max_length=255, blank=True, default="")
 
+    appointment_fee = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Lawyer-configured fee in INR for appointments on this case.",
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

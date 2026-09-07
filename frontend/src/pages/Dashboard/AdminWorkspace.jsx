@@ -9,6 +9,7 @@ import {
 } from '../../services/consultationService';
 import { listEmployees } from '../../services/employeeService';
 import { getHearingStatistics } from '../../services/hearingService';
+import { getAdminRevenue } from '../../services/paymentService';
 import './adminWorkspace.css';
 
 const NEW_CLIENT_DAYS = 7;
@@ -76,6 +77,7 @@ function AdminWorkspace() {
   const [clients, setClients] = useState([]);
   const [consultations, setConsultations] = useState([]);
   const [hearingStats, setHearingStats] = useState({ today: 0, this_week: 0, missed: 0 });
+  const [revenueData, setRevenueData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const firstName = (user?.full_name || 'Administrator').split(' ')[0];
@@ -86,16 +88,18 @@ function AdminWorkspace() {
     setLoading(true);
     setError('');
     try {
-      const [staffData, clientData, consData, statsData] = await Promise.all([
+      const [staffData, clientData, consData, statsData, revData] = await Promise.all([
         listEmployees(accessToken),
         listClients(accessToken),
         listAdminConsultations(accessToken),
         getHearingStatistics(accessToken),
+        getAdminRevenue(accessToken).catch(() => null),
       ]);
       setEmployees(Array.isArray(staffData) ? staffData : []);
       setClients(Array.isArray(clientData) ? clientData : []);
       setConsultations(Array.isArray(consData) ? consData : []);
       setHearingStats(statsData || { today: 0, this_week: 0, missed: 0 });
+      setRevenueData(revData);
     } catch (err) {
       setError(getErrorMessage(err, 'Unable to load firm overview.'));
       setEmployees([]);
@@ -201,6 +205,16 @@ function AdminWorkspace() {
       label: 'Unassigned',
       secondary: 'Awaiting lawyer',
     },
+    {
+      id: 'revenue',
+      icon: 'billing',
+      value: revenueData?.metrics?.total_revenue !== undefined
+        ? `₹${Number(revenueData.metrics.total_revenue).toLocaleString('en-IN')}`
+        : '₹0',
+      label: 'Consultation Revenue',
+      secondary: `${revenueData?.metrics?.paid_consultations_count || 0} paid bookings`,
+      linkTo: '/dashboard/admin/revenue',
+    },
   ];
 
   return (
@@ -228,18 +242,26 @@ function AdminWorkspace() {
         {loading ? (
           <p className="lw-muted admin-dash__loading">Loading overview…</p>
         ) : (
-          kpiCards.map((card) => (
-            <article key={card.id} className="admin-kpi">
-              <span className="admin-kpi__icon" aria-hidden="true">
-                <NavIcon name={card.icon} />
-              </span>
-              <div className="admin-kpi__body">
-                <p className="admin-kpi__value">{card.value}</p>
-                <p className="admin-kpi__label">{card.label}</p>
-                <p className="admin-kpi__secondary">{card.secondary}</p>
-              </div>
-            </article>
-          ))
+          kpiCards.map((card) => {
+            const cardElement = (
+              <article key={card.id} className="admin-kpi" style={card.linkTo ? { cursor: 'pointer' } : {}}>
+                <span className="admin-kpi__icon" aria-hidden="true">
+                  <NavIcon name={card.icon} />
+                </span>
+                <div className="admin-kpi__body">
+                  <p className="admin-kpi__value">{card.value}</p>
+                  <p className="admin-kpi__label">{card.label}</p>
+                  <p className="admin-kpi__secondary">{card.secondary}</p>
+                </div>
+              </article>
+            );
+
+            return card.linkTo ? (
+              <Link key={card.id} to={card.linkTo} style={{ textDecoration: 'none', color: 'inherit', display: 'contents' }}>
+                {cardElement}
+              </Link>
+            ) : cardElement;
+          })
         )}
       </section>
 

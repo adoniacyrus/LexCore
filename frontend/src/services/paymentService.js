@@ -55,4 +55,16 @@ export async function getConsultationPayment(access, consultationId) {
   return data;
 }
 
+/**
+ * Retrieves firm consultation and appointment revenue metrics and reports (Admin only).
+ */
+export async function getAdminRevenue(access, params = {}) {
+  const { data } = await api.get('/payments/revenue/', {
+    ...authHeaders(access),
+    params,
+  });
+  return data;
+}
+
 export { getErrorMessage };
+

@@ -111,6 +111,11 @@ function AdminManageModal({ open, item, practiceAreas, accessToken, onClose, onS
             {item.client?.email ? ` · ${item.client.email}` : ''}
           </p>
           <p className="cons-detail__submitted">
+            Consultation Type:{' '}
+            <strong>{item.consultation_type === 'EXISTING_CASE' ? 'Existing Case Appointment' : 'New Matter Intake'}</strong>
+            {item.case_appointment_ref ? ` (${item.case_appointment_ref})` : ''}
+          </p>
+          <p className="cons-detail__submitted">
             Current status:{' '}
             <span className={`cons-status is-${String(item.status).toLowerCase()}`}>
               {item.status_label || STATUS_LABELS[item.status] || item.status}
@@ -368,7 +373,18 @@ function AdminConsultationQueuePage() {
               <tbody>
                 {pageItems.map((item) => (
                   <tr key={item.id}>
-                    <td className="cons-ref">{item.consultation_id}</td>
+                    <td className="cons-ref">
+                      <div>{item.consultation_id}</div>
+                      {item.consultation_type === 'EXISTING_CASE' ? (
+                        <span style={{ fontSize: '0.72rem', color: 'var(--color-primary)', fontWeight: 600, display: 'block' }}>
+                          {item.case_appointment_ref ? `Case: ${item.case_appointment_ref}` : 'Case Appointment'}
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', display: 'block' }}>
+                          New Matter
+                        </span>
+                      )}
+                    </td>
                     <td>{item.client?.full_name || '—'}</td>
                     <td>{practiceAreaLabel(item)}</td>
                     <td>

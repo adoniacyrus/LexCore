@@ -6,6 +6,7 @@ from .views import (
     AdminConsultationDetailView,
     AdminConsultationListView,
     ConsultationCreateView,
+    ClientEligibleCasesView,
     EligibleLawyersView,
     LawyerAssignedListView,
     LawyerAssignedStatusView,
@@ -26,6 +27,7 @@ urlpatterns = [
         name="practice-area-detail",
     ),
     path("", ConsultationCreateView.as_view(), name="consultation-create"),
+    path("eligible-cases/", ClientEligibleCasesView.as_view(), name="consultation-eligible-cases"),
     path("my/", MyConsultationsView.as_view(), name="consultation-my-list"),
     path(
         "admin/",

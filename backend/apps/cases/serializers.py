@@ -430,3 +430,29 @@ class CaseTeamUpdateSerializer(serializers.ModelSerializer):
                 )
 
         return instance
+
+
+class CaseAppointmentFeeUpdateSerializer(serializers.Serializer):
+    appointment_fee = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        min_value=0,
+        required=True,
+    )
+
+    def update(self, instance, validated_data):
+        old_fee = instance.appointment_fee
+        new_fee = validated_data["appointment_fee"]
+        instance.appointment_fee = new_fee
+        instance.save(update_fields=["appointment_fee", "updated_at"])
+
+        user = self.context.get("request").user if "request" in self.context else None
+        old_display = f"₹{old_fee}" if old_fee is not None else "Not set"
+        CaseActivity.objects.create(
+            case=instance,
+            activity_type="FEE_CHANGED",
+            description=f"Appointment fee updated from {old_display} to ₹{new_fee}",
+            user=user,
+        )
+        return instance
+

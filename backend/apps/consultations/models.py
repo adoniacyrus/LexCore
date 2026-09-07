@@ -54,6 +54,11 @@ class ConsultationPaymentStatus(models.TextChoices):
     FAILED = "FAILED", "Payment Failed"
 
 
+class ConsultationType(models.TextChoices):
+    NEW_MATTER = "NEW_MATTER", "New Legal Matter"
+    EXISTING_CASE = "EXISTING_CASE", "Existing Case Appointment"
+
+
 LAWYER_ROLES = ("SENIOR_LAWYER", "JUNIOR_LAWYER")
 
 
@@ -66,6 +71,20 @@ class Consultation(models.Model):
         db_index=True,
         editable=False,
         help_text="Auto-generated reference, e.g. CONS-2026-0001.",
+    )
+    consultation_type = models.CharField(
+        max_length=20,
+        choices=ConsultationType.choices,
+        default=ConsultationType.NEW_MATTER,
+        db_index=True,
+    )
+    case_appointment = models.ForeignKey(
+        "cases.Case",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="case_appointments",
+        help_text="Linked case for an existing-case appointment.",
     )
     client = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -95,6 +114,13 @@ class Consultation(models.Model):
     preferred_time = models.TimeField()
     subject = models.CharField(max_length=255)
     issue_summary = models.TextField(blank=True, default="")
+    charged_fee = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Historical fee in INR charged at the time of booking.",
+    )
     status = models.CharField(
         max_length=20,
         choices=ConsultationStatus.choices,
@@ -117,6 +143,7 @@ class Consultation(models.Model):
             models.Index(fields=["status", "-created_at"]),
             models.Index(fields=["payment_status", "-created_at"]),
             models.Index(fields=["assigned_lawyer", "-created_at"]),
+            models.Index(fields=["consultation_type", "-created_at"]),
         ]
 
     def __str__(self):

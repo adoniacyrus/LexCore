@@ -192,6 +192,19 @@ function ConsultationDetailModal({ open, consultation, onClose, onUpdated }) {
               >
                 {paymentStatusLabel(current)}
               </span>
+              <span
+                style={{
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  padding: '0.15rem 0.5rem',
+                  borderRadius: '12px',
+                  backgroundColor: current.consultation_type === 'EXISTING_CASE' ? '#faf3e0' : '#f0f4f8',
+                  color: current.consultation_type === 'EXISTING_CASE' ? '#855b1b' : '#2c4a6f',
+                  border: '1px solid var(--color-border)',
+                }}
+              >
+                {current.consultation_type_label || (current.consultation_type === 'EXISTING_CASE' ? 'Existing Case Appointment' : 'New Legal Matter')}
+              </span>
             </div>
             {submittedAt ? (
               <span className="cons-detail__submitted">Submitted {submittedAt}</span>
@@ -200,6 +213,13 @@ function ConsultationDetailModal({ open, consultation, onClose, onUpdated }) {
 
           <div className="cons-detail__grid">
             <DetailField label="Subject">{current.subject || '—'}</DetailField>
+            {current.consultation_type === 'EXISTING_CASE' && (
+              <DetailField label="Linked Case">
+                <span style={{ fontWeight: 600, color: 'var(--color-primary)' }}>
+                  {current.case_appointment_ref || current.case_reference || 'Case File'}
+                </span>
+              </DetailField>
+            )}
             <DetailField label="Mode">{modeLabel}</DetailField>
             <DetailField label="Practice Area">{practiceLabel}</DetailField>
             <DetailField label="Assigned Lawyer">{lawyerLabel}</DetailField>
@@ -219,8 +239,8 @@ function ConsultationDetailModal({ open, consultation, onClose, onUpdated }) {
                 {paymentStatusLabel(current)}
               </span>
             </DetailField>
-            <DetailField label="Consultation Fee">
-              {formatFeeAmount(current.fee_amount)}
+            <DetailField label={current.consultation_type === 'EXISTING_CASE' ? 'Appointment Fee' : 'Consultation Fee'}>
+              {formatFeeAmount(current.charged_fee || current.fee_amount)}
             </DetailField>
           </div>
 

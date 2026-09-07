@@ -21,6 +21,7 @@ import DeleteDocumentConfirmModal from './DeleteDocumentConfirmModal';
 import CreateTaskModal from './CreateTaskModal';
 import TaskDetailModal from './TaskDetailModal';
 import AddCourtProceedingModal from './AddCourtProceedingModal';
+import EditAppointmentFeeModal from './EditAppointmentFeeModal';
 import './cases.css';
 
 function DetailField({ label, value, long = false }) {
@@ -49,6 +50,7 @@ function CaseDetailPage() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedDocToDelete, setSelectedDocToDelete] = useState(null);
+  const [showFeeModal, setShowFeeModal] = useState(false);
   
   // Tasks Modals & State
   const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
@@ -155,6 +157,7 @@ function CaseDetailPage() {
   const completedCount = tasks.filter(t => t.status === 'COMPLETED').length;
 
   const canCreateTask = role === 'ADMIN' || item?.responsible_lawyer?.id === user?.id || item?.supervising_lawyer?.id === user?.id;
+  const canEditFee = role === 'ADMIN' || item?.responsible_lawyer?.id === user?.id;
 
   return (
     <DashboardLayout showContext={false} activeModule="cases">
@@ -658,6 +661,39 @@ function CaseDetailPage() {
                 </div>
               </section>
 
+              {/* APPOINTMENT FEE SECTION */}
+              <section className="case-section" aria-labelledby="section-appointment-fee">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                  <h2 id="section-appointment-fee" className="case-section__title" style={{ margin: 0 }}>Appointment Fee</h2>
+                  {canEditFee && (
+                    <button
+                      type="button"
+                      className="btn btn-ghost-dark"
+                      style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem', height: 'auto', minHeight: 'auto', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                      onClick={() => setShowFeeModal(true)}
+                    >
+                      <NavIcon name="edit" /> Edit Fee
+                    </button>
+                  )}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-primary)' }}>
+                    {item.appointment_fee !== null && item.appointment_fee !== undefined
+                      ? `₹${Number(item.appointment_fee).toLocaleString('en-IN')}`
+                      : <span style={{ color: '#aaa', fontStyle: 'italic', fontSize: '0.95rem' }}>Not configured</span>}
+                  </div>
+                  {role === 'CLIENT' ? (
+                    <p style={{ fontSize: '0.78rem', color: '#666', margin: 0 }}>
+                      Fee charged when scheduling an appointment regarding this case.
+                    </p>
+                  ) : (
+                    <p style={{ fontSize: '0.78rem', color: '#888280', margin: 0 }}>
+                      {item.responsible_lawyer?.full_name ? `Configured by lead counsel ${item.responsible_lawyer.full_name}.` : 'Set by lead counsel.'}
+                    </p>
+                  )}
+                </div>
+              </section>
+
               {/* UPCOMING HEARING CARD */}
               <section className="case-section" aria-labelledby="section-upcoming-hearing">
                 <h2 id="section-upcoming-hearing" className="case-section__title">Upcoming Hearing</h2>
@@ -806,6 +842,13 @@ function CaseDetailPage() {
         open={showProceedingModal}
         caseObj={item}
         onClose={() => setShowProceedingModal(false)}
+        onSuccess={() => load()}
+      />
+
+      <EditAppointmentFeeModal
+        open={showFeeModal}
+        caseObj={item}
+        onClose={() => setShowFeeModal(false)}
         onSuccess={() => load()}
       />
     </DashboardLayout>

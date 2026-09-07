@@ -15,7 +15,12 @@ from django.utils import timezone
 import razorpay
 from razorpay.errors import SignatureVerificationError
 
-from apps.consultations.models import Consultation, ConsultationPaymentStatus, ConsultationStatus
+from apps.consultations.models import (
+    Consultation,
+    ConsultationPaymentStatus,
+    ConsultationStatus,
+    ConsultationType,
+)
 from .models import Payment, PaymentStatus
 
 logger = logging.getLogger(__name__)
@@ -117,14 +122,24 @@ class PaymentService:
         """
         Create server-side Razorpay order and initial Payment record for a consultation.
         """
-        fee_paise = cls.get_default_fee_paise()
+        if (
+            getattr(consultation, "consultation_type", None) == ConsultationType.EXISTING_CASE
+            and consultation.charged_fee is not None
+        ):
+            fee_paise = int(consultation.charged_fee * 100)
+        else:
+            fee_paise = cls.get_default_fee_paise()
 
         # Generate Razorpay order
         notes = {
             "consultation_id": consultation.consultation_id,
+            "consultation_type": getattr(consultation, "consultation_type", ConsultationType.NEW_MATTER),
             "client_id": str(consultation.client_id),
             "client_email": consultation.client.email,
         }
+        if getattr(consultation, "case_appointment", None):
+            notes["case_reference"] = consultation.case_appointment.case_reference
+
         order = RazorpayService.create_order(
             amount_paise=fee_paise,
             currency="INR",
@@ -217,7 +232,10 @@ class PaymentService:
             )
 
             consultation.payment_status = ConsultationPaymentStatus.PAID
-            consultation.status = ConsultationStatus.PENDING  # Ready for firm review
+            if getattr(consultation, "consultation_type", None) == ConsultationType.EXISTING_CASE:
+                consultation.status = ConsultationStatus.ACCEPTED
+            else:
+                consultation.status = ConsultationStatus.PENDING  # Ready for firm review
             consultation.save(update_fields=["payment_status", "status", "updated_at"])
 
         return payment
@@ -230,14 +248,24 @@ class PaymentService:
         if consultation.payment_status == ConsultationPaymentStatus.PAID:
             raise ValidationError("This consultation has already been paid for.")
 
-        fee_paise = cls.get_default_fee_paise()
+        if (
+            getattr(consultation, "consultation_type", None) == ConsultationType.EXISTING_CASE
+            and consultation.charged_fee is not None
+        ):
+            fee_paise = int(consultation.charged_fee * 100)
+        else:
+            fee_paise = cls.get_default_fee_paise()
 
         notes = {
             "consultation_id": consultation.consultation_id,
+            "consultation_type": getattr(consultation, "consultation_type", ConsultationType.NEW_MATTER),
             "client_id": str(consultation.client_id),
             "client_email": consultation.client.email,
             "retry": "true",
         }
+        if getattr(consultation, "case_appointment", None):
+            notes["case_reference"] = consultation.case_appointment.case_reference
+
         order = RazorpayService.create_order(
             amount_paise=fee_paise,
             currency="INR",
@@ -304,7 +332,10 @@ class PaymentService:
 
                 consultation = payment.consultation
                 consultation.payment_status = ConsultationPaymentStatus.PAID
-                consultation.status = ConsultationStatus.PENDING
+                if getattr(consultation, "consultation_type", None) == ConsultationType.EXISTING_CASE:
+                    consultation.status = ConsultationStatus.ACCEPTED
+                else:
+                    consultation.status = ConsultationStatus.PENDING
                 consultation.save(update_fields=["payment_status", "status", "updated_at"])
             return True
 

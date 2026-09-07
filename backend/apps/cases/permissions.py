@@ -25,3 +25,20 @@ class IsCaseParticipant(BasePermission):
         if user.role == UserRole.CLIENT:
             return obj.client == user
         return False
+
+
+class IsCaseResponsibleLawyerOrAdmin(BasePermission):
+    """
+    Enforces that only the case's responsible/main lawyer or an Admin can configure
+    the case appointment fee. Assistant lawyers, paralegals, and clients are forbidden.
+    """
+
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_authenticated)
+
+    def has_object_permission(self, request, view, obj):
+        user = request.user
+        if user.role == UserRole.ADMIN:
+            return True
+        return obj.responsible_lawyer == user
+

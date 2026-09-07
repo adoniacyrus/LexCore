@@ -79,4 +79,14 @@ export async function deleteCaseDocument(access, docId) {
   return data;
 }
 
+export async function updateCaseAppointmentFee(access, caseId, fee) {
+  const { data } = await api.patch(
+    `/cases/${caseId}/appointment-fee/`,
+    { appointment_fee: fee },
+    authHeaders(access)
+  );
+  return data;
+}
+
 export { getErrorMessage };
+

@@ -110,9 +110,24 @@ function LawyerConsultationDetailModal({ open, consultation, userRole, onClose, 
 
         <div className="cons-detail">
           <div className="cons-detail__status-row">
-            <span className={`cons-status is-${String(consultation.status).toLowerCase()}`}>
-              {statusLabel}
-            </span>
+            <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              <span className={`cons-status is-${String(consultation.status).toLowerCase()}`}>
+                {statusLabel}
+              </span>
+              <span
+                style={{
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  padding: '0.15rem 0.5rem',
+                  borderRadius: '12px',
+                  backgroundColor: consultation.consultation_type === 'EXISTING_CASE' ? '#faf3e0' : '#f0f4f8',
+                  color: consultation.consultation_type === 'EXISTING_CASE' ? '#855b1b' : '#2c4a6f',
+                  border: '1px solid var(--color-border)',
+                }}
+              >
+                {consultation.consultation_type_label || (consultation.consultation_type === 'EXISTING_CASE' ? 'Existing Case Appointment' : 'New Legal Matter')}
+              </span>
+            </div>
             {submittedAt ? (
               <span className="cons-detail__submitted">Submitted {submittedAt}</span>
             ) : null}
@@ -120,6 +135,13 @@ function LawyerConsultationDetailModal({ open, consultation, userRole, onClose, 
 
           <div className="cons-detail__grid">
             <DetailField label="Subject">{consultation.subject || '—'}</DetailField>
+            {consultation.consultation_type === 'EXISTING_CASE' && (
+              <DetailField label="Linked Case">
+                <span style={{ fontWeight: 600, color: 'var(--color-primary)' }}>
+                  {consultation.case_appointment_ref || consultation.case_reference || 'Case File'}
+                </span>
+              </DetailField>
+            )}
             <DetailField label="Client Name">{consultation.client?.full_name || '—'}</DetailField>
             <DetailField label="Mode">{modeLabel}</DetailField>
             <DetailField label="Practice Area">{practiceLabel}</DetailField>
@@ -129,6 +151,9 @@ function LawyerConsultationDetailModal({ open, consultation, userRole, onClose, 
             </DetailField>
             <DetailField label="Preferred Time">
               {formatPreferredTime(consultation.preferred_time)}
+            </DetailField>
+            <DetailField label={consultation.consultation_type === 'EXISTING_CASE' ? 'Appointment Fee' : 'Consultation Fee'}>
+              ₹{Number(consultation.charged_fee || consultation.fee_amount || 500).toLocaleString('en-IN')}
             </DetailField>
           </div>
 

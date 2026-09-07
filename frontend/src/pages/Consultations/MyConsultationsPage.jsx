@@ -147,7 +147,18 @@ function MyConsultationsPage() {
                       }
                     }}
                   >
-                    <td className="cons-ref">{item.consultation_id}</td>
+                    <td className="cons-ref">
+                      <div>{item.consultation_id}</div>
+                      {item.consultation_type === 'EXISTING_CASE' ? (
+                        <span style={{ fontSize: '0.72rem', color: 'var(--color-primary)', fontWeight: 600, display: 'block' }}>
+                          {item.case_appointment_ref ? `Case: ${item.case_appointment_ref}` : 'Case Appointment'}
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', display: 'block' }}>
+                          New Matter
+                        </span>
+                      )}
+                    </td>
                     <td>{item.subject}</td>
                     <td>{item.consultation_mode_label || item.consultation_mode || '—'}</td>
                     <td>

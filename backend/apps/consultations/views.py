@@ -30,6 +30,7 @@ def _consultation_qs():
         "client",
         "practice_area",
         "assigned_lawyer",
+        "case_appointment",
     )
 
 
@@ -161,6 +162,63 @@ class MyConsultationsView(APIView):
             ConsultationSerializer(queryset, many=True).data,
             status=status.HTTP_200_OK,
         )
+
+
+class ClientEligibleCasesView(APIView):
+    """
+    GET /api/consultations/eligible-cases/
+    Lists existing cases belonging to the authenticated client for appointment booking.
+    Evaluates server-side appointment booking eligibility.
+    """
+
+    permission_classes = [IsClientRole]
+
+    def get(self, request):
+        from apps.cases.models import Case, CaseStatus
+
+        cases = (
+            Case.objects.filter(client=request.user)
+            .select_related("responsible_lawyer", "practice_area")
+            .order_by("-created_at")
+        )
+
+        results = []
+        for c in cases:
+            is_active_status = c.status in (CaseStatus.OPEN, CaseStatus.IN_PROGRESS)
+            has_lawyer = bool(c.responsible_lawyer)
+            has_fee = c.appointment_fee is not None and c.appointment_fee > 0
+
+            is_eligible = is_active_status and has_lawyer and has_fee
+            ineligible_reason = None
+            if not is_active_status:
+                ineligible_reason = f"Case is {c.get_status_display().lower()} and not currently active."
+            elif not has_lawyer:
+                ineligible_reason = "This case currently has no responsible lawyer assigned. Please contact the firm."
+            elif not has_fee:
+                ineligible_reason = "An appointment fee has not yet been configured for this case. Please contact the firm."
+
+            results.append({
+                "id": c.id,
+                "case_reference": c.case_reference,
+                "title": c.title,
+                "case_type": c.case_type,
+                "case_type_label": c.get_case_type_display(),
+                "status": c.status,
+                "status_label": c.get_status_display(),
+                "practice_area_id": c.practice_area_id,
+                "practice_area_name": c.practice_area.name if c.practice_area else "General",
+                "responsible_lawyer": {
+                    "id": c.responsible_lawyer.id,
+                    "full_name": c.responsible_lawyer.full_name,
+                    "email": c.responsible_lawyer.email,
+                    "role": c.responsible_lawyer.role,
+                } if c.responsible_lawyer else None,
+                "appointment_fee": c.appointment_fee,
+                "is_eligible": is_eligible,
+                "ineligible_reason": ineligible_reason,
+            })
+
+        return Response(results, status=status.HTTP_200_OK)
 
 
 # ---------------------------------------------------------------------------
