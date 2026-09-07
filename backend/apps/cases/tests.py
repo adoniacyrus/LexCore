@@ -903,3 +903,151 @@ class CaseTeamHierarchyTests(APITestCase):
         response = self.client.post(task_url, task_payload)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
+
+from datetime import timedelta
+from django.utils import timezone
+from .models import CourtProceeding, Notification
+from .alerts import generate_hearing_alerts
+
+class HearingAndCalendarTests(APITestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(
+            email="admin_cal@lexcore.local",
+            full_name="Cal Admin",
+            password="password123",
+            role=UserRole.ADMIN,
+        )
+        self.senior_lawyer = User.objects.create_user(
+            email="senior_cal@lexcore.local",
+            full_name="Senior Cal",
+            password="password123",
+            role=UserRole.SENIOR_LAWYER,
+        )
+        self.client_user = User.objects.create_user(
+            email="client_cal@lexcore.local",
+            full_name="Cal Client",
+            password="password123",
+            role=UserRole.CLIENT,
+        )
+        self.practice_area = PracticeArea.objects.get(name="Family Law")
+        self.consultation = Consultation.objects.create(
+            client=self.client_user,
+            practice_area=self.practice_area,
+            assigned_lawyer=self.senior_lawyer,
+            consultation_mode="OFFICE",
+            preferred_date="2026-08-20",
+            preferred_time="10:00:00",
+            subject="Divorce Case",
+            status=ConsultationStatus.ACCEPTED,
+        )
+        self.case = Case.objects.create(
+            originating_consultation=self.consultation,
+            client=self.client_user,
+            practice_area=self.practice_area,
+            responsible_lawyer=self.senior_lawyer,
+            title="SOP Litig",
+            case_type=CaseType.CIVIL,
+            status=CaseStatus.OPEN,
+            start_date="2026-08-12",
+        )
+
+    def test_hearing_status_calculation(self):
+        """Verify dynamic status categorizes proceedings correctly."""
+        today = timezone.localdate()
+        
+        # 1. Missed hearing (event date today-5, next hearing date today-2)
+        # (This is the oldest proceeding in the case, so it starts as MISSED)
+        proc_missed = CourtProceeding.objects.create(
+            case=self.case,
+            event_date=today - timedelta(days=5),
+            event_type="Hearing",
+            court_name="High Court",
+            next_hearing_date=today - timedelta(days=2),
+        )
+        self.assertEqual(proc_missed.hearing_status, "MISSED")
+
+        # 2. Upcoming hearing (event date today-2, next hearing date today+5)
+        # (This has event_date newer than proc_missed, so proc_missed becomes COMPLETED)
+        proc_upcoming = CourtProceeding.objects.create(
+            case=self.case,
+            event_date=today - timedelta(days=2),
+            event_type="Hearing",
+            court_name="High Court",
+            next_hearing_date=today + timedelta(days=5),
+        )
+        self.assertEqual(proc_upcoming.hearing_status, "UPCOMING")
+        self.assertEqual(proc_missed.hearing_status, "COMPLETED")
+
+        # 3. Today hearing (event date today-1, next hearing date today)
+        proc_today = CourtProceeding.objects.create(
+            case=self.case,
+            event_date=today - timedelta(days=1),
+            event_type="Hearing",
+            court_name="High Court",
+            next_hearing_date=today,
+        )
+        self.assertEqual(proc_today.hearing_status, "TODAY")
+
+    def test_hearing_notifications_generation(self):
+        """Verify notifications generate without duplicates."""
+        today = timezone.localdate()
+        
+        # Upcoming in 7 days
+        proc_7days = CourtProceeding.objects.create(
+            case=self.case,
+            event_date=today - timedelta(days=1),
+            event_type="Hearing",
+            court_name="High Court",
+            next_hearing_date=today + timedelta(days=7),
+        )
+        
+        generate_hearing_alerts()
+        
+        # Verification
+        notifs = Notification.objects.filter(user=self.senior_lawyer, alert_type="7_DAYS")
+        self.assertEqual(notifs.count(), 1)
+        self.assertEqual(notifs.first().title, "Upcoming Hearing")
+
+        # Re-run alerts; shouldn't duplicate
+        generate_hearing_alerts()
+        self.assertEqual(notifs.count(), 1)
+
+    def test_hearing_api_permissions(self):
+        """Check API routes enforce correct participant accessibility."""
+        today = timezone.localdate()
+        CourtProceeding.objects.create(
+            case=self.case,
+            event_date=today,
+            event_type="Hearing",
+            court_name="High Court",
+            next_hearing_date=today + timedelta(days=1),
+        )
+
+        stats_url = reverse("hearing-statistics")
+        list_url = reverse("hearing-list")
+
+        # 1. Assigned lawyer access: success
+        self.client.force_authenticate(user=self.senior_lawyer)
+        response = self.client.get(stats_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["tomorrow"], 1)
+
+        # 2. Client access: read-only success
+        self.client.force_authenticate(user=self.client_user)
+        response = self.client.get(list_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+
+        # 3. Unassociated user access: returns 0 cases/hearings
+        unassoc = User.objects.create_user(
+            email="unassoc_cal@lexcore.local",
+            full_name="Unassoc Lawyer",
+            password="password123",
+            role=UserRole.SENIOR_LAWYER,
+        )
+        self.client.force_authenticate(user=unassoc)
+        response = self.client.get(list_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 0)
+
+

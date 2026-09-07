@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import PageHeader from '../../components/dashboard/PageHeader';
 import { useAuth } from '../../context/AuthContext';
@@ -20,6 +20,7 @@ import UploadDocumentModal from './UploadDocumentModal';
 import DeleteDocumentConfirmModal from './DeleteDocumentConfirmModal';
 import CreateTaskModal from './CreateTaskModal';
 import TaskDetailModal from './TaskDetailModal';
+import AddCourtProceedingModal from './AddCourtProceedingModal';
 import './cases.css';
 
 function DetailField({ label, value, long = false }) {
@@ -63,6 +64,10 @@ function CaseDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Proceedings Modals & Refs
+  const [showProceedingModal, setShowProceedingModal] = useState(false);
+  const proceedingsRef = useRef(null);
+
   const load = useCallback(async () => {
     if (!accessToken || !targetRef) return;
     setLoading(true);
@@ -81,8 +86,7 @@ function CaseDetailPage() {
         setTasks(Array.isArray(tasksData) ? tasksData : []);
       }
     } catch (err) {
-      setError(getErrorMessage(err, 'Unable to load case details.'));
-      setItem(null);
+      setError(getErrorMessage(err, 'Failed to load case details.'));
     } finally {
       setLoading(false);
       setDocsLoading(false);
@@ -93,6 +97,15 @@ function CaseDetailPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('scroll') === 'proceedings' && proceedingsRef.current) {
+      setTimeout(() => {
+        proceedingsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 500);
+    }
+  }, [item]);
 
   const role = user?.role || 'CLIENT';
   const dashboardPath = getDashboardPath(role);
@@ -560,6 +573,77 @@ function CaseDetailPage() {
                   </div>
                 )}
               </section>
+
+              {/* COURT PROCEEDINGS SECTION */}
+              <section className="case-section" aria-labelledby="section-proceedings" style={{ marginTop: '1.5rem' }} ref={proceedingsRef}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                  <h2 id="section-proceedings" className="case-section__title" style={{ margin: 0 }}>Court Proceedings</h2>
+                  {(role === 'ADMIN' || role === 'SENIOR_LAWYER' || role === 'JUNIOR_LAWYER') && (
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      style={{ fontSize: '0.78rem', padding: '0.4rem 0.75rem', height: 'auto', minHeight: 'auto', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                      onClick={() => setShowProceedingModal(true)}
+                    >
+                      + Record Proceeding
+                    </button>
+                  )}
+                </div>
+
+                {!item.proceedings || item.proceedings.length === 0 ? (
+                  <div style={{ padding: '2.5rem', textAlign: 'center', backgroundColor: '#faf9f6', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius-sm)' }}>
+                    <p style={{ fontSize: '0.9rem', color: '#888280', marginBottom: '1rem' }}>No proceedings have been recorded for this case.</p>
+                    {(role === 'ADMIN' || role === 'SENIOR_LAWYER' || role === 'JUNIOR_LAWYER') && (
+                      <button
+                        type="button"
+                        className="btn btn-ghost-dark"
+                        onClick={() => setShowProceedingModal(true)}
+                      >
+                        Record Proceeding
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="cases-table-wrap" style={{ border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius-sm)', background: '#fff' }}>
+                    <table className="cases-table" style={{ margin: 0 }}>
+                      <thead>
+                        <tr>
+                          <th>Event Date</th>
+                          <th>Event Type</th>
+                          <th>Court / Forum</th>
+                          <th>Next Hearing</th>
+                          <th>Notes</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {item.proceedings.map((proc) => (
+                          <tr key={proc.id}>
+                            <td style={{ whiteSpace: 'nowrap' }}>
+                              <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{formatDate(proc.event_date)}</span>
+                            </td>
+                            <td style={{ whiteSpace: 'nowrap' }}>
+                              <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>{proc.event_type}</span>
+                            </td>
+                            <td style={{ whiteSpace: 'normal', minWidth: '130px' }}>
+                              <span style={{ fontSize: '0.8rem' }}>{proc.court_name} {proc.bench && `(${proc.bench})`}</span>
+                            </td>
+                            <td style={{ whiteSpace: 'nowrap' }}>
+                              <span style={{ fontSize: '0.8rem', fontWeight: proc.next_hearing_date ? 600 : 400 }}>
+                                {formatDate(proc.next_hearing_date)}
+                              </span>
+                            </td>
+                            <td style={{ whiteSpace: 'normal', minWidth: '150px' }}>
+                              <span style={{ fontSize: '0.78rem', color: '#555', display: 'block', wordBreak: 'break-word' }}>
+                                {proc.notes || '—'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
             </div>
 
             {/* SIDEBAR */}
@@ -572,6 +656,26 @@ function CaseDetailPage() {
                   {role !== 'CLIENT' && <DetailField label="Phone" value={item.client?.phone_number} />}
                   <DetailField label="Practice Area" value={item.practice_area?.name} />
                 </div>
+              </section>
+
+              {/* UPCOMING HEARING CARD */}
+              <section className="case-section" aria-labelledby="section-upcoming-hearing">
+                <h2 id="section-upcoming-hearing" className="case-section__title">Upcoming Hearing</h2>
+                {item.upcoming_hearing ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>
+                      {formatDate(item.upcoming_hearing.next_hearing_date)}
+                    </div>
+                    <div style={{ fontWeight: 600, fontSize: '0.88rem' }}>{item.upcoming_hearing.court_name}</div>
+                    {item.upcoming_hearing.bench && (
+                      <div style={{ fontSize: '0.78rem', color: '#888280' }}>{item.upcoming_hearing.bench}</div>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ color: '#aaa', fontStyle: 'italic', fontSize: '0.85rem' }}>
+                    No hearing scheduled
+                  </div>
+                )}
               </section>
 
               <section className="case-section" aria-labelledby="section-legal-team">
@@ -695,6 +799,13 @@ function CaseDetailPage() {
           setShowTaskDetailModal(false);
           setSelectedTaskId(null);
         }}
+        onSuccess={() => load()}
+      />
+
+      <AddCourtProceedingModal
+        open={showProceedingModal}
+        caseObj={item}
+        onClose={() => setShowProceedingModal(false)}
         onSuccess={() => load()}
       />
     </DashboardLayout>

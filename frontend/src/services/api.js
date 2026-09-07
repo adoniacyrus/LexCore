@@ -15,7 +15,9 @@ const USER_KEY = 'lexcore_user';
 const AUTH_CLEARED_EVENT = 'lexcore:auth-cleared';
 const TOKENS_UPDATED_EVENT = 'lexcore:tokens-updated';
 
-const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
+import { API_BASE_URL } from './apiConfig';
+
+const baseURL = API_BASE_URL;
 
 const api = axios.create({
   baseURL,

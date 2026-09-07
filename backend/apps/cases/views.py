@@ -372,3 +372,161 @@ class CaseMatterBoardView(APIView):
             "summary": summary_data,
             "categories": categories_data
         }, status=status.HTTP_200_OK)
+
+
+from rest_framework import generics
+from datetime import timedelta
+from django.utils import timezone
+from django.db.models import Q
+from .models import CourtProceeding, Notification
+from .serializers import CourtProceedingSerializer, NotificationSerializer
+from .alerts import generate_hearing_alerts
+
+def get_user_accessible_proceedings(user):
+    queryset = CourtProceeding.objects.all()
+    if user.role == UserRole.ADMIN:
+        return queryset
+    elif user.role in (UserRole.SENIOR_LAWYER, UserRole.JUNIOR_LAWYER):
+        queryset = queryset.filter(
+            Q(case__responsible_lawyer=user) |
+            Q(case__supervising_lawyer=user) |
+            Q(case__assistant_lawyers=user)
+        ).distinct()
+    elif user.role == UserRole.PARALEGAL:
+        queryset = queryset.filter(case__supporting_paralegal=user)
+    elif user.role == UserRole.CLIENT:
+        queryset = queryset.filter(case__client=user)
+    else:
+        queryset = CourtProceeding.objects.none()
+    return queryset
+
+
+class HearingListView(generics.ListAPIView):
+    serializer_class = CourtProceedingSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        generate_hearing_alerts()
+        
+        queryset = get_user_accessible_proceedings(user).filter(next_hearing_date__isnull=False)
+        
+        # Apply filters
+        court = self.request.query_params.get("court")
+        if court:
+            queryset = queryset.filter(court_name__iexact=court)
+            
+        practice_area = self.request.query_params.get("practice_area")
+        if practice_area:
+            queryset = queryset.filter(case__practice_area_id=practice_area)
+            
+        lawyer = self.request.query_params.get("lawyer")
+        if lawyer:
+            if user.role == UserRole.ADMIN:
+                queryset = queryset.filter(
+                    Q(case__responsible_lawyer_id=lawyer) |
+                    Q(case__supervising_lawyer_id=lawyer) |
+                    Q(case__assistant_lawyers=lawyer)
+                ).distinct()
+                
+        # Date range filtering
+        start_date = self.request.query_params.get("start_date")
+        end_date = self.request.query_params.get("end_date")
+        if start_date and end_date:
+            queryset = queryset.filter(next_hearing_date__range=[start_date, end_date])
+            
+        return queryset
+
+
+class HearingStatisticsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        generate_hearing_alerts()
+        
+        proceedings = get_user_accessible_proceedings(user)
+        today_date = timezone.localdate()
+        tomorrow_date = today_date + timedelta(days=1)
+        start_of_week = today_date - timedelta(days=today_date.weekday())
+        end_of_week = start_of_week + timedelta(days=6)
+        
+        hearings = proceedings.filter(next_hearing_date__isnull=False)
+        
+        today_count = 0
+        tomorrow_count = 0
+        this_week_count = 0
+        missed_count = 0
+        completed_count = 0
+        
+        for h in hearings:
+            h_status = h.hearing_status
+            h_date = h.next_hearing_date
+            
+            if h_date == today_date:
+                today_count += 1
+            elif h_date == tomorrow_date:
+                tomorrow_count += 1
+                
+            if start_of_week <= h_date <= end_of_week:
+                this_week_count += 1
+                
+            if h_status == "MISSED":
+                missed_count += 1
+            elif h_status == "COMPLETED":
+                completed_count += 1
+                
+        return Response({
+            "today": today_count,
+            "tomorrow": tomorrow_count,
+            "this_week": this_week_count,
+            "missed": missed_count,
+            "completed": completed_count
+        }, status=status.HTTP_200_OK)
+
+
+class CaseProceedingListCreateView(generics.ListCreateAPIView):
+    serializer_class = CourtProceedingSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        case_id = self.kwargs.get("case_id")
+        # Fetch case
+        case = generics.get_object_or_404(Case, pk=case_id)
+        # Check permissions manually
+        from .permissions import IsCaseParticipant
+        perm = IsCaseParticipant()
+        if not perm.has_object_permission(self.request, self, case):
+            self.permission_denied(self.request)
+        return CourtProceeding.objects.filter(case=case)
+
+    def perform_create(self, serializer):
+        case_id = self.kwargs.get("case_id")
+        case = generics.get_object_or_404(Case, pk=case_id)
+        # Check permissions manually
+        from .permissions import IsCaseParticipant
+        perm = IsCaseParticipant()
+        if not perm.has_object_permission(self.request, self, case):
+            self.permission_denied(self.request)
+        serializer.save(case=case)
+        generate_hearing_alerts()
+
+
+class NotificationListView(generics.ListAPIView):
+    serializer_class = NotificationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        generate_hearing_alerts()
+        return Notification.objects.filter(user=self.request.user)
+
+
+class NotificationMarkReadView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        notification = generics.get_object_or_404(Notification, pk=pk, user=request.user)
+        notification.is_read = True
+        notification.save()
+        return Response({"status": "read"}, status=status.HTTP_200_OK)
+

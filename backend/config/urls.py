@@ -10,6 +10,8 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
+from apps.cases.views import HearingStatisticsView, HearingListView, NotificationListView, NotificationMarkReadView
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/auth/", include("apps.accounts.urls")),
@@ -19,6 +21,10 @@ urlpatterns = [
     path("api/cases/tasks/", include("apps.tasks.urls")),
     path("api/cases/", include("apps.cases.urls")),
     path("api/documents/", include("apps.documents.urls")),
+    path("api/hearings/statistics/", HearingStatisticsView.as_view(), name="hearing-statistics"),
+    path("api/hearings/", HearingListView.as_view(), name="hearing-list"),
+    path("api/notifications/", NotificationListView.as_view(), name="notification-list"),
+    path("api/notifications/<int:pk>/mark-read/", NotificationMarkReadView.as_view(), name="notification-mark-read"),
 ]
 
 if settings.DEBUG:

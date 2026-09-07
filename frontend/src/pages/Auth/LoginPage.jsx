@@ -20,7 +20,6 @@ function LoginPage() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [remember, setRemember] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({ email: '', password: '' });
   const [touched, setTouched] = useState({ email: false, password: false });
@@ -188,10 +187,6 @@ function LoginPage() {
         </label>
 
         <div className="auth-form-meta">
-          <label className="auth-check">
-            <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
-            <span>Remember Me</span>
-          </label>
           <Link to="/forgot-password" className="auth-text-link">
             Forgot Password
           </Link>

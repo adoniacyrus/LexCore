@@ -30,6 +30,7 @@ import CaseDetailPage from '../pages/Cases/CaseDetailPage';
 import CaseConvertPage from '../pages/Cases/CaseConvertPage';
 import CaseEditPage from '../pages/Cases/CaseEditPage';
 import MatterBoardPage from '../pages/Cases/MatterBoardPage';
+import CourtCalendarPage from '../pages/Calendar/CourtCalendarPage';
 
 function AppRouter() {
   return (
@@ -113,6 +114,14 @@ function AppRouter() {
               }
             />
             <Route
+              path="/dashboard/admin/calendar"
+              element={
+                <RoleProtectedRoute roles={['ADMIN']}>
+                  <CourtCalendarPage />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
               path="/dashboard/admin/cases/:caseReference"
               element={
                 <RoleProtectedRoute roles={['ADMIN']}>
@@ -177,6 +186,14 @@ function AppRouter() {
               }
             />
             <Route
+              path="/dashboard/senior/calendar"
+              element={
+                <RoleProtectedRoute roles={['SENIOR_LAWYER']}>
+                  <CourtCalendarPage />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
               path="/dashboard/junior"
               element={
                 <ProtectedRoute>
@@ -233,6 +250,14 @@ function AppRouter() {
               }
             />
             <Route
+              path="/dashboard/junior/calendar"
+              element={
+                <RoleProtectedRoute roles={['JUNIOR_LAWYER']}>
+                  <CourtCalendarPage />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
               path="/dashboard/paralegal"
               element={
                 <ProtectedRoute>
@@ -261,6 +286,14 @@ function AppRouter() {
               element={
                 <RoleProtectedRoute roles={['PARALEGAL']}>
                   <CaseDetailPage />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/paralegal/calendar"
+              element={
+                <RoleProtectedRoute roles={['PARALEGAL']}>
+                  <CourtCalendarPage />
                 </RoleProtectedRoute>
               }
             />
@@ -309,6 +342,14 @@ function AppRouter() {
               element={
                 <RoleProtectedRoute roles={['CLIENT']}>
                   <CaseDetailPage />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/client/calendar"
+              element={
+                <RoleProtectedRoute roles={['CLIENT']}>
+                  <CourtCalendarPage />
                 </RoleProtectedRoute>
               }
             />

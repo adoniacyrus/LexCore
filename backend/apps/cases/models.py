@@ -216,3 +216,78 @@ class CaseActivity(models.Model):
     def __str__(self):
         return f"{self.case.case_reference} - {self.activity_type} - {self.created_at}"
 
+
+class CourtProceeding(models.Model):
+    """
+    Case proceedings detailing event records and scheduled hearings.
+    """
+    case = models.ForeignKey(
+        Case,
+        on_delete=models.CASCADE,
+        related_name="proceedings",
+    )
+    event_date = models.DateField()
+    event_type = models.CharField(max_length=100)
+    court_name = models.CharField(max_length=255)
+    bench = models.CharField(max_length=255, blank=True, default="")
+    next_hearing_date = models.DateField(null=True, blank=True)
+    notes = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-event_date", "-created_at"]
+
+    def __str__(self):
+        return f"{self.case.case_reference} - {self.event_type} on {self.event_date}"
+
+    @property
+    def hearing_status(self):
+        if not self.next_hearing_date:
+            return None
+        from django.utils import timezone
+        today = timezone.localdate()
+        if self.next_hearing_date > today:
+            return "UPCOMING"
+        elif self.next_hearing_date == today:
+            return "TODAY"
+        else:
+            newer_exists = CourtProceeding.objects.filter(
+                case=self.case,
+                event_date__gt=self.event_date
+            ).exclude(pk=self.pk).exists()
+            if newer_exists:
+                return "COMPLETED"
+            return "MISSED"
+
+
+class Notification(models.Model):
+    """
+    User alerts for scheduled hearings.
+    """
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="notifications",
+    )
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    proceeding = models.ForeignKey(
+        CourtProceeding,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="notifications",
+    )
+    alert_type = models.CharField(max_length=50, blank=True, default="")
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        unique_together = ("user", "proceeding", "alert_type")
+
+    def __str__(self):
+        return f"{self.user.email} - {self.title} - {self.created_at}"
+
+

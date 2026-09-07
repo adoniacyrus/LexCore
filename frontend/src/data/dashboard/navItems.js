@@ -49,6 +49,12 @@ export const PORTAL_NAV_BY_ROLE = {
           icon: 'reports',
           route: '/dashboard/admin/matter-board',
         },
+        {
+          id: 'calendar',
+          label: 'Court Calendar',
+          icon: 'calendar',
+          route: '/dashboard/admin/calendar',
+        },
       ],
     },
     {
@@ -78,6 +84,12 @@ export const PORTAL_NAV_BY_ROLE = {
       route: '/dashboard/client/cases',
     },
     {
+      id: 'calendar',
+      label: 'Court Calendar',
+      icon: 'calendar',
+      route: '/dashboard/client/calendar',
+    },
+    {
       id: 'account',
       label: 'Account',
       icon: 'clients',
@@ -104,6 +116,12 @@ export const PORTAL_NAV_BY_ROLE = {
       icon: 'cases',
       route: '/dashboard/senior/cases',
     },
+    {
+      id: 'calendar',
+      label: 'Court Calendar',
+      icon: 'calendar',
+      route: '/dashboard/senior/calendar',
+    },
   ],
   JUNIOR_LAWYER: [
     { id: 'dashboard', label: 'Dashboard', icon: 'home' },
@@ -125,6 +143,12 @@ export const PORTAL_NAV_BY_ROLE = {
       icon: 'cases',
       route: '/dashboard/junior/cases',
     },
+    {
+      id: 'calendar',
+      label: 'Court Calendar',
+      icon: 'calendar',
+      route: '/dashboard/junior/calendar',
+    },
   ],
   PARALEGAL: [
     { id: 'dashboard', label: 'Dashboard', icon: 'home' },
@@ -139,6 +163,12 @@ export const PORTAL_NAV_BY_ROLE = {
       label: 'Supporting Cases',
       icon: 'cases',
       route: '/dashboard/paralegal/cases',
+    },
+    {
+      id: 'calendar',
+      label: 'Court Calendar',
+      icon: 'calendar',
+      route: '/dashboard/paralegal/calendar',
     },
   ],
 };

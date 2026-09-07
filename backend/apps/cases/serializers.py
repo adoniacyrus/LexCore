@@ -3,7 +3,7 @@ from rest_framework import serializers
 
 from apps.accounts.models import UserRole
 from apps.consultations.models import Consultation, ConsultationStatus, PracticeArea
-from .models import Case, CaseStatus, CaseType, MatterCategory, MatterStage, CaseActivity
+from .models import Case, CaseStatus, CaseType, MatterCategory, MatterStage, CaseActivity, CourtProceeding, Notification
 
 User = get_user_model()
 
@@ -31,6 +31,40 @@ class CaseActivitySerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class CourtProceedingSerializer(serializers.ModelSerializer):
+    case_reference = serializers.CharField(source="case.case_reference", read_only=True)
+    case_title = serializers.CharField(source="case.title", read_only=True)
+    responsible_lawyer_name = serializers.CharField(source="case.responsible_lawyer.full_name", read_only=True)
+    hearing_status = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = CourtProceeding
+        fields = (
+            "id",
+            "case",
+            "case_reference",
+            "case_title",
+            "responsible_lawyer_name",
+            "event_date",
+            "event_type",
+            "court_name",
+            "bench",
+            "next_hearing_date",
+            "notes",
+            "hearing_status",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = ("id", "created_at", "updated_at")
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ("id", "user", "title", "message", "is_read", "created_at")
+        read_only_fields = ("id", "user", "created_at")
+
+
 class CaseSerializer(serializers.ModelSerializer):
     client = UserBriefSerializer(read_only=True)
     responsible_lawyer = UserBriefSerializer(read_only=True)
@@ -43,6 +77,21 @@ class CaseSerializer(serializers.ModelSerializer):
     assistant_lawyers = UserBriefSerializer(many=True, read_only=True)
     activities = CaseActivitySerializer(many=True, read_only=True)
     practice_area = PracticeAreaBriefSerializer(read_only=True)
+    proceedings = CourtProceedingSerializer(many=True, read_only=True)
+    upcoming_hearing = serializers.SerializerMethodField()
+
+    def get_upcoming_hearing(self, obj):
+        from django.utils import timezone
+        today = timezone.localdate()
+        p = obj.proceedings.filter(next_hearing_date__gte=today).order_by("next_hearing_date").first()
+        if p:
+            return {
+                "id": p.id,
+                "next_hearing_date": p.next_hearing_date,
+                "court_name": p.court_name,
+                "bench": p.bench,
+            }
+        return None
     originating_consultation_ref = serializers.CharField(
         source="originating_consultation.consultation_id",
         read_only=True,
@@ -80,6 +129,7 @@ class CaseSerializer(serializers.ModelSerializer):
             "originating_consultation",
             "assistant_lawyers",
             "activities",
+            "proceedings",
         )
 
     def to_representation(self, instance):

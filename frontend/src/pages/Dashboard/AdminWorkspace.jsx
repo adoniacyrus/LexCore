@@ -8,6 +8,7 @@ import {
   listAdminConsultations,
 } from '../../services/consultationService';
 import { listEmployees } from '../../services/employeeService';
+import { getHearingStatistics } from '../../services/hearingService';
 import './adminWorkspace.css';
 
 const NEW_CLIENT_DAYS = 7;
@@ -74,6 +75,7 @@ function AdminWorkspace() {
   const [employees, setEmployees] = useState([]);
   const [clients, setClients] = useState([]);
   const [consultations, setConsultations] = useState([]);
+  const [hearingStats, setHearingStats] = useState({ today: 0, this_week: 0, missed: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const firstName = (user?.full_name || 'Administrator').split(' ')[0];
@@ -84,14 +86,16 @@ function AdminWorkspace() {
     setLoading(true);
     setError('');
     try {
-      const [staffData, clientData, consData] = await Promise.all([
+      const [staffData, clientData, consData, statsData] = await Promise.all([
         listEmployees(accessToken),
         listClients(accessToken),
         listAdminConsultations(accessToken),
+        getHearingStatistics(accessToken),
       ]);
       setEmployees(Array.isArray(staffData) ? staffData : []);
       setClients(Array.isArray(clientData) ? clientData : []);
       setConsultations(Array.isArray(consData) ? consData : []);
+      setHearingStats(statsData || { today: 0, this_week: 0, missed: 0 });
     } catch (err) {
       setError(getErrorMessage(err, 'Unable to load firm overview.'));
       setEmployees([]);
@@ -279,24 +283,48 @@ function AdminWorkspace() {
           )}
         </section>
 
-        <section className="admin-dash__actions" aria-labelledby="quick-actions-heading">
-          <div className="admin-dash__section-head">
-            <h2 id="quick-actions-heading">Quick Actions</h2>
-          </div>
-          <nav className="admin-action-grid" aria-label="Quick actions">
-            {QUICK_ACTIONS.map((action) => (
-              <Link key={action.id} to={action.to} className="admin-action">
-                <span className="admin-action__icon" aria-hidden="true">
-                  <NavIcon name={action.icon} />
-                </span>
-                <span className="admin-action__copy">
-                  <span className="admin-action__title">{action.title}</span>
-                  <span className="admin-action__desc">{action.description}</span>
-                </span>
-              </Link>
-            ))}
-          </nav>
-        </section>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', minHeight: 0, overflow: 'hidden' }}>
+          <section className="admin-dash__actions" aria-labelledby="quick-actions-heading" style={{ flex: 1, minHeight: 0 }}>
+            <div className="admin-dash__section-head">
+              <h2 id="quick-actions-heading">Quick Actions</h2>
+            </div>
+            <nav className="admin-action-grid" aria-label="Quick actions">
+              {QUICK_ACTIONS.map((action) => (
+                <Link key={action.id} to={action.to} className="admin-action">
+                  <span className="admin-action__icon" aria-hidden="true">
+                    <NavIcon name={action.icon} />
+                  </span>
+                  <span className="admin-action__copy">
+                    <span className="admin-action__title">{action.title}</span>
+                    <span className="admin-action__desc">{action.description}</span>
+                  </span>
+                </Link>
+              ))}
+            </nav>
+          </section>
+
+          {/* CALENDAR STATS WIDGET */}
+          <section className="admin-dash__actions" aria-labelledby="hearings-widget-heading" style={{ flex: 1, minHeight: 0 }}>
+            <div className="admin-dash__section-head">
+              <h2 id="hearings-widget-heading">Upcoming Hearings</h2>
+              <Link to="/dashboard/admin/calendar" className="btn btn-ghost-dark" style={{ fontSize: '0.78rem', padding: '0.2rem 0.5rem' }}>View Calendar</Link>
+            </div>
+            <div className="admin-work__card" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', padding: '1rem', textAlign: 'center', background: '#fff', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius-sm)' }}>
+              <div>
+                <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-primary)', margin: 0 }}>{hearingStats.today}</p>
+                <p style={{ fontSize: '0.72rem', color: '#888280', margin: '0.2rem 0 0 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Today</p>
+              </div>
+              <div>
+                <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-primary)', margin: 0 }}>{hearingStats.this_week}</p>
+                <p style={{ fontSize: '0.72rem', color: '#888280', margin: '0.2rem 0 0 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>This Week</p>
+              </div>
+              <div>
+                <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#c0392b', margin: 0 }}>{hearingStats.missed}</p>
+                <p style={{ fontSize: '0.72rem', color: '#888280', margin: '0.2rem 0 0 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Missed</p>
+              </div>
+            </div>
+          </section>
+        </div>
       </div>
     </div>
   );

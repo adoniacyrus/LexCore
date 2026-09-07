@@ -10,6 +10,7 @@ from .views import (
     CaseListView,
     CaseTeamUpdateView,
     CaseMatterBoardView,
+    CaseProceedingListCreateView,
 )
 
 urlpatterns = [
@@ -22,4 +23,5 @@ urlpatterns = [
     path("<str:pk>/team/", CaseTeamUpdateView.as_view(), name="case-team-update"),
     path("<str:case_id>/documents/", CaseDocumentsView.as_view(), name="case-documents"),
     path("<str:case_id>/tasks/", CaseTaskListCreateView.as_view(), name="case-tasks"),
+    path("<str:case_id>/proceedings/", CaseProceedingListCreateView.as_view(), name="case-proceedings"),
 ]

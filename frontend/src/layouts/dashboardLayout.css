@@ -70,7 +70,7 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  overflow: hidden !important;
+  overflow-y: auto !important;
 }
 
 .lw-shell__scrim {
