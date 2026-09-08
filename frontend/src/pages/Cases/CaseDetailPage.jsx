@@ -192,51 +192,41 @@ function CaseDetailPage() {
         ) : null}
 
         {loading ? (
-          <div style={{ padding: '3rem', textAlign: 'center' }}>Loading case details…</div>
+          <div style={{ padding: '1.25rem 1rem', textAlign: 'center' }}>Loading case details…</div>
         ) : !item ? (
           <div className="cases-error">Case not found or access denied.</div>
         ) : (
           <div className="case-detail-container">
             <div className="case-detail-main">
               {/* Classification Badges */}
-              <div className="matter-classification-header-card" style={{
-                display: 'flex',
-                gap: '1.5rem',
-                backgroundColor: '#FAF9F6',
-                border: '1px solid var(--color-border)',
-                borderRadius: 'var(--border-radius-sm)',
-                padding: '1rem',
-                marginBottom: '1rem',
-                alignItems: 'center',
-                flexWrap: 'wrap'
-              }}>
+              <div className="matter-classification-header-card">
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <span className="case-label" style={{ marginBottom: '0.25rem' }}>Matter Category</span>
+                  <span className="case-label" style={{ marginBottom: '0.15rem' }}>Matter Category</span>
                   <span className="matter-badge category-badge" style={{
                     display: 'inline-flex',
                     alignItems: 'center',
-                    fontSize: '0.82rem',
+                    fontSize: '0.78rem',
                     fontWeight: '600',
                     color: 'var(--color-primary)',
                     backgroundColor: '#f6eff1',
                     border: '1px solid rgba(107, 30, 43, 0.15)',
-                    padding: '0.35rem 0.8rem',
+                    padding: '0.25rem 0.65rem',
                     borderRadius: '12px'
                   }}>
                     {item.matter_category_label || item.matter_category}
                   </span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <span className="case-label" style={{ marginBottom: '0.25rem' }}>Matter Stage</span>
+                  <span className="case-label" style={{ marginBottom: '0.15rem' }}>Matter Stage</span>
                   <span className="matter-badge stage-badge" style={{
                     display: 'inline-flex',
                     alignItems: 'center',
-                    fontSize: '0.82rem',
+                    fontSize: '0.78rem',
                     fontWeight: '600',
                     color: '#855b1b',
                     backgroundColor: '#faf5ec',
                     border: '1px solid rgba(133, 91, 27, 0.15)',
-                    padding: '0.35rem 0.8rem',
+                    padding: '0.25rem 0.65rem',
                     borderRadius: '12px'
                   }}>
                     {item.matter_stage_label || item.matter_stage}
@@ -245,13 +235,9 @@ function CaseDetailPage() {
                 {(role === 'ADMIN' || item.responsible_lawyer?.id === user?.id) && (
                   <button
                     type="button"
-                    className="btn btn-ghost-dark"
+                    className="btn btn-ghost-dark btn-sm"
                     style={{
                       marginLeft: 'auto',
-                      fontSize: '0.78rem',
-                      padding: '0.35rem 0.75rem',
-                      height: 'auto',
-                      minHeight: 'auto',
                       alignSelf: 'center'
                     }}
                     onClick={() => setShowClassificationModal(true)}
@@ -314,9 +300,9 @@ function CaseDetailPage() {
 
               {/* TASKS & WORK SECTION (Internal Legal Team Only) */}
               {role !== 'CLIENT' && (
-                <section className="case-section" aria-labelledby="section-tasks-work" style={{ marginTop: '2rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <section className="case-section" aria-labelledby="section-tasks-work">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
                       <h2 id="section-tasks-work" className="case-section__title" style={{ margin: 0, border: 'none', padding: 0 }}>
                         Tasks & Work
                       </h2>
@@ -339,8 +325,7 @@ function CaseDetailPage() {
                     {canCreateTask && (
                       <button
                         type="button"
-                        className="btn btn-primary"
-                        style={{ fontSize: '0.78rem', padding: '0.4rem 0.75rem', height: 'auto', minHeight: 'auto', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                        className="btn btn-primary btn-sm"
                         onClick={() => setShowCreateTaskModal(true)}
                       >
                         + Add Task
@@ -349,7 +334,7 @@ function CaseDetailPage() {
                   </div>
 
                   {/* TASK FILTER TABS */}
-                  <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: '0.35rem', marginBottom: '0.65rem', flexWrap: 'wrap' }}>
                     {[
                       { key: 'ALL', label: 'All Tasks' },
                       { key: 'MY_TASKS', label: 'My Tasks' },
@@ -362,9 +347,9 @@ function CaseDetailPage() {
                         type="button"
                         onClick={() => setTaskFilter(tab.key)}
                         style={{
-                          fontSize: '0.75rem',
-                          padding: '0.25rem 0.6rem',
-                          borderRadius: '12px',
+                          fontSize: '0.74rem',
+                          padding: '0.2rem 0.55rem',
+                          borderRadius: '10px',
                           border: '1px solid var(--color-border)',
                           background: taskFilter === tab.key ? 'var(--color-primary)' : '#FAF9F6',
                           color: taskFilter === tab.key ? '#fff' : 'var(--color-text)',
@@ -378,16 +363,16 @@ function CaseDetailPage() {
                   </div>
 
                   {tasksLoading ? (
-                    <div style={{ padding: '1.5rem', textAlign: 'center', color: '#888280', fontSize: '0.9rem' }}>Loading tasks…</div>
+                    <div style={{ padding: '1rem', textAlign: 'center', color: '#888280', fontSize: '0.85rem' }}>Loading tasks…</div>
                   ) : filteredTasks.length === 0 ? (
-                    <div style={{ padding: '2.5rem', textAlign: 'center', backgroundColor: '#faf9f6', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius-sm)' }}>
-                      <p style={{ fontSize: '0.9rem', color: '#888280', marginBottom: canCreateTask ? '1rem' : 0 }}>
+                    <div style={{ padding: '1.25rem 1rem', textAlign: 'center', backgroundColor: '#faf9f6', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius-sm)' }}>
+                      <p style={{ fontSize: '0.85rem', color: '#888280', marginBottom: canCreateTask ? '0.65rem' : 0 }}>
                         {taskFilter !== 'ALL' ? 'No tasks match selected filter.' : 'No tasks assigned to this case yet.'}
                       </p>
                       {canCreateTask && taskFilter === 'ALL' && (
                         <button
                           type="button"
-                          className="btn btn-ghost-dark"
+                          className="btn btn-ghost-dark btn-sm"
                           onClick={() => setShowCreateTaskModal(true)}
                         >
                           Add Task
@@ -458,13 +443,12 @@ function CaseDetailPage() {
               )}
 
               {/* CASE DOCUMENTS SECTION (Common Repository) */}
-              <section className="case-section" aria-labelledby="section-case-documents" style={{ marginTop: '2rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.75rem', marginBottom: '1.25rem' }}>
+              <section className="case-section" aria-labelledby="section-case-documents">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem', marginBottom: '0.75rem' }}>
                   <h2 id="section-case-documents" className="case-section__title" style={{ margin: 0, border: 'none', padding: 0 }}>Documents & Evidence</h2>
                   <button
                     type="button"
-                    className="btn btn-primary"
-                    style={{ fontSize: '0.78rem', padding: '0.4rem 0.75rem', height: 'auto', minHeight: 'auto', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                    className="btn btn-primary btn-sm"
                     onClick={() => setShowUploadModal(true)}
                   >
                     + Upload Document
@@ -472,13 +456,13 @@ function CaseDetailPage() {
                 </div>
 
                 {docsLoading ? (
-                  <div style={{ padding: '1.5rem', textAlign: 'center', color: '#888280', fontSize: '0.9rem' }}>Loading documents…</div>
+                  <div style={{ padding: '1rem', textAlign: 'center', color: '#888280', fontSize: '0.85rem' }}>Loading documents…</div>
                 ) : documents.length === 0 ? (
-                  <div style={{ padding: '2.5rem', textAlign: 'center', backgroundColor: '#faf9f6', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius-sm)' }}>
-                    <p style={{ fontSize: '0.9rem', color: '#888280', marginBottom: '1rem' }}>No documents have been uploaded for this case.</p>
+                  <div style={{ padding: '1.25rem 1rem', textAlign: 'center', backgroundColor: '#faf9f6', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius-sm)' }}>
+                    <p style={{ fontSize: '0.85rem', color: '#888280', marginBottom: '0.65rem' }}>No documents have been uploaded for this case.</p>
                     <button
                       type="button"
-                      className="btn btn-ghost-dark"
+                      className="btn btn-ghost-dark btn-sm"
                       onClick={() => setShowUploadModal(true)}
                     >
                       Upload Document
@@ -578,14 +562,13 @@ function CaseDetailPage() {
               </section>
 
               {/* COURT PROCEEDINGS SECTION */}
-              <section className="case-section" aria-labelledby="section-proceedings" style={{ marginTop: '1.5rem' }} ref={proceedingsRef}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <section className="case-section" aria-labelledby="section-proceedings" ref={proceedingsRef}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                   <h2 id="section-proceedings" className="case-section__title" style={{ margin: 0 }}>Court Proceedings</h2>
                   {(role === 'ADMIN' || role === 'SENIOR_LAWYER' || role === 'JUNIOR_LAWYER') && (
                     <button
                       type="button"
-                      className="btn btn-primary"
-                      style={{ fontSize: '0.78rem', padding: '0.4rem 0.75rem', height: 'auto', minHeight: 'auto', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                      className="btn btn-primary btn-sm"
                       onClick={() => setShowProceedingModal(true)}
                     >
                       + Record Proceeding
@@ -594,12 +577,12 @@ function CaseDetailPage() {
                 </div>
 
                 {!item.proceedings || item.proceedings.length === 0 ? (
-                  <div style={{ padding: '2.5rem', textAlign: 'center', backgroundColor: '#faf9f6', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius-sm)' }}>
-                    <p style={{ fontSize: '0.9rem', color: '#888280', marginBottom: '1rem' }}>No proceedings have been recorded for this case.</p>
+                  <div style={{ padding: '1.25rem 1rem', textAlign: 'center', backgroundColor: '#faf9f6', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius-sm)' }}>
+                    <p style={{ fontSize: '0.85rem', color: '#888280', marginBottom: '0.65rem' }}>No proceedings have been recorded for this case.</p>
                     {(role === 'ADMIN' || role === 'SENIOR_LAWYER' || role === 'JUNIOR_LAWYER') && (
                       <button
                         type="button"
-                        className="btn btn-ghost-dark"
+                        className="btn btn-ghost-dark btn-sm"
                         onClick={() => setShowProceedingModal(true)}
                       >
                         Record Proceeding

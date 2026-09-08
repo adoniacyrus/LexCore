@@ -140,12 +140,12 @@ function CaseListPage() {
         ) : null}
 
         {items.length > 0 && (
-          <div className="cases-filters-panel" style={{ display: 'flex', gap: '1rem', marginBottom: '1.25rem', padding: '0.75rem 1rem', background: '#faf9f6', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius-sm)', flexWrap: 'wrap', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Filters:</span>
+          <div className="cases-filters-panel">
+            <span className="cases-filters-panel__tag">Filters:</span>
             
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem', fontWeight: 500 }}>
+            <label>
               Status
-              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ padding: '0.3rem 0.5rem', borderRadius: 'var(--border-radius-sm)', border: '1px solid var(--color-border)', outline: 'none' }}>
+              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
                 <option value="">All Statuses</option>
                 {uniqueStatuses.map(status => {
                   const label = STATUS_CHOICES.find(opt => opt.value === status)?.label || status;
@@ -154,9 +154,9 @@ function CaseListPage() {
               </select>
             </label>
 
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem', fontWeight: 500 }}>
+            <label>
               Category
-              <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} style={{ padding: '0.3rem 0.5rem', borderRadius: 'var(--border-radius-sm)', border: '1px solid var(--color-border)', outline: 'none' }}>
+              <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
                 <option value="">All Categories</option>
                 {MATTER_CATEGORY_CHOICES.map(opt => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -164,9 +164,9 @@ function CaseListPage() {
               </select>
             </label>
 
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem', fontWeight: 500 }}>
+            <label>
               Stage
-              <select value={stageFilter} onChange={(e) => setStageFilter(e.target.value)} style={{ padding: '0.3rem 0.5rem', borderRadius: 'var(--border-radius-sm)', border: '1px solid var(--color-border)', outline: 'none' }}>
+              <select value={stageFilter} onChange={(e) => setStageFilter(e.target.value)}>
                 <option value="">All Stages</option>
                 {MATTER_STAGE_CHOICES.map(opt => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -175,9 +175,9 @@ function CaseListPage() {
             </label>
 
             {role === 'ADMIN' && (
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem', fontWeight: 500 }}>
+              <label>
                 Lawyer
-                <select value={lawyerFilter} onChange={(e) => setLawyerFilter(e.target.value)} style={{ padding: '0.3rem 0.5rem', borderRadius: 'var(--border-radius-sm)', border: '1px solid var(--color-border)', outline: 'none' }}>
+                <select value={lawyerFilter} onChange={(e) => setLawyerFilter(e.target.value)}>
                   <option value="">All Lawyers</option>
                   {uniqueLawyers.map(lawyer => (
                     <option key={lawyer.id} value={lawyer.id}>{lawyer.full_name}</option>
@@ -187,9 +187,9 @@ function CaseListPage() {
             )}
 
             {role === 'ADMIN' && (
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem', fontWeight: 500 }}>
+              <label>
                 Practice Area
-                <select value={practiceAreaFilter} onChange={(e) => setPracticeAreaFilter(e.target.value)} style={{ padding: '0.3rem 0.5rem', borderRadius: 'var(--border-radius-sm)', border: '1px solid var(--color-border)', outline: 'none' }}>
+                <select value={practiceAreaFilter} onChange={(e) => setPracticeAreaFilter(e.target.value)}>
                   <option value="">All Practice Areas</option>
                   {uniquePracticeAreas.map(pa => (
                     <option key={pa.id} value={pa.id}>{pa.name}</option>
@@ -201,8 +201,7 @@ function CaseListPage() {
             {(statusFilter || categoryFilter || stageFilter || lawyerFilter || practiceAreaFilter) && (
               <button 
                 type="button" 
-                className="btn btn-ghost-dark" 
-                style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem', height: 'auto', minHeight: 'auto' }}
+                className="btn btn-ghost-dark btn-sm" 
                 onClick={() => {
                   setStatusFilter('');
                   setCategoryFilter('');
@@ -219,7 +218,7 @@ function CaseListPage() {
 
         <div className="cases-table-wrap">
           {loading ? (
-            <div style={{ padding: '2rem', textAlign: 'center' }}>Loading cases…</div>
+            <div style={{ padding: '1.25rem 1rem', textAlign: 'center' }}>Loading cases…</div>
           ) : items.length === 0 ? (
             <EmptyState
               eyebrow="Cases"
@@ -231,9 +230,9 @@ function CaseListPage() {
               }
             />
           ) : filteredItems.length === 0 ? (
-            <div style={{ padding: '3rem', textAlign: 'center', backgroundColor: '#faf9f6', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius-sm)' }}>
-              <p style={{ fontWeight: 500, color: 'var(--color-primary)', marginBottom: '0.5rem' }}>No cases match selected filters.</p>
-              <button type="button" className="btn btn-ghost-dark" onClick={() => { setStatusFilter(''); setCategoryFilter(''); setStageFilter(''); setLawyerFilter(''); setPracticeAreaFilter(''); }}>Reset Filters</button>
+            <div style={{ padding: '1.5rem 1rem', textAlign: 'center', backgroundColor: '#faf9f6', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius-sm)' }}>
+              <p style={{ fontWeight: 500, color: 'var(--color-primary)', marginBottom: '0.4rem', fontSize: '0.85rem' }}>No cases match selected filters.</p>
+              <button type="button" className="btn btn-ghost-dark btn-sm" onClick={() => { setStatusFilter(''); setCategoryFilter(''); setStageFilter(''); setLawyerFilter(''); setPracticeAreaFilter(''); }}>Reset Filters</button>
             </div>
           ) : (
             <table className="cases-table">

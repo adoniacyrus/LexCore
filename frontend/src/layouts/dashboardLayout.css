@@ -546,51 +546,55 @@ body.lw-shell-fill-lock {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
-  gap: 0.75rem 1rem;
-  margin: 0.15rem 0 1rem;
+  gap: 0.5rem 0.85rem;
+  margin: 0 0 0.65rem;
   align-items: flex-end;
 }
 
 .lw-page-title.section-headline {
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.2rem;
+  font-size: clamp(1.45rem, 2.2vw, 1.85rem);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
 }
 
 .lw-workspace-home--compact .lw-page-header {
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.6rem;
 }
 
 .lw-workspace-home--compact .lw-page-desc,
 .lw-workspace-home--compact .auth-sheet-lede {
-  font-size: 0.88rem;
+  font-size: 0.82rem;
 }
 
 .lw-page-desc,
 .lw-section-desc,
 .lw-muted {
   color: var(--color-text);
-  font-size: 0.92rem;
+  font-size: 0.82rem;
+  line-height: 1.35;
   font-family: var(--font-sans);
 }
 
 .lw-page-header .auth-sheet-lede {
   margin: 0;
-  max-width: 52ch;
+  max-width: 56ch;
 }
 
 .lw-section-header {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  gap: 0.75rem;
+  margin-bottom: 0.65rem;
 }
 
 .lw-section-title {
   font-family: var(--font-headings);
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   font-weight: 600;
   color: var(--color-dark);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
   margin: 0;
 }
 
@@ -601,9 +605,30 @@ body.lw-shell-fill-lock {
   border-radius: var(--lw-radius);
 }
 
-.lw-card--pad-sm { padding: 1rem; }
-.lw-card--pad-md { padding: 1.25rem 1.35rem; }
-.lw-card--pad-lg { padding: 1.6rem; }
+.lw-card--pad-sm { padding: 0.65rem 0.85rem; }
+.lw-card--pad-md { padding: 0.85rem 1.1rem; }
+.lw-card--pad-lg { padding: 1.15rem 1.35rem; }
+
+/* Workspace button sizing — compact professional law-firm proportions */
+.lw-shell .btn {
+  padding: 0.42rem 0.85rem;
+  font-size: 0.82rem;
+  min-height: 2.1rem;
+  gap: 0.4rem;
+  line-height: 1.25;
+}
+
+.lw-shell .btn-sm {
+  padding: 0.28rem 0.55rem;
+  font-size: 0.76rem;
+  min-height: 1.8rem;
+}
+
+.lw-shell .btn-lg {
+  padding: 0.65rem 1.15rem;
+  font-size: 0.88rem;
+  min-height: 2.4rem;
+}
 
 .lw-widget {
   margin-bottom: 1.15rem;
