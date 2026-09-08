@@ -191,7 +191,7 @@ function ClientWorkspace() {
         </p>
       ) : null}
 
-      <section className="admin-dash__kpis" aria-label="Client portal summary" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
+      <section className="admin-dash__kpis admin-dash__kpis--3" aria-label="Client portal summary">
         {loading ? (
           <p className="lw-muted admin-dash__loading">Loading client portal overview…</p>
         ) : (

@@ -3,7 +3,7 @@
 .lw-shell {
   --lw-sidebar-w: 248px;
   --lw-context-w: 300px;
-  --lw-header-h: 60px;
+  --lw-header-h: 52px;
   --lw-shadow: 0 4px 24px rgba(58, 28, 36, 0.06);
   --lw-radius: var(--border-radius-sm);
 
@@ -62,7 +62,7 @@
 .lw-shell--fill .lw-shell__body {
   min-height: 0;
   overflow: hidden !important;
-  padding-bottom: 1rem;
+  padding-bottom: 0.65rem;
 }
 
 .lw-shell--fill .lw-shell__workspace {
@@ -272,7 +272,7 @@ body.lw-shell-fill-lock {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.55rem 1.25rem;
+  padding: 0.35rem 1.25rem;
   background: rgba(255, 255, 255, 0.92);
   border-bottom: 1px solid rgba(231, 225, 215, 0.95);
   box-shadow: 0 2px 14px rgba(58, 28, 36, 0.035);

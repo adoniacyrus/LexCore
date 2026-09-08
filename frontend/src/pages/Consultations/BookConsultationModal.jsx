@@ -29,7 +29,7 @@ const EMPTY = {
   issue_summary: '',
 };
 
-function BookConsultationModal({ open, onClose, onSubmitted }) {
+function BookConsultationModal({ open, onClose, onSubmitted, initialCase = null }) {
   const { accessToken, user } = useAuth();
   const [step, setStep] = useState('form'); // 'form' | 'review' | 'success' | 'failed'
   const [bookingType, setBookingType] = useState('NEW_MATTER'); // 'NEW_MATTER' | 'EXISTING_CASE'
@@ -49,9 +49,37 @@ function BookConsultationModal({ open, onClose, onSubmitted }) {
   useEffect(() => {
     if (!open) return;
     setStep('form');
-    setBookingType('NEW_MATTER');
+    if (initialCase) {
+      setBookingType('EXISTING_CASE');
+      const isCaseActive = initialCase.status === 'OPEN' || initialCase.status === 'IN_PROGRESS';
+      const hasLawyer = Boolean(initialCase.responsible_lawyer?.id || initialCase.responsible_lawyer?.full_name);
+      const hasFee = initialCase.appointment_fee !== null && initialCase.appointment_fee !== undefined && Number(initialCase.appointment_fee) > 0;
+      const isEligible = isCaseActive && hasLawyer && hasFee;
+
+      let ineligibleReason = null;
+      if (!isCaseActive) {
+        ineligibleReason = `Case is ${initialCase.status_label || initialCase.status || 'inactive'} and not currently active.`;
+      } else if (!hasLawyer) {
+        ineligibleReason = 'This case currently has no responsible lawyer assigned. Please contact the firm.';
+      } else if (!hasFee) {
+        ineligibleReason = 'An appointment fee has not been configured for this case. Please contact the firm.';
+      }
+
+      setSelectedCase({
+        id: initialCase.id,
+        case_reference: initialCase.case_reference,
+        title: initialCase.title,
+        practice_area_name: initialCase.practice_area?.name || initialCase.practice_area_name || 'General Legal Matter',
+        responsible_lawyer: initialCase.responsible_lawyer,
+        appointment_fee: initialCase.appointment_fee,
+        is_eligible: isEligible,
+        ineligible_reason: ineligibleReason,
+      });
+    } else {
+      setBookingType('NEW_MATTER');
+      setSelectedCase(null);
+    }
     setForm(EMPTY);
-    setSelectedCase(null);
     setFieldErrors({});
     setError('');
     setSubmitting(false);
@@ -59,10 +87,10 @@ function BookConsultationModal({ open, onClose, onSubmitted }) {
     setCreatedConsultation(null);
     setPendingOrder(null);
     backdropPointerDown.current = false;
-  }, [open]);
+  }, [open, initialCase]);
 
   useEffect(() => {
-    if (!open || !accessToken) return undefined;
+    if (!open || !accessToken || initialCase) return undefined;
     let cancelled = false;
     (async () => {
       setLoadingCases(true);
@@ -366,7 +394,7 @@ function BookConsultationModal({ open, onClose, onSubmitted }) {
           <div>
             <p className="section-tag-gold">Legal Services</p>
             <h2 id="cons-book-title">
-              {step === 'form' && (bookingType === 'EXISTING_CASE' ? 'Book Case Appointment' : 'Book Consultation')}
+              {step === 'form' && (bookingType === 'EXISTING_CASE' ? 'Book Appointment' : 'Book Consultation')}
               {step === 'review' && (bookingType === 'EXISTING_CASE' ? 'Review & Pay Appointment Fee' : 'Consultation & Fee Review')}
               {step === 'success' && 'Appointment Confirmed'}
               {step === 'failed' && 'Payment Incomplete'}
@@ -388,58 +416,60 @@ function BookConsultationModal({ open, onClose, onSubmitted }) {
           <form className="cons-form auth-form cons-modal__form" onSubmit={handleProceedToReview} noValidate>
             
             {/* BOOKING TYPE SELECTOR */}
-            <div className="cons-category-selector" style={{ marginBottom: '1.25rem' }}>
-              <p className="cons-choice-label" style={{ marginBottom: '0.45rem', fontWeight: 600 }}>
-                What would you like to book?
-              </p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setBookingType('NEW_MATTER');
-                    setError('');
-                    setFieldErrors({});
-                  }}
-                  style={{
-                    padding: '0.75rem 0.9rem',
-                    borderRadius: '6px',
-                    border: bookingType === 'NEW_MATTER' ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-                    backgroundColor: bookingType === 'NEW_MATTER' ? '#fdf8f9' : '#fff',
-                    color: bookingType === 'NEW_MATTER' ? 'var(--color-primary)' : '#444',
-                    fontWeight: bookingType === 'NEW_MATTER' ? '600' : '500',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    transition: 'all 0.15s ease',
-                  }}
-                >
-                  <div style={{ fontSize: '0.88rem', marginBottom: '0.15rem' }}>New Legal Matter</div>
-                  <div style={{ fontSize: '0.72rem', color: '#777' }}>Intake consultation for a new legal dispute or advisory</div>
-                </button>
+            {!initialCase && (
+              <div className="cons-category-selector" style={{ marginBottom: '1.25rem' }}>
+                <p className="cons-choice-label" style={{ marginBottom: '0.45rem', fontWeight: 600 }}>
+                  What would you like to book?
+                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBookingType('NEW_MATTER');
+                      setError('');
+                      setFieldErrors({});
+                    }}
+                    style={{
+                      padding: '0.75rem 0.9rem',
+                      borderRadius: '6px',
+                      border: bookingType === 'NEW_MATTER' ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+                      backgroundColor: bookingType === 'NEW_MATTER' ? '#fdf8f9' : '#fff',
+                      color: bookingType === 'NEW_MATTER' ? 'var(--color-primary)' : '#444',
+                      fontWeight: bookingType === 'NEW_MATTER' ? '600' : '500',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <div style={{ fontSize: '0.88rem', marginBottom: '0.15rem' }}>New Legal Matter</div>
+                    <div style={{ fontSize: '0.72rem', color: '#777' }}>Intake consultation for a new legal dispute or advisory</div>
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setBookingType('EXISTING_CASE');
-                    setError('');
-                    setFieldErrors({});
-                  }}
-                  style={{
-                    padding: '0.75rem 0.9rem',
-                    borderRadius: '6px',
-                    border: bookingType === 'EXISTING_CASE' ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-                    backgroundColor: bookingType === 'EXISTING_CASE' ? '#fdf8f9' : '#fff',
-                    color: bookingType === 'EXISTING_CASE' ? 'var(--color-primary)' : '#444',
-                    fontWeight: bookingType === 'EXISTING_CASE' ? '600' : '500',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    transition: 'all 0.15s ease',
-                  }}
-                >
-                  <div style={{ fontSize: '0.88rem', marginBottom: '0.15rem' }}>Appointment for Existing Case</div>
-                  <div style={{ fontSize: '0.72rem', color: '#777' }}>Meet with the assigned lead counsel on your active matter</div>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBookingType('EXISTING_CASE');
+                      setError('');
+                      setFieldErrors({});
+                    }}
+                    style={{
+                      padding: '0.75rem 0.9rem',
+                      borderRadius: '6px',
+                      border: bookingType === 'EXISTING_CASE' ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+                      backgroundColor: bookingType === 'EXISTING_CASE' ? '#fdf8f9' : '#fff',
+                      color: bookingType === 'EXISTING_CASE' ? 'var(--color-primary)' : '#444',
+                      fontWeight: bookingType === 'EXISTING_CASE' ? '600' : '500',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <div style={{ fontSize: '0.88rem', marginBottom: '0.15rem' }}>Appointment for Existing Case</div>
+                    <div style={{ fontSize: '0.72rem', color: '#777' }}>Meet with the assigned lead counsel on your active matter</div>
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* FLOW A: NEW LEGAL MATTER */}
             {bookingType === 'NEW_MATTER' && (
@@ -595,32 +625,40 @@ function BookConsultationModal({ open, onClose, onSubmitted }) {
                   </div>
                 ) : (
                   /* SELECTED CASE BANNER */
-                  <div style={{ padding: '0.85rem 1rem', background: '#fcfaf6', border: '1px solid #ebdcc5', borderRadius: '6px', marginBottom: '0.5rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div style={{
+                    padding: '0.85rem 1rem',
+                    background: '#fcfaf6',
+                    border: '1px solid #ebdcc5',
+                    borderRadius: '6px',
+                    marginBottom: '0.85rem',
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
                       <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                          <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-primary)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                          <span style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--color-primary)' }}>
                             {selectedCase.case_reference}
                           </span>
-                          <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>
+                          <span style={{ fontWeight: 600, fontSize: '0.88rem', color: '#222' }}>
                             {selectedCase.title}
                           </span>
                         </div>
-                        <div style={{ fontSize: '0.78rem', color: '#555', marginBottom: '0.2rem' }}>
-                          Responsible Lawyer: <strong>{selectedCase.responsible_lawyer?.full_name}</strong>
+                        <div style={{ fontSize: '0.8rem', color: '#555', marginBottom: '0.25rem' }}>
+                          Lead Counsel: <strong>{selectedCase.responsible_lawyer?.full_name || 'Assigned Counsel'}</strong>
                         </div>
-                        <div style={{ fontSize: '0.78rem', color: '#555' }}>
-                          Configured Appointment Fee: <strong style={{ color: 'var(--color-primary)' }}>₹{Number(selectedCase.appointment_fee).toLocaleString('en-IN')}</strong>
+                        <div style={{ fontSize: '0.8rem', color: '#555' }}>
+                          Appointment Fee: <strong style={{ color: 'var(--color-primary)' }}>₹{Number(selectedCase.appointment_fee).toLocaleString('en-IN')}</strong>
                         </div>
                       </div>
-                      <button
-                        type="button"
-                        className="btn btn-ghost-dark"
-                        style={{ fontSize: '0.72rem', padding: '0.2rem 0.55rem', height: 'auto', minHeight: 'auto' }}
-                        onClick={() => setSelectedCase(null)}
-                      >
-                        Change Case
-                      </button>
+                      {!initialCase && (
+                        <button
+                          type="button"
+                          className="btn btn-ghost-dark"
+                          style={{ fontSize: '0.72rem', padding: '0.2rem 0.55rem', height: 'auto', minHeight: 'auto' }}
+                          onClick={() => setSelectedCase(null)}
+                        >
+                          Change Case
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}
@@ -714,7 +752,7 @@ function BookConsultationModal({ open, onClose, onSubmitted }) {
                 Cancel
               </button>
               <button type="submit" className="btn btn-primary">
-                Review &amp; Pay Fee
+                Review &amp; Pay
               </button>
             </div>
           </form>

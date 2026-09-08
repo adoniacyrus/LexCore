@@ -22,6 +22,7 @@ import CreateTaskModal from './CreateTaskModal';
 import TaskDetailModal from './TaskDetailModal';
 import AddCourtProceedingModal from './AddCourtProceedingModal';
 import EditAppointmentFeeModal from './EditAppointmentFeeModal';
+import BookConsultationModal from '../Consultations/BookConsultationModal';
 import './cases.css';
 
 function DetailField({ label, value, long = false }) {
@@ -51,6 +52,8 @@ function CaseDetailPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedDocToDelete, setSelectedDocToDelete] = useState(null);
   const [showFeeModal, setShowFeeModal] = useState(false);
+  const [showBookAppointmentModal, setShowBookAppointmentModal] = useState(false);
+  const [appointmentSuccessNotice, setAppointmentSuccessNotice] = useState('');
   
   // Tasks Modals & State
   const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
@@ -189,6 +192,43 @@ function CaseDetailPage() {
           <p className="cases-error" role="alert">
             {error}
           </p>
+        ) : null}
+
+        {appointmentSuccessNotice ? (
+          <div
+            style={{
+              padding: '0.75rem 1rem',
+              marginBottom: '1rem',
+              backgroundColor: '#edf7ed',
+              border: '1px solid #b7eb8f',
+              borderRadius: '6px',
+              color: '#1e4620',
+              fontSize: '0.85rem',
+              fontWeight: 500,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+            role="status"
+          >
+            <span>{appointmentSuccessNotice}</span>
+            <button
+              type="button"
+              onClick={() => setAppointmentSuccessNotice('')}
+              style={{
+                background: 'none',
+                border: 'none',
+                fontSize: '1.1rem',
+                color: '#1e4620',
+                cursor: 'pointer',
+                padding: '0 0.25rem',
+                lineHeight: 1,
+              }}
+              aria-label="Dismiss message"
+            >
+              ×
+            </button>
+          </div>
         ) : null}
 
         {loading ? (
@@ -666,9 +706,65 @@ function CaseDetailPage() {
                       : <span style={{ color: '#aaa', fontStyle: 'italic', fontSize: '0.95rem' }}>Not configured</span>}
                   </div>
                   {role === 'CLIENT' ? (
-                    <p style={{ fontSize: '0.78rem', color: '#666', margin: 0 }}>
-                      Fee charged when scheduling an appointment regarding this case.
-                    </p>
+                    <>
+                      <p style={{ fontSize: '0.78rem', color: '#666', margin: 0 }}>
+                        Fee charged when scheduling an appointment regarding this case.
+                      </p>
+                      {(() => {
+                        const isCaseActive = item.status === 'OPEN' || item.status === 'IN_PROGRESS';
+                        const hasLawyer = Boolean(item.responsible_lawyer?.id || item.responsible_lawyer?.full_name);
+                        const hasFee = item.appointment_fee !== null && item.appointment_fee !== undefined && Number(item.appointment_fee) > 0;
+                        const isEligible = isCaseActive && hasLawyer && hasFee;
+
+                        let ineligibleReason = null;
+                        if (!isCaseActive) {
+                          ineligibleReason = `Case is ${item.status_label || item.status || 'inactive'} and not currently active.`;
+                        } else if (!hasLawyer) {
+                          ineligibleReason = 'This case currently has no responsible lawyer assigned. Please contact the firm.';
+                        } else if (!hasFee) {
+                          ineligibleReason = 'An appointment fee has not been configured for this case. Please contact the firm.';
+                        }
+
+                        if (isEligible) {
+                          return (
+                            <button
+                              type="button"
+                              className="btn btn-primary"
+                              style={{
+                                marginTop: '0.5rem',
+                                width: '100%',
+                                fontSize: '0.82rem',
+                                padding: '0.45rem 0.85rem',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '0.4rem',
+                              }}
+                              onClick={() => setShowBookAppointmentModal(true)}
+                            >
+                              <NavIcon name="calendar" /> Book Appointment
+                            </button>
+                          );
+                        }
+
+                        return (
+                          <div
+                            style={{
+                              marginTop: '0.5rem',
+                              padding: '0.45rem 0.65rem',
+                              background: '#fcf8e3',
+                              border: '1px solid #faebcc',
+                              borderRadius: '4px',
+                              color: '#8a6d3b',
+                              fontSize: '0.74rem',
+                              lineHeight: 1.35,
+                            }}
+                          >
+                            {ineligibleReason}
+                          </div>
+                        );
+                      })()}
+                    </>
                   ) : (
                     <p style={{ fontSize: '0.78rem', color: '#888280', margin: 0 }}>
                       {item.responsible_lawyer?.full_name ? `Configured by lead counsel ${item.responsible_lawyer.full_name}.` : 'Set by lead counsel.'}
@@ -833,6 +929,16 @@ function CaseDetailPage() {
         caseObj={item}
         onClose={() => setShowFeeModal(false)}
         onSuccess={() => load()}
+      />
+
+      <BookConsultationModal
+        open={showBookAppointmentModal}
+        initialCase={item}
+        onClose={() => setShowBookAppointmentModal(false)}
+        onSubmitted={() => {
+          setAppointmentSuccessNotice('Appointment booked successfully! Our chambers will be in touch with you shortly.');
+          load();
+        }}
       />
     </DashboardLayout>
   );
