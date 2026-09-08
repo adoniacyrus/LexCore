@@ -1,13 +1,24 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ACCESS_KEY,
   AUTH_CLEARED_EVENT,
   REFRESH_KEY,
+  SESSION_NOTICE_KEY,
   TOKENS_UPDATED_EVENT,
   USER_KEY,
 } from '../services/api';
 import * as authService from '../services/authService';
 import { getErrorMessage } from '../services/authService';
+
+export const DEFAULT_INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+
+export function getInactivityTimeoutMs() {
+  const envVal = import.meta.env?.VITE_SESSION_TIMEOUT_MS;
+  if (envVal && !isNaN(Number(envVal)) && Number(envVal) > 0) {
+    return Number(envVal);
+  }
+  return DEFAULT_INACTIVITY_TIMEOUT_MS;
+}
 
 const AuthContext = createContext(undefined);
 
@@ -69,6 +80,83 @@ export function AuthProvider({ children }) {
       window.removeEventListener(AUTH_CLEARED_EVENT, onAuthCleared);
     };
   }, []);
+
+  // Multi-tab logout synchronization via browser storage event
+  useEffect(() => {
+    const onStorage = (event) => {
+      if (event.key === ACCESS_KEY && !event.newValue) {
+        clearPersistedAuth();
+        setUser(null);
+        setAccessToken(null);
+        setRefreshToken(null);
+        const path = window.location.pathname || '';
+        if (!path.startsWith('/login') && !path.startsWith('/register')) {
+          window.location.assign('/login');
+        }
+      }
+    };
+
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+    };
+  }, []);
+
+  const lastActivityRef = useRef(Date.now());
+
+  const handleSessionExpired = useCallback((message = 'Your session has expired due to inactivity. Please sign in again.') => {
+    try {
+      sessionStorage.setItem(SESSION_NOTICE_KEY, message);
+    } catch {
+      // ignore storage errors
+    }
+    clearPersistedAuth();
+    setUser(null);
+    setAccessToken(null);
+    setRefreshToken(null);
+    window.dispatchEvent(new Event(AUTH_CLEARED_EVENT));
+    const path = window.location.pathname || '';
+    if (!path.startsWith('/login') && !path.startsWith('/register')) {
+      window.location.assign('/login');
+    }
+  }, []);
+
+  // Client-side inactivity session timeout
+  useEffect(() => {
+    if (!user || !accessToken) return;
+
+    const timeoutMs = getInactivityTimeoutMs();
+    lastActivityRef.current = Date.now();
+
+    let lastRecorded = Date.now();
+    const onUserActivity = () => {
+      const now = Date.now();
+      // Throttle activity updates to at most once per second
+      if (now - lastRecorded >= 1000) {
+        lastRecorded = now;
+        lastActivityRef.current = now;
+      }
+    };
+
+    const activityEvents = ['mousedown', 'keydown', 'touchstart', 'scroll', 'click'];
+    activityEvents.forEach((evt) => {
+      window.addEventListener(evt, onUserActivity, { passive: true });
+    });
+
+    const checkIntervalMs = Math.min(5000, Math.max(1000, Math.floor(timeoutMs / 6)));
+    const intervalId = setInterval(() => {
+      if (Date.now() - lastActivityRef.current >= timeoutMs) {
+        handleSessionExpired('Your session has expired due to inactivity. Please sign in again.');
+      }
+    }, checkIntervalMs);
+
+    return () => {
+      clearInterval(intervalId);
+      activityEvents.forEach((evt) => {
+        window.removeEventListener(evt, onUserActivity);
+      });
+    };
+  }, [user, accessToken, handleSessionExpired]);
 
   useEffect(() => {
     let cancelled = false;

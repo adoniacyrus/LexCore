@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-do
 import GoogleAuthButton from '../../components/GoogleAuthButton';
 import { useAuth } from '../../context/AuthContext';
 import { getDashboardPath } from '../../utils/roleRoutes';
+import { SESSION_NOTICE_KEY } from '../../services/api';
 import {
   hasFieldErrors,
   mapDjangoFieldErrors,
@@ -32,6 +33,20 @@ function LoginPage() {
     const id = requestAnimationFrame(() => setEntered(true));
     return () => cancelAnimationFrame(id);
   }, []);
+
+  useEffect(() => {
+    try {
+      const notice = sessionStorage.getItem(SESSION_NOTICE_KEY);
+      if (notice) {
+        sessionStorage.removeItem(SESSION_NOTICE_KEY);
+        setError(notice);
+      } else if (location.state?.sessionExpired || location.state?.error) {
+        setError(location.state.error || 'Your session has expired. Please sign in again.');
+      }
+    } catch {
+      // ignore
+    }
+  }, [location.state]);
 
   useEffect(() => {
     if (loading || !isAuthenticated || !user) return;

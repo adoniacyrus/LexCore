@@ -23,7 +23,6 @@ import AdminConsultationQueuePage from '../pages/Consultations/AdminConsultation
 import AdminPracticeAreasPage from '../pages/Consultations/AdminPracticeAreasPage';
 import LawyerAssignedPage from '../pages/Consultations/LawyerAssignedPage';
 import ClientAccountPage from '../pages/Account/ClientAccountPage';
-import ProtectedRoute from './ProtectedRoute';
 import RoleProtectedRoute from './RoleProtectedRoute';
 import CaseListPage from '../pages/Cases/CaseListPage';
 import CaseDetailPage from '../pages/Cases/CaseDetailPage';
@@ -53,9 +52,9 @@ function AppRouter() {
             <Route
               path="/dashboard/admin"
               element={
-                <ProtectedRoute>
+                <RoleProtectedRoute roles={['ADMIN']}>
                   <AdminDashboard />
-                </ProtectedRoute>
+                </RoleProtectedRoute>
               }
             />
             <Route
@@ -141,9 +140,9 @@ function AppRouter() {
             <Route
               path="/dashboard/senior"
               element={
-                <ProtectedRoute>
+                <RoleProtectedRoute roles={['SENIOR_LAWYER']}>
                   <SeniorLawyerDashboard />
-                </ProtectedRoute>
+                </RoleProtectedRoute>
               }
             />
             <Route
@@ -205,9 +204,9 @@ function AppRouter() {
             <Route
               path="/dashboard/junior"
               element={
-                <ProtectedRoute>
+                <RoleProtectedRoute roles={['JUNIOR_LAWYER']}>
                   <JuniorLawyerDashboard />
-                </ProtectedRoute>
+                </RoleProtectedRoute>
               }
             />
             <Route
@@ -269,9 +268,9 @@ function AppRouter() {
             <Route
               path="/dashboard/paralegal"
               element={
-                <ProtectedRoute>
+                <RoleProtectedRoute roles={['PARALEGAL']}>
                   <ParalegalDashboard />
-                </ProtectedRoute>
+                </RoleProtectedRoute>
               }
             />
             <Route
@@ -309,9 +308,9 @@ function AppRouter() {
             <Route
               path="/dashboard/client"
               element={
-                <ProtectedRoute>
+                <RoleProtectedRoute roles={['CLIENT']}>
                   <ClientDashboard />
-                </ProtectedRoute>
+                </RoleProtectedRoute>
               }
             />
             <Route

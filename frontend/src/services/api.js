@@ -11,6 +11,7 @@ import axios from 'axios';
 const ACCESS_KEY = 'lexcore_access';
 const REFRESH_KEY = 'lexcore_refresh';
 const USER_KEY = 'lexcore_user';
+const SESSION_NOTICE_KEY = 'lexcore_session_notice';
 
 const AUTH_CLEARED_EVENT = 'lexcore:auth-cleared';
 const TOKENS_UPDATED_EVENT = 'lexcore:tokens-updated';
@@ -59,8 +60,13 @@ function persistRefreshedTokens({ access, refresh }) {
   );
 }
 
-function forceLogoutSession() {
+function forceLogoutSession(message = 'Your session has expired. Please sign in again.') {
   clearStoredAuth();
+  try {
+    sessionStorage.setItem(SESSION_NOTICE_KEY, message);
+  } catch {
+    // Ignore storage quota or security errors
+  }
   window.dispatchEvent(new Event(AUTH_CLEARED_EVENT));
   const path = window.location.pathname || '';
   if (!path.startsWith('/login') && !path.startsWith('/register')) {
@@ -159,6 +165,7 @@ export {
   ACCESS_KEY,
   REFRESH_KEY,
   USER_KEY,
+  SESSION_NOTICE_KEY,
   AUTH_CLEARED_EVENT,
   TOKENS_UPDATED_EVENT,
 };
