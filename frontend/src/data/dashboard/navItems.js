@@ -122,6 +122,18 @@ export const PORTAL_NAV_BY_ROLE = {
       route: '/dashboard/senior/consultations',
     },
     {
+      id: 'consultation-calendar',
+      label: 'Consultation Calendar',
+      icon: 'calendar',
+      route: '/dashboard/senior/consultation-calendar',
+    },
+    {
+      id: 'availability',
+      label: 'Availability Settings',
+      icon: 'settings',
+      route: '/dashboard/senior/availability',
+    },
+    {
       id: 'cases',
       label: 'My Cases',
       icon: 'cases',
@@ -147,6 +159,18 @@ export const PORTAL_NAV_BY_ROLE = {
       label: 'Assigned Consultations',
       icon: 'consultations',
       route: '/dashboard/junior/consultations',
+    },
+    {
+      id: 'consultation-calendar',
+      label: 'Consultation Calendar',
+      icon: 'calendar',
+      route: '/dashboard/junior/consultation-calendar',
+    },
+    {
+      id: 'availability',
+      label: 'Availability Settings',
+      icon: 'settings',
+      route: '/dashboard/junior/availability',
     },
     {
       id: 'cases',
@@ -214,6 +238,14 @@ export const MODULE_META = {
   'assigned-consultations': {
     title: 'Assigned Consultations',
     summary: 'Consultations assigned to you.',
+  },
+  'consultation-calendar': {
+    title: 'Consultation Calendar',
+    summary: 'View upcoming consultations, client bookings, and time blocks.',
+  },
+  availability: {
+    title: 'Availability Settings',
+    summary: 'Configure working hours, slot duration, overrides, and time blocks.',
   },
   account: { title: 'Account', summary: 'Your LexCore client account details.' },
   clients: { title: 'Clients', summary: 'Client registry, intake, and relationship history.' },

@@ -1,5 +1,6 @@
 """Serializers for consultation workflow APIs."""
 
+from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers
 
@@ -12,8 +13,15 @@ from .models import (
     ConsultationPaymentStatus,
     ConsultationStatus,
     ConsultationType,
+    LawyerAvailabilityProfile,
+    LawyerDateOverride,
+    LawyerTimeBlock,
+    LawyerWeeklySchedule,
     PracticeArea,
+    TimeBlockReason,
+    Weekday,
 )
+from .services.availability_service import AvailabilityService, _add_minutes_to_time
 
 
 GENERAL_CONSULTATION_NAME = "General Consultation"
@@ -93,6 +101,7 @@ class ConsultationSerializer(serializers.ModelSerializer):
         read_only=True,
     )
     client = ClientBriefSerializer(read_only=True)
+    client_name = serializers.SerializerMethodField()
     assigned_lawyer = LawyerBriefSerializer(read_only=True)
     assigned_lawyer_name = serializers.SerializerMethodField()
     case_id = serializers.SerializerMethodField()
@@ -109,6 +118,7 @@ class ConsultationSerializer(serializers.ModelSerializer):
             "consultation_type",
             "consultation_type_label",
             "client",
+            "client_name",
             "practice_area",
             "practice_area_id",
             "practice_area_label",
@@ -118,6 +128,8 @@ class ConsultationSerializer(serializers.ModelSerializer):
             "consultation_mode_label",
             "preferred_date",
             "preferred_time",
+            "duration_minutes",
+            "end_time",
             "subject",
             "issue_summary",
             "status",
@@ -145,6 +157,11 @@ class ConsultationSerializer(serializers.ModelSerializer):
                 return first_p.amount_rupees
         from django.conf import settings
         return getattr(settings, "RAZORPAY_DEFAULT_CONSULTATION_FEE", 500)
+
+    def get_client_name(self, obj):
+        if obj.client:
+            return obj.client.full_name
+        return "—"
 
     def get_practice_area_label(self, obj):
         if obj.practice_area_id and obj.practice_area:
@@ -281,6 +298,27 @@ class ConsultationCreateSerializer(serializers.Serializer):
             attrs["practice_area"] = case.practice_area
             attrs["charged_fee"] = case.appointment_fee
 
+            # Validate availability of responsible lawyer with row-level concurrency lock
+            lawyer = case.responsible_lawyer
+            if transaction.get_connection().in_atomic_block:
+                User.objects.select_for_update().filter(pk=lawyer.pk).first()
+            duration = AvailabilityService.get_lawyer_duration(lawyer)
+            pref_date = attrs["preferred_date"]
+            pref_time = attrs["preferred_time"]
+            is_avail, reason = AvailabilityService.check_slot_available(
+                lawyer=lawyer,
+                target_date=pref_date,
+                preferred_time=pref_time,
+                duration_minutes=duration,
+            )
+            if not is_avail:
+                raise serializers.ValidationError({
+                    "preferred_time": f"This time slot is no longer available: {reason}"
+                })
+
+            attrs["duration_minutes"] = duration
+            attrs["end_time"] = _add_minutes_to_time(pref_time, duration)
+
         else:
             # NEW_MATTER flow
             subject = (attrs.get("subject") or "").strip()
@@ -319,6 +357,8 @@ class ConsultationCreateSerializer(serializers.Serializer):
             attrs["charged_fee"] = default_fee
             attrs["case_appointment"] = None
             attrs["assigned_lawyer"] = None
+            attrs["duration_minutes"] = 30
+            attrs["end_time"] = _add_minutes_to_time(attrs["preferred_time"], 30)
 
         attrs["issue_summary"] = (attrs.get("issue_summary") or "").strip()
         return attrs
@@ -335,7 +375,7 @@ class ConsultationCreateSerializer(serializers.Serializer):
 
 
 class AdminConsultationUpdateSerializer(serializers.Serializer):
-    """Admin assignment and lifecycle updates."""
+    """Admin assignment and lifecycle updates, including rescheduling and lawyer assignment."""
 
     practice_area = serializers.PrimaryKeyRelatedField(
         queryset=PracticeArea.objects.all(),
@@ -350,6 +390,8 @@ class AdminConsultationUpdateSerializer(serializers.Serializer):
         required=False,
         allow_null=True,
     )
+    preferred_date = serializers.DateField(required=False, allow_null=True)
+    preferred_time = serializers.TimeField(required=False, allow_null=True)
     status = serializers.ChoiceField(
         choices=ConsultationStatus.choices,
         required=False,
@@ -407,6 +449,33 @@ class AdminConsultationUpdateSerializer(serializers.Serializer):
                     }
                 )
 
+        # Admin assignment and rescheduling: validate availability when assigned_lawyer or date/time is updated
+        target_lawyer = lawyer if lawyer is not serializers.empty else (consultation.assigned_lawyer if consultation else None)
+        target_date = attrs.get("preferred_date", consultation.preferred_date if consultation else None)
+        target_time = attrs.get("preferred_time", consultation.preferred_time if consultation else None)
+
+        if target_lawyer is not None and target_date and target_time:
+            duration = AvailabilityService.get_lawyer_duration(target_lawyer)
+            attrs["duration_minutes"] = duration
+            attrs["end_time"] = _add_minutes_to_time(target_time, duration)
+
+            is_avail, reason = AvailabilityService.check_slot_available(
+                lawyer=target_lawyer,
+                target_date=target_date,
+                preferred_time=target_time,
+                duration_minutes=duration,
+                exclude_consultation_id=consultation.id if consultation else None,
+            )
+            if not is_avail:
+                raise serializers.ValidationError(
+                    {
+                        "assigned_lawyer": (
+                            f"{target_lawyer.full_name} is unavailable at "
+                            f"{target_date} {target_time}: {reason}"
+                        )
+                    }
+                )
+
         return attrs
 
     def update(self, instance, validated_data):
@@ -435,6 +504,18 @@ class AdminConsultationUpdateSerializer(serializers.Serializer):
 
         if "assigned_lawyer" in validated_data:
             instance.assigned_lawyer = validated_data["assigned_lawyer"]
+            if instance.assigned_lawyer:
+                instance.duration_minutes = AvailabilityService.get_lawyer_duration(instance.assigned_lawyer)
+                if instance.preferred_time:
+                    instance.end_time = _add_minutes_to_time(instance.preferred_time, instance.duration_minutes)
+
+        if "preferred_date" in validated_data and validated_data["preferred_date"]:
+            instance.preferred_date = validated_data["preferred_date"]
+
+        if "preferred_time" in validated_data and validated_data["preferred_time"]:
+            instance.preferred_time = validated_data["preferred_time"]
+            duration = instance.duration_minutes or 30
+            instance.end_time = _add_minutes_to_time(instance.preferred_time, duration)
 
         if "status" in validated_data:
             instance.status = validated_data["status"]
@@ -515,3 +596,124 @@ def eligible_lawyers_queryset(practice_area=None):
     if general is None:
         return base.none()
     return base.filter(practice_areas=general).distinct()
+
+
+class LawyerWeeklyScheduleSerializer(serializers.ModelSerializer):
+    weekday_label = serializers.CharField(source="get_weekday_display", read_only=True)
+
+    class Meta:
+        model = LawyerWeeklySchedule
+        fields = (
+            "id",
+            "weekday",
+            "weekday_label",
+            "start_time",
+            "end_time",
+            "is_active",
+        )
+        read_only_fields = ("id", "weekday_label")
+
+    def validate(self, attrs):
+        start = attrs.get("start_time", getattr(self.instance, "start_time", None))
+        end = attrs.get("end_time", getattr(self.instance, "end_time", None))
+        if start and end and start >= end:
+            raise serializers.ValidationError("Start time must be strictly before end time.")
+        return attrs
+
+
+class LawyerSchedulePeriodInputSerializer(serializers.Serializer):
+    weekday = serializers.ChoiceField(choices=Weekday.choices)
+    start_time = serializers.TimeField()
+    end_time = serializers.TimeField()
+    is_active = serializers.BooleanField(default=True)
+
+    def validate(self, attrs):
+        if attrs["start_time"] >= attrs["end_time"]:
+            raise serializers.ValidationError("Start time must be strictly before end time.")
+        return attrs
+
+
+class LawyerScheduleConfigSerializer(serializers.Serializer):
+    consultation_duration = serializers.ChoiceField(choices=[30, 45], default=30)
+    is_available = serializers.BooleanField(default=True)
+    weekly_schedules = LawyerSchedulePeriodInputSerializer(many=True, required=False)
+
+    def validate_weekly_schedules(self, schedules):
+        # Validate that within any weekday, active schedules do not overlap
+        by_day = {}
+        for s in schedules:
+            if not s.get("is_active", True):
+                continue
+            day = s["weekday"]
+            if day not in by_day:
+                by_day[day] = []
+            start = s["start_time"]
+            end = s["end_time"]
+            for prev_start, prev_end in by_day[day]:
+                if not (end <= prev_start or start >= prev_end):
+                    day_name = dict(Weekday.choices).get(day, f"Day {day}")
+                    raise serializers.ValidationError(
+                        f"Overlapping working hours found for {day_name}: "
+                        f"{start.strftime('%H:%M')}–{end.strftime('%H:%M')} overlaps with "
+                        f"{prev_start.strftime('%H:%M')}–{prev_end.strftime('%H:%M')}."
+                    )
+            by_day[day].append((start, end))
+        return schedules
+
+
+class LawyerDateOverrideSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LawyerDateOverride
+        fields = (
+            "id",
+            "start_date",
+            "end_date",
+            "is_unavailable",
+            "start_time",
+            "end_time",
+            "reason",
+            "created_at",
+        )
+        read_only_fields = ("id", "created_at")
+
+    def validate(self, attrs):
+        start_date = attrs.get("start_date", getattr(self.instance, "start_date", None))
+        end_date = attrs.get("end_date", getattr(self.instance, "end_date", None))
+        if start_date and end_date and start_date > end_date:
+            raise serializers.ValidationError("Start date cannot be after end date.")
+
+        is_unavail = attrs.get("is_unavailable", getattr(self.instance, "is_unavailable", True))
+        if not is_unavail:
+            start_t = attrs.get("start_time", getattr(self.instance, "start_time", None))
+            end_t = attrs.get("end_time", getattr(self.instance, "end_time", None))
+            if not start_t or not end_t:
+                raise serializers.ValidationError("Start time and end time are required when marked available.")
+            if start_t >= end_t:
+                raise serializers.ValidationError("Start time must be strictly before end time.")
+        return attrs
+
+
+class LawyerTimeBlockSerializer(serializers.ModelSerializer):
+    reason_label = serializers.CharField(source="get_reason_display", read_only=True)
+
+    class Meta:
+        model = LawyerTimeBlock
+        fields = (
+            "id",
+            "date",
+            "start_time",
+            "end_time",
+            "reason",
+            "reason_label",
+            "notes",
+            "created_at",
+        )
+        read_only_fields = ("id", "reason_label", "created_at")
+
+    def validate(self, attrs):
+        start = attrs.get("start_time", getattr(self.instance, "start_time", None))
+        end = attrs.get("end_time", getattr(self.instance, "end_time", None))
+        if start and end and start >= end:
+            raise serializers.ValidationError("Start time must be strictly before end time.")
+        return attrs
+

@@ -92,13 +92,17 @@ export async function updateAdminConsultation(access, id, payload) {
   return data;
 }
 
-export async function listEligibleLawyers(access, practiceAreaId) {
+export async function listEligibleLawyers(access, practiceAreaId, date = null, time = null, excludeId = null) {
   const params = {};
   if (practiceAreaId == null || practiceAreaId === '') {
     params.practice_area = 'unassigned';
   } else {
     params.practice_area = practiceAreaId;
   }
+  if (date) params.date = date;
+  if (time) params.time = time;
+  if (excludeId) params.exclude_consultation_id = excludeId;
+
   const { data } = await api.get('/consultations/admin/eligible-lawyers/', {
     ...authHeaders(access),
     params,
@@ -122,4 +126,83 @@ export async function updateAssignedConsultationStatus(access, id, statusValue) 
   return data;
 }
 
+/* ---- Availability & Scheduling ---- */
+
+export async function fetchLawyerAvailableSlots(access, lawyerId, date, excludeId = null) {
+  const params = { lawyer_id: lawyerId, date };
+  if (excludeId) params.exclude_consultation_id = excludeId;
+  const { data } = await api.get('/consultations/availability/slots/', {
+    ...authHeaders(access),
+    params,
+  });
+  return data;
+}
+
+export async function fetchLawyerSchedule(access) {
+  const { data } = await api.get('/consultations/availability/my-schedule/', authHeaders(access));
+  return data;
+}
+
+export async function updateLawyerSchedule(access, payload) {
+  const { data } = await api.put(
+    '/consultations/availability/my-schedule/',
+    payload,
+    authHeaders(access)
+  );
+  return data;
+}
+
+export async function listDateOverrides(access) {
+  const { data } = await api.get('/consultations/availability/overrides/', authHeaders(access));
+  return data;
+}
+
+export async function createDateOverride(access, payload) {
+  const { data } = await api.post(
+    '/consultations/availability/overrides/',
+    payload,
+    authHeaders(access)
+  );
+  return data;
+}
+
+export async function deleteDateOverride(access, id) {
+  const { data } = await api.delete(
+    `/consultations/availability/overrides/${id}/`,
+    authHeaders(access)
+  );
+  return data;
+}
+
+export async function listTimeBlocks(access) {
+  const { data } = await api.get('/consultations/availability/time-blocks/', authHeaders(access));
+  return data;
+}
+
+export async function createTimeBlock(access, payload) {
+  const { data } = await api.post(
+    '/consultations/availability/time-blocks/',
+    payload,
+    authHeaders(access)
+  );
+  return data;
+}
+
+export async function deleteTimeBlock(access, id) {
+  const { data } = await api.delete(
+    `/consultations/availability/time-blocks/${id}/`,
+    authHeaders(access)
+  );
+  return data;
+}
+
+export async function fetchLawyerConsultationCalendar(access, params = {}) {
+  const { data } = await api.get('/consultations/lawyer-calendar/', {
+    ...authHeaders(access),
+    params,
+  });
+  return data;
+}
+
 export { getErrorMessage };
+

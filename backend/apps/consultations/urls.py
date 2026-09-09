@@ -10,6 +10,13 @@ from .views import (
     EligibleLawyersView,
     LawyerAssignedListView,
     LawyerAssignedStatusView,
+    LawyerAvailableSlotsView,
+    LawyerConsultationCalendarView,
+    LawyerDateOverrideDetailView,
+    LawyerDateOverrideListCreateView,
+    LawyerScheduleConfigView,
+    LawyerTimeBlockDetailView,
+    LawyerTimeBlockListCreateView,
     MyConsultationsView,
     PracticeAreaDetailView,
     PracticeAreaListCreateView,
@@ -54,4 +61,41 @@ urlpatterns = [
         LawyerAssignedStatusView.as_view(),
         name="consultation-assigned-status",
     ),
+    # Availability, time slots & lawyer schedule management
+    path(
+        "availability/slots/",
+        LawyerAvailableSlotsView.as_view(),
+        name="consultation-available-slots",
+    ),
+    path(
+        "availability/my-schedule/",
+        LawyerScheduleConfigView.as_view(),
+        name="consultation-my-schedule",
+    ),
+    path(
+        "availability/overrides/",
+        LawyerDateOverrideListCreateView.as_view(),
+        name="consultation-date-overrides",
+    ),
+    path(
+        "availability/overrides/<int:pk>/",
+        LawyerDateOverrideDetailView.as_view(),
+        name="consultation-date-override-detail",
+    ),
+    path(
+        "availability/time-blocks/",
+        LawyerTimeBlockListCreateView.as_view(),
+        name="consultation-time-blocks",
+    ),
+    path(
+        "availability/time-blocks/<int:pk>/",
+        LawyerTimeBlockDetailView.as_view(),
+        name="consultation-time-block-detail",
+    ),
+    path(
+        "lawyer-calendar/",
+        LawyerConsultationCalendarView.as_view(),
+        name="consultation-lawyer-calendar",
+    ),
 ]
+

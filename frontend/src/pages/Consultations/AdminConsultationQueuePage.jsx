@@ -27,6 +27,8 @@ const PAGE_SIZE = 10;
 function AdminManageModal({ open, item, practiceAreas, accessToken, onClose, onSaved }) {
   const [practiceAreaId, setPracticeAreaId] = useState('');
   const [lawyerId, setLawyerId] = useState('');
+  const [preferredDate, setPreferredDate] = useState('');
+  const [preferredTime, setPreferredTime] = useState('');
   const [lawyers, setLawyers] = useState([]);
   const [loadingLawyers, setLoadingLawyers] = useState(false);
   const [statusAction, setStatusAction] = useState('');
@@ -37,6 +39,8 @@ function AdminManageModal({ open, item, practiceAreas, accessToken, onClose, onS
     if (!open || !item) return;
     setPracticeAreaId(item.practice_area?.id ? String(item.practice_area.id) : '');
     setLawyerId(item.assigned_lawyer?.id ? String(item.assigned_lawyer.id) : '');
+    setPreferredDate(item.preferred_date || '');
+    setPreferredTime(item.preferred_time ? item.preferred_time.substring(0, 5) : '');
     setStatusAction('');
     setError('');
     setSubmitting(false);
@@ -50,7 +54,10 @@ function AdminManageModal({ open, item, practiceAreas, accessToken, onClose, onS
       try {
         const data = await listEligibleLawyers(
           accessToken,
-          practiceAreaId ? Number(practiceAreaId) : null
+          practiceAreaId ? Number(practiceAreaId) : null,
+          preferredDate || item?.preferred_date,
+          preferredTime || (item?.preferred_time ? item.preferred_time.substring(0, 5) : null),
+          item?.id
         );
         if (!cancelled) setLawyers(Array.isArray(data) ? data : []);
       } catch {
@@ -62,7 +69,7 @@ function AdminManageModal({ open, item, practiceAreas, accessToken, onClose, onS
     return () => {
       cancelled = true;
     };
-  }, [open, accessToken, practiceAreaId]);
+  }, [open, accessToken, practiceAreaId, preferredDate, preferredTime, item]);
 
   if (!open || !item) return null;
 
@@ -74,6 +81,12 @@ function AdminManageModal({ open, item, practiceAreas, accessToken, onClose, onS
       assigned_lawyer: lawyerId ? Number(lawyerId) : null,
     };
     if (statusAction) payload.status = statusAction;
+    if (preferredDate && preferredDate !== item.preferred_date) {
+      payload.preferred_date = preferredDate;
+    }
+    if (preferredTime && preferredTime !== (item.preferred_time ? item.preferred_time.substring(0, 5) : '')) {
+      payload.preferred_time = preferredTime;
+    }
 
     try {
       const updated = await updateAdminConsultation(accessToken, item.id, payload);
@@ -85,6 +98,11 @@ function AdminManageModal({ open, item, practiceAreas, accessToken, onClose, onS
       setSubmitting(false);
     }
   };
+
+  const selectedLawyer = useMemo(() => {
+    if (!lawyerId) return null;
+    return lawyers.find((l) => String(l.id) === String(lawyerId)) || null;
+  }, [lawyerId, lawyers]);
 
   return (
     <div className="cons-modal-overlay" role="presentation" onClick={onClose}>
@@ -144,6 +162,26 @@ function AdminManageModal({ open, item, practiceAreas, accessToken, onClose, onS
             </div>
           ) : null}
 
+          {/* RESCHEDULING CONTROLS */}
+          <div className="cons-grid-2" style={{ marginTop: '0.4rem', marginBottom: '0.3rem' }}>
+            <label className="auth-field">
+              <span>Appointment Date</span>
+              <input
+                type="date"
+                value={preferredDate}
+                onChange={(e) => setPreferredDate(e.target.value)}
+              />
+            </label>
+            <label className="auth-field">
+              <span>Appointment Time</span>
+              <input
+                type="time"
+                value={preferredTime}
+                onChange={(e) => setPreferredTime(e.target.value)}
+              />
+            </label>
+          </div>
+
           <label className="auth-field">
             <span>Practice Area</span>
             <select
@@ -171,18 +209,26 @@ function AdminManageModal({ open, item, practiceAreas, accessToken, onClose, onS
               disabled={loadingLawyers}
             >
               <option value="">Not assigned</option>
-              {lawyers.map((lawyer) => (
-                <option key={lawyer.id} value={lawyer.id}>
-                  {lawyer.full_name}
-                </option>
-              ))}
+              {lawyers.map((lawyer) => {
+                const isAvail = lawyer.is_available !== false;
+                return (
+                  <option key={lawyer.id} value={lawyer.id}>
+                    {lawyer.full_name} — {isAvail ? '✓ Available' : `✗ ${lawyer.status_reason || 'Unavailable'}`}
+                  </option>
+                );
+              })}
             </select>
             {loadingLawyers ? (
-              <span className="cons-detail__submitted">Loading eligible lawyers…</span>
+              <span className="cons-detail__submitted">Checking lawyer availability…</span>
             ) : lawyers.length === 0 ? (
               <span className="cons-detail__submitted">
                 No eligible lawyers for this practice area. Assign specializations on the Staff page.
               </span>
+            ) : null}
+            {selectedLawyer && selectedLawyer.is_available === false ? (
+              <div style={{ padding: '0.4rem 0.6rem', background: '#fff5f5', border: '1px solid #fed7d7', borderRadius: '4px', fontSize: '0.74rem', color: '#c53030', marginTop: '0.35rem' }}>
+                <strong>Availability Conflict:</strong> {selectedLawyer.full_name} is marked as <em>{selectedLawyer.status_reason || 'unavailable'}</em> for this slot. Please select another counsel or adjust the appointment date/time above.
+              </div>
             ) : null}
           </label>
 

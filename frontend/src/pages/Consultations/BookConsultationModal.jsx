@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import {
   createConsultation,
+  fetchLawyerAvailableSlots,
   getErrorMessage,
   listEligibleCasesForAppointment,
   listPracticeAreas,
@@ -44,6 +45,9 @@ function BookConsultationModal({ open, onClose, onSubmitted, initialCase = null 
   const [verifying, setVerifying] = useState(false);
   const [createdConsultation, setCreatedConsultation] = useState(null);
   const [pendingOrder, setPendingOrder] = useState(null);
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [slotDuration, setSlotDuration] = useState(30);
   const backdropPointerDown = useRef(false);
 
   useEffect(() => {
@@ -86,8 +90,43 @@ function BookConsultationModal({ open, onClose, onSubmitted, initialCase = null 
     setVerifying(false);
     setCreatedConsultation(null);
     setPendingOrder(null);
+    setAvailableSlots([]);
+    setLoadingSlots(false);
+    setSlotDuration(30);
     backdropPointerDown.current = false;
   }, [open, initialCase]);
+
+  // Load available slots when booking an existing case and a date is selected
+  useEffect(() => {
+    if (!open || bookingType !== 'EXISTING_CASE' || !selectedCase?.responsible_lawyer?.id || !form.preferred_date) {
+      setAvailableSlots([]);
+      return undefined;
+    }
+    let cancelled = false;
+    (async () => {
+      setLoadingSlots(true);
+      try {
+        const res = await fetchLawyerAvailableSlots(
+          accessToken,
+          selectedCase.responsible_lawyer.id,
+          form.preferred_date
+        );
+        if (!cancelled) {
+          setAvailableSlots(Array.isArray(res?.slots) ? res.slots : []);
+          setSlotDuration(res?.duration_minutes || 30);
+        }
+      } catch {
+        if (!cancelled) {
+          setAvailableSlots([]);
+        }
+      } finally {
+        if (!cancelled) setLoadingSlots(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, bookingType, selectedCase, form.preferred_date, accessToken]);
 
   useEffect(() => {
     if (!open || !accessToken || initialCase) return undefined;
@@ -196,7 +235,12 @@ function BookConsultationModal({ open, onClose, onSubmitted, initialCase = null 
     else if (form.preferred_date < todayInputValue()) {
       next.preferred_date = 'Preferred date cannot be before today.';
     }
-    if (!form.preferred_time) next.preferred_time = 'Preferred time is required.';
+    if (!form.preferred_time) {
+      next.preferred_time =
+        bookingType === 'EXISTING_CASE'
+          ? 'Please select an available appointment time slot.'
+          : 'Preferred time is required.';
+    }
     if (!form.consultation_mode) next.consultation_mode = 'Consultation mode is required.';
 
     setFieldErrors(next);
@@ -671,37 +715,122 @@ function BookConsultationModal({ open, onClose, onSubmitted, initialCase = null 
               </div>
             )}
 
-            {/* COMMON APPOINTMENT DATE & TIME */}
-            <div className="cons-grid-2">
-              <label className="auth-field">
-                <span>Preferred Date</span>
-                <input
-                  name="preferred_date"
-                  type="date"
-                  min={todayInputValue()}
-                  value={form.preferred_date}
-                  onChange={onChange}
-                  required
-                />
-                {fieldErrors.preferred_date ? (
-                  <span className="invalid-feedback d-block">{fieldErrors.preferred_date}</span>
-                ) : null}
-              </label>
+            {/* APPOINTMENT DATE & TIME SELECTION */}
+            {bookingType === 'EXISTING_CASE' ? (
+              <div style={{ marginBottom: '0.65rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                  <label className="auth-field" style={{ flex: 1, margin: 0 }}>
+                    <span>Appointment Date</span>
+                    <input
+                      name="preferred_date"
+                      type="date"
+                      min={todayInputValue()}
+                      value={form.preferred_date}
+                      onChange={(e) => {
+                        onChange(e);
+                        setForm((prev) => ({ ...prev, preferred_time: '' }));
+                      }}
+                      required
+                    />
+                    {fieldErrors.preferred_date ? (
+                      <span className="invalid-feedback d-block">{fieldErrors.preferred_date}</span>
+                    ) : null}
+                  </label>
+                  <div style={{ marginLeft: '0.8rem', textAlign: 'right', fontSize: '0.74rem', color: '#666' }}>
+                    <div>Duration: <strong style={{ color: 'var(--color-primary)' }}>{slotDuration} mins</strong></div>
+                    <div>With: <strong>{selectedCase?.responsible_lawyer?.full_name || 'Assigned Counsel'}</strong></div>
+                  </div>
+                </div>
 
-              <label className="auth-field">
-                <span>Preferred Time</span>
-                <input
-                  name="preferred_time"
-                  type="time"
-                  value={form.preferred_time}
-                  onChange={onChange}
-                  required
-                />
-                {fieldErrors.preferred_time ? (
-                  <span className="invalid-feedback d-block">{fieldErrors.preferred_time}</span>
-                ) : null}
-              </label>
-            </div>
+                {/* SLOT SELECTION */}
+                <div style={{ marginTop: '0.45rem' }}>
+                  <label className="auth-field" style={{ margin: 0, marginBottom: '0.2rem' }}>
+                    <span>Available Time Slots</span>
+                  </label>
+                  {!form.preferred_date ? (
+                    <div style={{ fontSize: '0.74rem', color: '#777', padding: '0.5rem', background: '#fdfbf7', border: '1px dashed #dcd5ca', borderRadius: '4px', textAlign: 'center' }}>
+                      Select an appointment date above to view counsel’s available slots.
+                    </div>
+                  ) : loadingSlots ? (
+                    <div style={{ fontSize: '0.74rem', color: '#666', padding: '0.5rem', textAlign: 'center' }}>
+                      Checking {selectedCase?.responsible_lawyer?.full_name || 'counsel'}’s availability…
+                    </div>
+                  ) : availableSlots.length === 0 ? (
+                    <div style={{ fontSize: '0.74rem', color: '#b23b3b', padding: '0.5rem', background: '#fff7f7', border: '1px solid #f2d7d7', borderRadius: '4px', textAlign: 'center' }}>
+                      No available slots for {selectedCase?.responsible_lawyer?.full_name || 'counsel'} on this date. Please select another date.
+                    </div>
+                  ) : (
+                    <div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '0.35rem', maxHeight: '140px', overflowY: 'auto', padding: '0.15rem 0' }}>
+                        {availableSlots.map((slot) => {
+                          const isSelected = form.preferred_time === slot.start_time;
+                          return (
+                            <button
+                              key={slot.start_time}
+                              type="button"
+                              onClick={() => {
+                                setForm((prev) => ({ ...prev, preferred_time: slot.start_time }));
+                                setFieldErrors((prev) => ({ ...prev, preferred_time: '' }));
+                              }}
+                              style={{
+                                padding: '0.35rem 0.45rem',
+                                borderRadius: '5px',
+                                border: isSelected ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+                                background: isSelected ? '#fbf2f4' : '#fff',
+                                color: isSelected ? 'var(--color-primary)' : '#333',
+                                fontWeight: isSelected ? 700 : 500,
+                                fontSize: '0.73rem',
+                                cursor: 'pointer',
+                                textAlign: 'center',
+                                transition: 'all 0.15s ease',
+                                boxShadow: isSelected ? '0 1px 4px rgba(107, 30, 43, 0.2)' : 'none',
+                              }}
+                            >
+                              {slot.display}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {fieldErrors.preferred_time ? (
+                        <span className="invalid-feedback d-block" style={{ marginTop: '0.2rem' }}>{fieldErrors.preferred_time}</span>
+                      ) : null}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* NEW_MATTER flow: DATE & TIME INPUTS */
+              <div className="cons-grid-2">
+                <label className="auth-field">
+                  <span>Preferred Date</span>
+                  <input
+                    name="preferred_date"
+                    type="date"
+                    min={todayInputValue()}
+                    value={form.preferred_date}
+                    onChange={onChange}
+                    required
+                  />
+                  {fieldErrors.preferred_date ? (
+                    <span className="invalid-feedback d-block">{fieldErrors.preferred_date}</span>
+                  ) : null}
+                </label>
+
+                <label className="auth-field">
+                  <span>Preferred Time</span>
+                  <input
+                    name="preferred_time"
+                    type="time"
+                    value={form.preferred_time}
+                    onChange={onChange}
+                    required
+                  />
+                  {fieldErrors.preferred_time ? (
+                    <span className="invalid-feedback d-block">{fieldErrors.preferred_time}</span>
+                  ) : null}
+                </label>
+              </div>
+            )}
 
             <label className="auth-field">
               <span>Consultation Mode</span>

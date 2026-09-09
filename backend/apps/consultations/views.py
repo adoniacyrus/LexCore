@@ -1,12 +1,27 @@
-"""Consultation workflow APIs — client, admin, and lawyer."""
+import datetime
 
+from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Consultation, ConsultationPaymentStatus, PracticeArea
+from apps.accounts.models import User
+
+from .models import (
+    LAWYER_ROLES,
+    Consultation,
+    ConsultationPaymentStatus,
+    ConsultationStatus,
+    LawyerAvailabilityProfile,
+    LawyerDateOverride,
+    LawyerTimeBlock,
+    LawyerWeeklySchedule,
+    PracticeArea,
+)
 from .permissions import (
     IsAdminRole,
     IsAuthenticatedStaffOrClientReadPracticeAreas,
@@ -18,11 +33,16 @@ from .serializers import (
     ConsultationCreateSerializer,
     ConsultationSerializer,
     LawyerBriefSerializer,
+    LawyerDateOverrideSerializer,
+    LawyerScheduleConfigSerializer,
     LawyerStatusUpdateSerializer,
+    LawyerTimeBlockSerializer,
+    LawyerWeeklyScheduleSerializer,
     PracticeAreaSerializer,
     PracticeAreaWriteSerializer,
     eligible_lawyers_queryset,
 )
+from .services.availability_service import AvailabilityService
 
 
 def _consultation_qs():
@@ -130,16 +150,17 @@ class ConsultationCreateView(APIView):
     permission_classes = [IsClientRole]
 
     def post(self, request):
-        serializer = ConsultationCreateSerializer(
-            data=request.data,
-            context={"request": request},
-        )
-        serializer.is_valid(raise_exception=True)
-        consultation = serializer.save()
+        with transaction.atomic():
+            serializer = ConsultationCreateSerializer(
+                data=request.data,
+                context={"request": request},
+            )
+            serializer.is_valid(raise_exception=True)
+            consultation = serializer.save()
 
-        # Create Razorpay order and local payment record server-side
-        from apps.payments.services import PaymentService
-        order_data = PaymentService.create_consultation_order(consultation)
+            # Create Razorpay order and local payment record server-side
+            from apps.payments.services import PaymentService
+            order_data = PaymentService.create_consultation_order(consultation)
 
         payload = ConsultationSerializer(
             _consultation_qs().get(pk=consultation.pk)
@@ -312,7 +333,7 @@ class AdminConsultationDetailView(APIView):
 
 class EligibleLawyersView(APIView):
     """
-    GET /api/consultations/admin/eligible-lawyers/?practice_area=<id|empty>
+    GET /api/consultations/admin/eligible-lawyers/?practice_area=<id|empty>&date=<YYYY-MM-DD>&time=<HH:MM>&exclude_consultation_id=<id>
     """
 
     permission_classes = [IsAdminRole]
@@ -322,6 +343,38 @@ class EligibleLawyersView(APIView):
         practice_area = None
         if raw and raw.lower() not in ("none", "null", "unassigned"):
             practice_area = get_object_or_404(PracticeArea, pk=raw)
+
+        raw_date = (request.query_params.get("date") or "").strip()
+        raw_time = (request.query_params.get("time") or "").strip()
+        exclude_id = (request.query_params.get("exclude_consultation_id") or "").strip() or None
+
+        if raw_date:
+            try:
+                target_date = datetime.date.fromisoformat(raw_date)
+            except ValueError:
+                return Response(
+                    {"detail": "Invalid date format. Use YYYY-MM-DD."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            target_time = None
+            if raw_time:
+                try:
+                    parts = raw_time.split(":")
+                    target_time = datetime.time(int(parts[0]), int(parts[1]))
+                except Exception:
+                    return Response(
+                        {"detail": "Invalid time format. Use HH:MM."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+            results = AvailabilityService.get_eligible_lawyers_availability(
+                practice_area=practice_area,
+                target_date=target_date,
+                target_time=target_time,
+                exclude_consultation_id=exclude_id,
+            )
+            return Response(results, status=status.HTTP_200_OK)
 
         lawyers = eligible_lawyers_queryset(practice_area)
         return Response(
@@ -373,5 +426,281 @@ class LawyerAssignedStatusView(APIView):
         consultation = _consultation_qs().get(pk=consultation.pk)
         return Response(
             ConsultationSerializer(consultation).data,
+            status=status.HTTP_200_OK,
+        )
+
+
+# ---------------------------------------------------------------------------
+# Availability & Scheduling APIs
+# ---------------------------------------------------------------------------
+
+
+class LawyerAvailableSlotsView(APIView):
+    """
+    GET /api/consultations/availability/slots/?lawyer_id=<id>&date=<YYYY-MM-DD>
+    Accessible to authenticated clients and staff to retrieve genuinely available slots.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        raw_lawyer_id = (request.query_params.get("lawyer_id") or "").strip()
+        raw_date = (request.query_params.get("date") or "").strip()
+
+        if not raw_lawyer_id or not raw_date:
+            return Response(
+                {"detail": "Both lawyer_id and date query parameters are required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            lawyer = User.objects.get(pk=raw_lawyer_id, role__in=LAWYER_ROLES, is_active=True)
+        except (User.DoesNotExist, ValueError):
+            return Response(
+                {"detail": "Lawyer not found or inactive."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        try:
+            target_date = datetime.date.fromisoformat(raw_date)
+        except ValueError:
+            return Response(
+                {"detail": "Invalid date format. Use YYYY-MM-DD."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        exclude_id = request.query_params.get("exclude_consultation_id")
+        slots = AvailabilityService.get_available_slots(
+            lawyer=lawyer,
+            target_date=target_date,
+            exclude_consultation_id=exclude_id,
+        )
+        duration = AvailabilityService.get_lawyer_duration(lawyer)
+
+        return Response(
+            {
+                "lawyer_id": lawyer.id,
+                "lawyer_name": lawyer.full_name,
+                "date": raw_date,
+                "duration_minutes": duration,
+                "slots": slots,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class LawyerScheduleConfigView(APIView):
+    """
+    GET, PUT /api/consultations/availability/my-schedule/
+    Allows the authenticated lawyer to manage their consultation duration and weekly schedule.
+    """
+
+    permission_classes = [IsLawyerRole]
+
+    def get(self, request):
+        profile, _ = LawyerAvailabilityProfile.objects.get_or_create(
+            lawyer=request.user,
+            defaults={"consultation_duration": 30, "is_available": True},
+        )
+        schedules = LawyerWeeklySchedule.objects.filter(lawyer=request.user).order_by("weekday", "start_time")
+
+        return Response(
+            {
+                "consultation_duration": profile.consultation_duration,
+                "is_available": profile.is_available,
+                "weekly_schedules": LawyerWeeklyScheduleSerializer(schedules, many=True).data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    def put(self, request):
+        serializer = LawyerScheduleConfigSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        with transaction.atomic():
+            profile, _ = LawyerAvailabilityProfile.objects.get_or_create(lawyer=request.user)
+            profile.consultation_duration = data.get("consultation_duration", 30)
+            profile.is_available = data.get("is_available", True)
+            profile.save()
+
+            if "weekly_schedules" in data:
+                LawyerWeeklySchedule.objects.filter(lawyer=request.user).delete()
+                new_schedules = []
+                for item in data["weekly_schedules"]:
+                    new_schedules.append(
+                        LawyerWeeklySchedule(
+                            lawyer=request.user,
+                            weekday=item["weekday"],
+                            start_time=item["start_time"],
+                            end_time=item["end_time"],
+                            is_active=item.get("is_active", True),
+                        )
+                    )
+                if new_schedules:
+                    LawyerWeeklySchedule.objects.bulk_create(new_schedules)
+
+        schedules = LawyerWeeklySchedule.objects.filter(lawyer=request.user).order_by("weekday", "start_time")
+        return Response(
+            {
+                "message": "Consultation schedule saved successfully.",
+                "consultation_duration": profile.consultation_duration,
+                "is_available": profile.is_available,
+                "weekly_schedules": LawyerWeeklyScheduleSerializer(schedules, many=True).data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class LawyerDateOverrideListCreateView(APIView):
+    """
+    GET  /api/consultations/availability/overrides/ — list lawyer's date overrides
+    POST /api/consultations/availability/overrides/ — create date override
+    """
+
+    permission_classes = [IsLawyerRole]
+
+    def get(self, request):
+        overrides = LawyerDateOverride.objects.filter(lawyer=request.user).order_by("start_date")
+        return Response(
+            LawyerDateOverrideSerializer(overrides, many=True).data,
+            status=status.HTTP_200_OK,
+        )
+
+    def post(self, request):
+        serializer = LawyerDateOverrideSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        override = serializer.save(lawyer=request.user)
+        return Response(
+            LawyerDateOverrideSerializer(override).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class LawyerDateOverrideDetailView(APIView):
+    """
+    DELETE /api/consultations/availability/overrides/<id>/ — delete date override
+    """
+
+    permission_classes = [IsLawyerRole]
+
+    def delete(self, request, pk):
+        override = get_object_or_404(LawyerDateOverride, pk=pk, lawyer=request.user)
+        override.delete()
+        return Response({"message": "Date override removed successfully."}, status=status.HTTP_200_OK)
+
+
+class LawyerTimeBlockListCreateView(APIView):
+    """
+    GET  /api/consultations/availability/time-blocks/ — list lawyer's time blocks
+    POST /api/consultations/availability/time-blocks/ — create time block
+    """
+
+    permission_classes = [IsLawyerRole]
+
+    def get(self, request):
+        blocks = LawyerTimeBlock.objects.filter(lawyer=request.user).order_by("date", "start_time")
+        return Response(
+            LawyerTimeBlockSerializer(blocks, many=True).data,
+            status=status.HTTP_200_OK,
+        )
+
+    def post(self, request):
+        serializer = LawyerTimeBlockSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        block = serializer.save(lawyer=request.user)
+        return Response(
+            LawyerTimeBlockSerializer(block).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class LawyerTimeBlockDetailView(APIView):
+    """
+    DELETE /api/consultations/availability/time-blocks/<id>/ — delete time block
+    """
+
+    permission_classes = [IsLawyerRole]
+
+    def delete(self, request, pk):
+        block = get_object_or_404(LawyerTimeBlock, pk=pk, lawyer=request.user)
+        block.delete()
+        return Response({"message": "Time block removed successfully."}, status=status.HTTP_200_OK)
+
+
+class LawyerConsultationCalendarView(APIView):
+    """
+    GET /api/consultations/lawyer-calendar/?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
+    Returns consultations, blocks, overrides, and weekly schedule for calendar display.
+    """
+
+    permission_classes = [IsLawyerRole]
+
+    def get(self, request):
+        lawyer = request.user
+        raw_start = request.query_params.get("start_date")
+        raw_end = request.query_params.get("end_date")
+
+        today = timezone.localdate()
+        if raw_start:
+            try:
+                start_date = datetime.date.fromisoformat(raw_start)
+            except ValueError:
+                start_date = today.replace(day=1)
+        else:
+            start_date = today.replace(day=1)
+
+        if raw_end:
+            try:
+                end_date = datetime.date.fromisoformat(raw_end)
+            except ValueError:
+                end_date = start_date + datetime.timedelta(days=35)
+        else:
+            end_date = start_date + datetime.timedelta(days=35)
+
+        # 1. Consultations
+        consultations = (
+            Consultation.objects.filter(
+                assigned_lawyer=lawyer,
+                preferred_date__gte=start_date,
+                preferred_date__lte=end_date,
+            )
+            .select_related("client", "practice_area", "case_appointment")
+            .order_by("preferred_date", "preferred_time")
+        )
+
+        consultations_data = ConsultationSerializer(consultations, many=True).data
+
+        # 2. Time blocks
+        blocks = LawyerTimeBlock.objects.filter(
+            lawyer=lawyer,
+            date__gte=start_date,
+            date__lte=end_date,
+        ).order_by("date", "start_time")
+
+        # 3. Date overrides
+        overrides = LawyerDateOverride.objects.filter(
+            lawyer=lawyer,
+            start_date__lte=end_date,
+            end_date__gte=start_date,
+        ).order_by("start_date")
+
+        # 4. Weekly schedule
+        schedules = LawyerWeeklySchedule.objects.filter(
+            lawyer=lawyer,
+            is_active=True,
+        ).order_by("weekday", "start_time")
+
+        profile = getattr(lawyer, "availability_profile", None)
+
+        return Response(
+            {
+                "consultation_duration": profile.consultation_duration if profile else 30,
+                "is_available": profile.is_available if profile else True,
+                "consultations": consultations_data,
+                "time_blocks": LawyerTimeBlockSerializer(blocks, many=True).data,
+                "date_overrides": LawyerDateOverrideSerializer(overrides, many=True).data,
+                "weekly_schedules": LawyerWeeklyScheduleSerializer(schedules, many=True).data,
+            },
             status=status.HTTP_200_OK,
         )

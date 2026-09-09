@@ -7,6 +7,7 @@ import {
   practiceAreaLabel,
   STATUS_LABELS,
 } from './consultationConstants';
+import { useAuth } from '../../context/AuthContext';
 import { getDashboardPath } from '../../utils/roleRoutes';
 import './consultations.css';
 
@@ -21,6 +22,7 @@ function DetailField({ label, children }) {
 
 function LawyerConsultationDetailModal({ open, consultation, userRole, onClose, onConvert }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const backdropPointerDown = useRef(false);
 
   useEffect(() => {
@@ -40,8 +42,9 @@ function LawyerConsultationDetailModal({ open, consultation, userRole, onClose, 
     consultation.status;
   const modeLabel =
     consultation.consultation_mode_label || consultation.consultation_mode || '—';
-  const practiceLabel = practiceAreaLabel(consultation);
-  const lawyerLabel = assignedLawyerLabel(consultation);
+  const practiceLabel = practiceAreaLabel(consultation) || consultation.practice_area_label || '—';
+  const lawyerLabel = assignedLawyerLabel(consultation) || consultation.assigned_lawyer_name || 'Not Assigned';
+  const clientName = consultation.client?.full_name || consultation.client_name || '—';
   const submittedAt = consultation.created_at
     ? new Date(consultation.created_at).toLocaleString(undefined, {
         day: 'numeric',
@@ -52,10 +55,27 @@ function LawyerConsultationDetailModal({ open, consultation, userRole, onClose, 
       })
     : null;
 
-  const dashboardPath = getDashboardPath(userRole);
+  const effectiveRole = userRole || user?.role;
+  const dashboardPath = getDashboardPath(effectiveRole);
+
+  const isExistingCaseAppt =
+    consultation.consultation_type === 'EXISTING_CASE' ||
+    Boolean(consultation.case_appointment_id) ||
+    Boolean(consultation.case_appointment_ref);
+
+  const linkedCaseRef =
+    consultation.case_reference ||
+    consultation.case_appointment_ref ||
+    (consultation.case_id ? `CASE-${consultation.case_id}` : null);
+
+  const isAlreadyConverted = Boolean(consultation.case_id) || Boolean(consultation.case_reference);
+
+  // An existing case appointment was never a new matter, so it cannot be converted to a case.
+  // A new matter can be converted only if not already converted and accepted/completed.
   const isEligibleForConversion =
-    consultation.status === 'ACCEPTED' || consultation.status === 'COMPLETED';
-  const isAlreadyConverted = Boolean(consultation.case_id);
+    !isExistingCaseAppt &&
+    !isAlreadyConverted &&
+    (consultation.status === 'ACCEPTED' || consultation.status === 'COMPLETED');
 
   const handleConvertClick = () => {
     if (onConvert) {
@@ -70,7 +90,14 @@ function LawyerConsultationDetailModal({ open, consultation, userRole, onClose, 
 
   const handleCaseLinkClick = () => {
     onClose?.();
-    navigate(`${dashboardPath}/cases/${consultation.case_reference || consultation.case_id}`);
+    const targetRef =
+      consultation.case_reference ||
+      consultation.case_appointment_ref ||
+      consultation.case_id ||
+      consultation.case_appointment_id;
+    if (targetRef) {
+      navigate(`${dashboardPath}/cases/${targetRef}`);
+    }
   };
 
   return (
@@ -120,12 +147,12 @@ function LawyerConsultationDetailModal({ open, consultation, userRole, onClose, 
                   fontWeight: 600,
                   padding: '0.15rem 0.5rem',
                   borderRadius: '12px',
-                  backgroundColor: consultation.consultation_type === 'EXISTING_CASE' ? '#faf3e0' : '#f0f4f8',
-                  color: consultation.consultation_type === 'EXISTING_CASE' ? '#855b1b' : '#2c4a6f',
+                  backgroundColor: isExistingCaseAppt ? '#faf3e0' : '#f0f4f8',
+                  color: isExistingCaseAppt ? '#855b1b' : '#2c4a6f',
                   border: '1px solid var(--color-border)',
                 }}
               >
-                {consultation.consultation_type_label || (consultation.consultation_type === 'EXISTING_CASE' ? 'Existing Case Appointment' : 'New Legal Matter')}
+                {consultation.consultation_type_label || (isExistingCaseAppt ? 'Existing Case Appointment' : 'New Legal Matter')}
               </span>
             </div>
             {submittedAt ? (
@@ -135,14 +162,14 @@ function LawyerConsultationDetailModal({ open, consultation, userRole, onClose, 
 
           <div className="cons-detail__grid">
             <DetailField label="Subject">{consultation.subject || '—'}</DetailField>
-            {consultation.consultation_type === 'EXISTING_CASE' && (
+            {(isExistingCaseAppt || isAlreadyConverted) && linkedCaseRef && (
               <DetailField label="Linked Case">
                 <span style={{ fontWeight: 600, color: 'var(--color-primary)' }}>
-                  {consultation.case_appointment_ref || consultation.case_reference || 'Case File'}
+                  {linkedCaseRef}
                 </span>
               </DetailField>
             )}
-            <DetailField label="Client Name">{consultation.client?.full_name || '—'}</DetailField>
+            <DetailField label="Client Name">{clientName}</DetailField>
             <DetailField label="Mode">{modeLabel}</DetailField>
             <DetailField label="Practice Area">{practiceLabel}</DetailField>
             <DetailField label="Assigned Lawyer">{lawyerLabel}</DetailField>
@@ -152,7 +179,7 @@ function LawyerConsultationDetailModal({ open, consultation, userRole, onClose, 
             <DetailField label="Preferred Time">
               {formatPreferredTime(consultation.preferred_time)}
             </DetailField>
-            <DetailField label={consultation.consultation_type === 'EXISTING_CASE' ? 'Appointment Fee' : 'Consultation Fee'}>
+            <DetailField label={isExistingCaseAppt ? 'Appointment Fee' : 'Consultation Fee'}>
               ₹{Number(consultation.charged_fee || consultation.fee_amount || 500).toLocaleString('en-IN')}
             </DetailField>
           </div>
@@ -168,21 +195,40 @@ function LawyerConsultationDetailModal({ open, consultation, userRole, onClose, 
 
           {/* Case Conversion / Status link section */}
           <div className="cons-detail__summary" style={{ borderTop: '1px solid var(--color-border)', paddingTop: '1.25rem', marginTop: '1.25rem' }}>
-            {isAlreadyConverted ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span className="cons-detail__label" style={{ margin: 0 }}>Linked Case:</span>
-                <button
-                  type="button"
-                  className="btn btn-ghost-dark"
-                  style={{ textDecoration: 'underline', color: 'var(--color-primary)', fontWeight: 'bold', padding: '0.2rem 0.5rem', height: 'auto', fontSize: '0.9rem' }}
-                  onClick={handleCaseLinkClick}
-                >
-                  {consultation.case_reference || 'View Case File'}
-                </button>
+            {isExistingCaseAppt || isAlreadyConverted ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                <p style={{ fontSize: '0.85rem', color: '#666', margin: 0 }}>
+                  {isExistingCaseAppt
+                    ? 'This consultation is an appointment scheduled for an active case.'
+                    : 'This consultation has already been converted into a case matter.'}
+                </p>
+                {linkedCaseRef && (
+                  <div>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
+                        backgroundColor: 'var(--color-primary)',
+                        borderColor: 'var(--color-primary)',
+                        color: '#fff',
+                        fontWeight: 600,
+                        padding: '0.45rem 1rem',
+                        fontSize: '0.85rem',
+                      }}
+                      onClick={handleCaseLinkClick}
+                    >
+                      <span>Go to Case ({linkedCaseRef})</span>
+                      <span aria-hidden="true">→</span>
+                    </button>
+                  </div>
+                )}
               </div>
             ) : isEligibleForConversion ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <p style={{ fontSize: '0.85rem', color: '#888280' }}>
+                <p style={{ fontSize: '0.85rem', color: '#888280', margin: 0 }}>
                   This matter is eligible for conversion to a formal law firm case.
                 </p>
                 <div>
@@ -197,7 +243,7 @@ function LawyerConsultationDetailModal({ open, consultation, userRole, onClose, 
                 </div>
               </div>
             ) : (
-              <p style={{ fontSize: '0.85rem', color: '#888280', fontStyle: 'italic' }}>
+              <p style={{ fontSize: '0.85rem', color: '#888280', fontStyle: 'italic', margin: 0 }}>
                 Consultation must be Accepted or Completed before it can be converted to a case file.
               </p>
             )}
