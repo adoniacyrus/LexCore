@@ -45,6 +45,10 @@
   min-width: 0;
 }
 
+:where(.lw-shell) section {
+  padding: 0;
+}
+
 /* Lock shell to viewport — page chrome fixed, inner content scrolls */
 .lw-shell--fill {
   height: 100vh;

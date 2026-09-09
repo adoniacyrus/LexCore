@@ -39,14 +39,14 @@
 }
 
 .cons-modal {
-  width: min(480px, 100%);
-  max-height: min(88vh, 640px);
+  width: min(520px, 100%);
+  max-height: min(94vh, 720px);
   overflow-y: auto;
   background: #fff;
   border: 1px solid var(--color-border);
   box-shadow: 0 12px 40px rgba(58, 28, 36, 0.14);
   border-radius: var(--border-radius-sm);
-  padding: 0.9rem 1.05rem 0.85rem;
+  padding: 0.65rem 0.95rem 0.55rem;
   animation: lw-fade-up 220ms var(--ease-out-soft);
 }
 
@@ -54,31 +54,31 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 0.75rem;
-  margin-bottom: 0.7rem;
-  padding-bottom: 0.55rem;
+  gap: 0.65rem;
+  margin-bottom: 0.35rem;
+  padding-bottom: 0.25rem;
   border-bottom: 1px solid var(--color-border);
 }
 
 .cons-modal__header .section-tag-gold {
-  margin-bottom: 0.2rem;
-  font-size: 0.62rem;
+  margin-bottom: 0.05rem;
+  font-size: 0.58rem;
 }
 
 .cons-modal__header h2 {
   font-family: var(--font-headings);
-  font-size: 1.3rem;
+  font-size: 1.15rem;
   font-weight: 600;
   letter-spacing: -0.02em;
   color: var(--color-dark);
   margin: 0;
-  line-height: 1.2;
+  line-height: 1.1;
 }
 
 .cons-modal__close {
   border: none;
   background: transparent;
-  font-size: 1.35rem;
+  font-size: 1.2rem;
   line-height: 1;
   color: var(--color-text);
   cursor: pointer;
@@ -87,16 +87,19 @@
 }
 
 .cons-modal__form {
-  gap: 0.55rem;
+  gap: 0.32rem;
 }
 
 .cons-modal__form .auth-field {
-  gap: 0.2rem;
+  gap: 0.1rem;
 }
 
 .cons-modal__form .auth-field > span {
-  font-size: 0.62rem;
-  letter-spacing: 0.1em;
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1.1;
+  margin-bottom: 0.02rem;
 }
 
 .cons-modal__form .auth-field select,
@@ -104,40 +107,61 @@
 .cons-modal__form .auth-field input[type='date'],
 .cons-modal__form .auth-field input[type='time'],
 .cons-modal__form .auth-field input[type='text'] {
-  padding: 0.55rem 0.7rem;
-  font-size: 0.86rem;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.81rem;
+  min-height: 1.95rem;
+  border-radius: var(--border-radius-sm);
+}
+
+.cons-modal__form .auth-field textarea {
+  min-height: 2.2rem;
+  height: 2.2rem;
+  resize: vertical;
 }
 
 .cons-modal__form .cons-choice-group {
+  gap: 0.15rem;
+}
+
+.cons-modal__form .cons-choice-group .cons-choice-label {
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+}
+
+.cons-modal__form .cons-choice-options {
   gap: 0.4rem;
 }
 
 .cons-modal__form .cons-choice {
-  padding: 0.45rem 0.7rem;
-  font-size: 0.84rem;
+  padding: 0.22rem 0.55rem;
+  font-size: 0.78rem;
 }
 
 .cons-modal__form .cons-grid-2 {
-  gap: 0.55rem;
+  gap: 0.4rem;
 }
 
 .cons-modal__form .cons-actions {
   margin-top: 0.15rem;
-  padding-top: 0.35rem;
+  padding-top: 0.2rem;
+  gap: 0.45rem;
 }
 
 .cons-modal__form .cons-actions .btn {
-  padding: 0.65rem 1.2rem;
+  padding: 0.32rem 0.85rem;
+  font-size: 0.8rem;
+  min-height: 1.95rem;
 }
 
 .cons-hint--compact {
-  padding: 0.5rem 0.7rem;
-  font-size: 0.8rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.74rem;
+  margin: 0;
 }
 
 .cons-modal__form .cons-error {
-  padding: 0.55rem 0.7rem;
-  font-size: 0.8rem;
+  padding: 0.35rem 0.55rem;
+  font-size: 0.76rem;
   margin: 0;
 }
 

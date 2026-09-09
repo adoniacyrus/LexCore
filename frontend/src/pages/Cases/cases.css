@@ -256,11 +256,12 @@
   font-size: 0.68rem !important;
 }
 
-.case-section {
+.case-section,
+.lw-shell .case-section {
   background-color: var(--color-card-bg);
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius-sm);
-  padding: 0.85rem 1.05rem;
+  padding: 1rem 1.25rem;
   box-shadow: 0 2px 12px rgba(58, 28, 36, 0.04);
 }
 
@@ -268,8 +269,8 @@
   font-family: var(--font-headings);
   font-size: 0.98rem;
   border-bottom: 1px solid var(--color-border);
-  padding-bottom: 0.3rem;
-  margin-bottom: 0.65rem;
+  padding-bottom: 0.35rem;
+  margin-bottom: 0.75rem;
   color: var(--color-dark);
   font-weight: 600;
 }
@@ -375,11 +376,11 @@
 
 .matter-classification-header-card {
   display: flex;
-  gap: 1rem;
+  gap: 1.25rem;
   background-color: #FAF9F6;
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius-sm);
-  padding: 0.55rem 0.85rem;
+  padding: 0.75rem 1.25rem;
   margin-bottom: 0.65rem;
   align-items: center;
   flex-wrap: wrap;

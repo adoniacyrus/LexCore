@@ -231,11 +231,11 @@ function CourtCalendarPage() {
 
   return (
     <DashboardLayout showContext={false} activeModule="calendar">
-      <div className="cases-page lw-fade-in">
+      <div className="cases-page calendar-page lw-fade-in">
         <PageHeader
           eyebrow="Calendar Overview"
           title="Court Hearing Calendar"
-          subtitle="Direct and coordinate courtroom commitments, review dates, and oversee hearing statuses."
+          description="Direct and coordinate courtroom commitments, review dates, and oversee hearing statuses."
         />
 
         {/* STATISTICS SUMMARY BAR */}
@@ -266,11 +266,10 @@ function CourtCalendarPage() {
         <section className="calendar-filters-card">
           <div className="calendar-view-header">
             <h3 className="calendar-view-title">Filter Hearings</h3>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <div className="calendar-view-toggle-group">
               <button
                 type="button"
                 className={`btn ${viewMode === 'AGENDA' ? 'btn-primary' : 'btn-ghost-dark'}`}
-                style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem' }}
                 onClick={() => setViewMode('AGENDA')}
               >
                 Agenda View
@@ -278,7 +277,6 @@ function CourtCalendarPage() {
               <button
                 type="button"
                 className={`btn ${viewMode === 'WEEK' ? 'btn-primary' : 'btn-ghost-dark'}`}
-                style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem' }}
                 onClick={() => setViewMode('WEEK')}
               >
                 Week View
@@ -286,7 +284,6 @@ function CourtCalendarPage() {
               <button
                 type="button"
                 className={`btn ${viewMode === 'MONTH' ? 'btn-primary' : 'btn-ghost-dark'}`}
-                style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem' }}
                 onClick={() => setViewMode('MONTH')}
               >
                 Month View
@@ -294,7 +291,7 @@ function CourtCalendarPage() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
+          <div className="calendar-filters-grid">
             <label className="auth-field">
               <span>Date Range Preset</span>
               <select value={dateRangePreset} onChange={(e) => setDateRangePreset(e.target.value)}>
@@ -355,22 +352,14 @@ function CourtCalendarPage() {
         </section>
 
         {/* CALENDAR VIEWS CONTAINER */}
-        <section style={{ position: 'relative' }}>
+        <section className="calendar-views-container">
           {loading ? (
-            <div style={{ padding: '3rem', textAlign: 'center', color: '#888280' }}>Loading court hearings calendar…</div>
+            <div className="calendar-loading-state">Loading court hearings calendar…</div>
           ) : error ? (
             <p className="admin-dash__error" role="alert">{error}</p>
           ) : hearings.length === 0 ? (
-            <div
-              style={{
-                padding: '3rem',
-                textAlign: 'center',
-                backgroundColor: '#fff',
-                border: '1px solid var(--color-border)',
-                borderRadius: 'var(--border-radius-sm)',
-              }}
-            >
-              <p style={{ color: '#888280', fontSize: '0.95rem' }}>No hearings found matching these filters.</p>
+            <div className="calendar-empty-state">
+              <p>No hearings found matching these filters.</p>
             </div>
           ) : (
             <>

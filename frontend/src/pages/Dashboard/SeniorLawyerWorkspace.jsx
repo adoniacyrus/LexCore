@@ -277,69 +277,69 @@ function SeniorLawyerWorkspace() {
           )}
         </section>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', minHeight: 0, overflow: 'hidden' }}>
-          <section className="admin-dash__actions" aria-labelledby="quick-actions-heading" style={{ flex: 1, minHeight: 0 }}>
-            <div className="admin-dash__section-head">
-              <h2 id="quick-actions-heading">Quick Actions</h2>
-            </div>
-            <nav className="admin-action-grid" aria-label="Quick actions">
-              {QUICK_ACTIONS.map((action) => (
-                <Link key={action.id} to={action.to} className="admin-action">
-                  <span className="admin-action__icon" aria-hidden="true">
-                    <NavIcon name={action.icon} />
-                  </span>
-                  <span className="admin-action__copy">
-                    <span className="admin-action__title">{action.title}</span>
-                    <span className="admin-action__desc">{action.description}</span>
-                  </span>
-                </Link>
-              ))}
-            </nav>
-          </section>
-
-          {/* CALENDAR STATS WIDGET */}
-          <section className="admin-dash__actions" aria-labelledby="hearings-widget-heading" style={{ flex: 1, minHeight: 0 }}>
-            <div className="admin-dash__section-head">
-              <h2 id="hearings-widget-heading">Upcoming Hearings</h2>
-              <Link to="/dashboard/senior/calendar" className="btn btn-ghost-dark" style={{ fontSize: '0.78rem', padding: '0.2rem 0.5rem' }}>View Calendar</Link>
-            </div>
-            <div className="admin-work__card" style={{ padding: '1rem', background: '#fff', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius-sm)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {upcomingHearingsGrouped.tomorrowItems.length === 0 && upcomingHearingsGrouped.otherUpcoming.length === 0 ? (
-                <p style={{ margin: 0, fontSize: '0.85rem', color: '#888280', fontStyle: 'italic' }}>No upcoming hearings scheduled.</p>
-              ) : (
-                <>
-                  {upcomingHearingsGrouped.tomorrowItems.length > 0 && (
-                    <div>
-                      <h4 style={{ margin: '0 0 0.4rem 0', fontSize: '0.78rem', color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tomorrow</h4>
-                      {upcomingHearingsGrouped.tomorrowItems.map(h => (
-                        <div key={h.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.3rem' }}>
-                          <span style={{ fontWeight: 600 }}>{h.case_title}</span>
-                          <span style={{ color: '#888280' }}>{h.court_name}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {upcomingHearingsGrouped.otherUpcoming.length > 0 && (
-                    <div>
-                      <h4 style={{ margin: '0.5rem 0 0.4rem 0', fontSize: '0.78rem', color: '#888280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Upcoming</h4>
-                      {upcomingHearingsGrouped.otherUpcoming.map(h => {
-                        const dateObj = new Date(h.next_hearing_date);
-                        const formattedDate = dateObj.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
-                        return (
-                          <div key={h.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.3rem' }}>
-                            <span style={{ fontWeight: 500 }}>{h.case_title} <span style={{ fontSize: '0.75rem', color: '#888280' }}>({h.court_name})</span></span>
-                            <span style={{ fontWeight: 600, color: 'var(--color-primary)' }}>{formattedDate}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </section>
-        </div>
+        <section className="admin-dash__actions" aria-labelledby="quick-actions-heading">
+          <div className="admin-dash__section-head">
+            <h2 id="quick-actions-heading">Quick Actions</h2>
+          </div>
+          <nav className="admin-action-grid" aria-label="Quick actions">
+            {QUICK_ACTIONS.map((action) => (
+              <Link key={action.id} to={action.to} className="admin-action">
+                <span className="admin-action__icon" aria-hidden="true">
+                  <NavIcon name={action.icon} />
+                </span>
+                <span className="admin-action__copy">
+                  <span className="admin-action__title">{action.title}</span>
+                  <span className="admin-action__desc">{action.description}</span>
+                </span>
+              </Link>
+            ))}
+          </nav>
+        </section>
       </div>
+
+      {/* UPCOMING HEARINGS — placed directly below Attention Required & Quick Actions */}
+      <section className="admin-dash__hearings" aria-labelledby="hearings-widget-heading">
+        <div className="admin-dash__section-head">
+          <h2 id="hearings-widget-heading">Upcoming Hearings</h2>
+          <Link to="/dashboard/senior/calendar" className="btn btn-ghost-dark admin-dash__view-cal">
+            View Calendar
+          </Link>
+        </div>
+        <div className="admin-hearings-list">
+          {upcomingHearingsGrouped.tomorrowItems.length === 0 && upcomingHearingsGrouped.otherUpcoming.length === 0 ? (
+            <p style={{ margin: 0, fontSize: '0.82rem', color: '#888280', fontStyle: 'italic' }}>No upcoming hearings scheduled.</p>
+          ) : (
+            <>
+              {upcomingHearingsGrouped.tomorrowItems.length > 0 && (
+                <div>
+                  <h4 className="admin-hearings-group-title">Tomorrow</h4>
+                  {upcomingHearingsGrouped.tomorrowItems.map(h => (
+                    <div key={h.id} className="admin-hearings-row">
+                      <span style={{ fontWeight: 600 }}>{h.case_title}</span>
+                      <span style={{ color: '#888280' }}>{h.court_name}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {upcomingHearingsGrouped.otherUpcoming.length > 0 && (
+                <div>
+                  <h4 className="admin-hearings-group-title" style={{ color: '#888280' }}>Upcoming</h4>
+                  {upcomingHearingsGrouped.otherUpcoming.map(h => {
+                    const dateObj = new Date(h.next_hearing_date);
+                    const formattedDate = dateObj.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+                    return (
+                      <div key={h.id} className="admin-hearings-row">
+                        <span style={{ fontWeight: 500 }}>{h.case_title} <span style={{ fontSize: '0.75rem', color: '#888280' }}>({h.court_name})</span></span>
+                        <span style={{ fontWeight: 600, color: 'var(--color-primary)' }}>{formattedDate}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </section>
     </div>
   );
 }

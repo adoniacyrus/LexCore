@@ -8,7 +8,7 @@ import { getAdminRevenue, getErrorMessage } from '../../services/paymentService'
 import { listActiveLawyers } from '../../services/caseService';
 import './revenue.css';
 
-function RevenueCard({ title, amount, subtitle, icon, highlight = false, isDanger = false, isWarning = false }) {
+function RevenueCard({ title, amount, subtitle, icon, highlight = false, isDanger = false, isWarning = false, isCurrency = true }) {
   return (
     <div className={`rev-metric-card ${highlight ? 'is-highlight' : ''} ${isDanger ? 'is-danger' : ''} ${isWarning ? 'is-warning' : ''}`}>
       <div className="rev-metric-card__header">
@@ -16,7 +16,9 @@ function RevenueCard({ title, amount, subtitle, icon, highlight = false, isDange
         {icon && <span className="rev-metric-card__icon" aria-hidden="true"><NavIcon name={icon} /></span>}
       </div>
       <div className="rev-metric-card__amount">
-        {typeof amount === 'number' ? `₹${amount.toLocaleString('en-IN')}` : amount}
+        {typeof amount === 'number'
+          ? (isCurrency ? `₹${amount.toLocaleString('en-IN')}` : amount.toLocaleString('en-IN'))
+          : amount}
       </div>
       {subtitle && <div className="rev-metric-card__sub">{subtitle}</div>}
     </div>
@@ -133,6 +135,7 @@ function RevenuePage() {
             subtitle="Awaiting client payment"
             icon="billing"
             isWarning={metrics.pending_payments_count > 0}
+            isCurrency={false}
           />
           <RevenueCard
             title="Failed Transactions"
@@ -140,6 +143,7 @@ function RevenuePage() {
             subtitle="Unsuccessful checkout attempts"
             icon="billing"
             isDanger={metrics.failed_payments_count > 0}
+            isCurrency={false}
           />
         </section>
 

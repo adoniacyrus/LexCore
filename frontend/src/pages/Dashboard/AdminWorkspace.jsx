@@ -114,6 +114,8 @@ function AdminWorkspace() {
     load();
   }, [load]);
 
+
+
   const stats = useMemo(() => {
     const activeStaff = employees.filter((e) => e.is_active).length;
     const activeClients = clients.filter((c) => c.is_active).length;
@@ -243,8 +245,8 @@ function AdminWorkspace() {
           <p className="lw-muted admin-dash__loading">Loading overview…</p>
         ) : (
           kpiCards.map((card) => {
-            const cardElement = (
-              <article key={card.id} className="admin-kpi" style={card.linkTo ? { cursor: 'pointer' } : {}}>
+            const cardInner = (
+              <>
                 <span className="admin-kpi__icon" aria-hidden="true">
                   <NavIcon name={card.icon} />
                 </span>
@@ -253,14 +255,23 @@ function AdminWorkspace() {
                   <p className="admin-kpi__label">{card.label}</p>
                   <p className="admin-kpi__secondary">{card.secondary}</p>
                 </div>
-              </article>
+              </>
             );
 
             return card.linkTo ? (
-              <Link key={card.id} to={card.linkTo} style={{ textDecoration: 'none', color: 'inherit', display: 'contents' }}>
-                {cardElement}
+              <Link
+                key={card.id}
+                to={card.linkTo}
+                className="admin-kpi admin-kpi--link"
+                style={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}
+              >
+                {cardInner}
               </Link>
-            ) : cardElement;
+            ) : (
+              <article key={card.id} className="admin-kpi">
+                {cardInner}
+              </article>
+            );
           })
         )}
       </section>
@@ -305,49 +316,49 @@ function AdminWorkspace() {
           )}
         </section>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', minHeight: 0, overflow: 'hidden' }}>
-          <section className="admin-dash__actions" aria-labelledby="quick-actions-heading" style={{ flex: 1, minHeight: 0 }}>
-            <div className="admin-dash__section-head">
-              <h2 id="quick-actions-heading">Quick Actions</h2>
-            </div>
-            <nav className="admin-action-grid" aria-label="Quick actions">
-              {QUICK_ACTIONS.map((action) => (
-                <Link key={action.id} to={action.to} className="admin-action">
-                  <span className="admin-action__icon" aria-hidden="true">
-                    <NavIcon name={action.icon} />
-                  </span>
-                  <span className="admin-action__copy">
-                    <span className="admin-action__title">{action.title}</span>
-                    <span className="admin-action__desc">{action.description}</span>
-                  </span>
-                </Link>
-              ))}
-            </nav>
-          </section>
-
-          {/* CALENDAR STATS WIDGET */}
-          <section className="admin-dash__actions" aria-labelledby="hearings-widget-heading" style={{ flex: 1, minHeight: 0 }}>
-            <div className="admin-dash__section-head">
-              <h2 id="hearings-widget-heading">Upcoming Hearings</h2>
-              <Link to="/dashboard/admin/calendar" className="btn btn-ghost-dark" style={{ fontSize: '0.78rem', padding: '0.2rem 0.5rem' }}>View Calendar</Link>
-            </div>
-            <div className="admin-work__card" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', padding: '1rem', textAlign: 'center', background: '#fff', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius-sm)' }}>
-              <div>
-                <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-primary)', margin: 0 }}>{hearingStats.today}</p>
-                <p style={{ fontSize: '0.72rem', color: '#888280', margin: '0.2rem 0 0 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Today</p>
-              </div>
-              <div>
-                <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-primary)', margin: 0 }}>{hearingStats.this_week}</p>
-                <p style={{ fontSize: '0.72rem', color: '#888280', margin: '0.2rem 0 0 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>This Week</p>
-              </div>
-              <div>
-                <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#c0392b', margin: 0 }}>{hearingStats.missed}</p>
-                <p style={{ fontSize: '0.72rem', color: '#888280', margin: '0.2rem 0 0 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Missed</p>
-              </div>
-            </div>
-          </section>
-        </div>
+        <section className="admin-dash__actions" aria-labelledby="quick-actions-heading">
+          <div className="admin-dash__section-head">
+            <h2 id="quick-actions-heading">Quick Actions</h2>
+          </div>
+          <nav className="admin-action-grid" aria-label="Quick actions">
+            {QUICK_ACTIONS.map((action) => (
+              <Link key={action.id} to={action.to} className="admin-action">
+                <span className="admin-action__icon" aria-hidden="true">
+                  <NavIcon name={action.icon} />
+                </span>
+                <span className="admin-action__copy">
+                  <span className="admin-action__title">{action.title}</span>
+                  <span className="admin-action__desc">{action.description}</span>
+                </span>
+              </Link>
+            ))}
+          </nav>
+        </section>
       </div>
+
+      {/* UPCOMING HEARINGS — placed directly below Attention Required & Quick Actions */}
+      <section className="admin-dash__hearings" aria-labelledby="hearings-widget-heading">
+        <div className="admin-dash__section-head">
+          <h2 id="hearings-widget-heading">Upcoming Hearings</h2>
+          <Link to="/dashboard/admin/calendar" className="btn btn-ghost-dark admin-dash__view-cal">
+            View Calendar
+          </Link>
+        </div>
+        <div className="admin-hearings-card">
+          <div className="admin-hearings-stat">
+            <p className="admin-hearings-stat__value">{hearingStats.today}</p>
+            <p className="admin-hearings-stat__label">Today</p>
+          </div>
+          <div className="admin-hearings-stat">
+            <p className="admin-hearings-stat__value">{hearingStats.this_week}</p>
+            <p className="admin-hearings-stat__label">This Week</p>
+          </div>
+          <div className="admin-hearings-stat">
+            <p className="admin-hearings-stat__value admin-hearings-stat__value--alert">{hearingStats.missed}</p>
+            <p className="admin-hearings-stat__label">Missed</p>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

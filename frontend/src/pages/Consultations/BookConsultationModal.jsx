@@ -417,11 +417,11 @@ function BookConsultationModal({ open, onClose, onSubmitted, initialCase = null 
             
             {/* BOOKING TYPE SELECTOR */}
             {!initialCase && (
-              <div className="cons-category-selector" style={{ marginBottom: '1.25rem' }}>
-                <p className="cons-choice-label" style={{ marginBottom: '0.45rem', fontWeight: 600 }}>
+              <div className="cons-category-selector" style={{ marginBottom: '0.15rem' }}>
+                <p className="cons-choice-label" style={{ marginBottom: '0.15rem', fontWeight: 600 }}>
                   What would you like to book?
                 </p>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.45rem' }}>
                   <button
                     type="button"
                     onClick={() => {
@@ -430,7 +430,7 @@ function BookConsultationModal({ open, onClose, onSubmitted, initialCase = null 
                       setFieldErrors({});
                     }}
                     style={{
-                      padding: '0.75rem 0.9rem',
+                      padding: '0.35rem 0.65rem',
                       borderRadius: '6px',
                       border: bookingType === 'NEW_MATTER' ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
                       backgroundColor: bookingType === 'NEW_MATTER' ? '#fdf8f9' : '#fff',
@@ -441,8 +441,8 @@ function BookConsultationModal({ open, onClose, onSubmitted, initialCase = null 
                       transition: 'all 0.15s ease',
                     }}
                   >
-                    <div style={{ fontSize: '0.88rem', marginBottom: '0.15rem' }}>New Legal Matter</div>
-                    <div style={{ fontSize: '0.72rem', color: '#777' }}>Intake consultation for a new legal dispute or advisory</div>
+                    <div style={{ fontSize: '0.82rem', marginBottom: '0.04rem' }}>New Legal Matter</div>
+                    <div style={{ fontSize: '0.68rem', color: '#777', lineHeight: 1.2 }}>Intake consultation for a new legal dispute or advisory</div>
                   </button>
 
                   <button
@@ -453,7 +453,7 @@ function BookConsultationModal({ open, onClose, onSubmitted, initialCase = null 
                       setFieldErrors({});
                     }}
                     style={{
-                      padding: '0.75rem 0.9rem',
+                      padding: '0.35rem 0.65rem',
                       borderRadius: '6px',
                       border: bookingType === 'EXISTING_CASE' ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
                       backgroundColor: bookingType === 'EXISTING_CASE' ? '#fdf8f9' : '#fff',
@@ -464,8 +464,8 @@ function BookConsultationModal({ open, onClose, onSubmitted, initialCase = null 
                       transition: 'all 0.15s ease',
                     }}
                   >
-                    <div style={{ fontSize: '0.88rem', marginBottom: '0.15rem' }}>Appointment for Existing Case</div>
-                    <div style={{ fontSize: '0.72rem', color: '#777' }}>Meet with the assigned lead counsel on your active matter</div>
+                    <div style={{ fontSize: '0.82rem', marginBottom: '0.04rem' }}>Appointment for Existing Case</div>
+                    <div style={{ fontSize: '0.68rem', color: '#777', lineHeight: 1.2 }}>Meet with the assigned lead counsel on your active matter</div>
                   </button>
                 </div>
               </div>
@@ -543,8 +543,8 @@ function BookConsultationModal({ open, onClose, onSubmitted, initialCase = null 
 
             {/* FLOW B: EXISTING CASE APPOINTMENT */}
             {bookingType === 'EXISTING_CASE' && (
-              <div style={{ marginBottom: '1.25rem' }}>
-                <p className="cons-choice-label" style={{ marginBottom: '0.45rem', fontWeight: 600 }}>
+              <div style={{ marginBottom: '0.25rem' }}>
+                <p className="cons-choice-label" style={{ marginBottom: '0.25rem', fontWeight: 600 }}>
                   Select Your Case
                 </p>
 
@@ -626,11 +626,11 @@ function BookConsultationModal({ open, onClose, onSubmitted, initialCase = null 
                 ) : (
                   /* SELECTED CASE BANNER */
                   <div style={{
-                    padding: '0.85rem 1rem',
+                    padding: '0.55rem 0.8rem',
                     background: '#fcfaf6',
                     border: '1px solid #ebdcc5',
                     borderRadius: '6px',
-                    marginBottom: '0.85rem',
+                    marginBottom: '0.35rem',
                   }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
                       <div>
