@@ -26,7 +26,8 @@ function LawyerConsultationCalendarPage() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [viewMode, setViewMode] = useState('AGENDA'); // 'AGENDA' | 'WEEK' | 'MONTH'
+  const [viewMode, setViewMode] = useState('WEEK'); // 'AGENDA' | 'WEEK' | 'MONTH'
+  const [activeDate, setActiveDate] = useState(() => new Date());
 
   // Modal State
   const [selectedConsultation, setSelectedConsultation] = useState(null);
@@ -34,20 +35,30 @@ function LawyerConsultationCalendarPage() {
   const availabilityPath =
     role === 'JUNIOR_LAWYER' ? '/dashboard/junior/availability' : '/dashboard/senior/availability';
 
-  const loadCalendar = useCallback(async () => {
+  const formatDateKey = (d) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  const activeMonthYear = `${activeDate.getFullYear()}-${activeDate.getMonth()}`;
+
+  const loadCalendar = useCallback(async (targetDate = activeDate) => {
     if (!accessToken) return;
     setLoading(true);
     setError('');
     try {
-      const today = new Date();
-      const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-      const end = new Date(today.getFullYear(), today.getMonth() + 2, 0);
+      const year = targetDate.getFullYear();
+      const month = targetDate.getMonth();
+      const start = new Date(year, month - 1, 1);
+      const end = new Date(year, month + 2, 0);
 
       const formatDateStr = (d) => {
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const date = String(d.getDate()).padStart(2, '0');
-        return `${year}-${month}-${date}`;
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const dt = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${dt}`;
       };
 
       const data = await fetchLawyerConsultationCalendar(accessToken, {
@@ -60,11 +71,31 @@ function LawyerConsultationCalendarPage() {
     } finally {
       setLoading(false);
     }
-  }, [accessToken]);
+  }, [accessToken, activeMonthYear]);
 
   useEffect(() => {
-    loadCalendar();
+    loadCalendar(activeDate);
   }, [loadCalendar]);
+
+  const handlePrev = useCallback(() => {
+    if (viewMode === 'WEEK') {
+      setActiveDate((prev) => new Date(prev.getFullYear(), prev.getMonth(), prev.getDate() - 7));
+    } else if (viewMode === 'MONTH') {
+      setActiveDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+    }
+  }, [viewMode]);
+
+  const handleNext = useCallback(() => {
+    if (viewMode === 'WEEK') {
+      setActiveDate((prev) => new Date(prev.getFullYear(), prev.getMonth(), prev.getDate() + 7));
+    } else if (viewMode === 'MONTH') {
+      setActiveDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+    }
+  }, [viewMode]);
+
+  const handleToday = useCallback(() => {
+    setActiveDate(new Date());
+  }, []);
 
   // Combine consultations and blocks into day groups for Agenda View
   const agendaGroups = useMemo(() => {
@@ -101,17 +132,16 @@ function LawyerConsultationCalendarPage() {
 
   // Week days for Week View
   const weekDays = useMemo(() => {
-    const today = new Date();
-    const day = today.getDay();
-    const diff = today.getDate() - day + (day === 0 ? -6 : 1); // Monday
-    const monday = new Date(today.setDate(diff));
+    const base = new Date(activeDate.getFullYear(), activeDate.getMonth(), activeDate.getDate());
+    const day = base.getDay();
+    const diff = day === 0 ? -6 : 1 - day; // Monday as first day
+    const monday = new Date(base.getFullYear(), base.getMonth(), base.getDate() + diff);
 
     const days = [];
     for (let i = 0; i < 7; i++) {
-      const d = new Date(monday);
-      d.setDate(monday.getDate() + i);
-      const key = d.toISOString().split('T')[0];
-      const label = d.toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' });
+      const d = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i);
+      const key = formatDateKey(d);
+      const label = d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
 
       const dayCons = (calendarData.consultations || []).filter((c) => c.preferred_date === key);
       const dayBlocks = (calendarData.time_blocks || []).filter((b) => b.date === key);
@@ -119,18 +149,34 @@ function LawyerConsultationCalendarPage() {
       days.push({
         key,
         label,
+        date: d,
         consultations: dayCons,
         blocks: dayBlocks,
       });
     }
     return days;
-  }, [calendarData]);
+  }, [activeDate, calendarData]);
+
+  const weekLabel = useMemo(() => {
+    if (!weekDays.length) return '';
+    const first = weekDays[0].date;
+    const last = weekDays[6].date;
+    const sameMonth = first.getMonth() === last.getMonth();
+    const sameYear = first.getFullYear() === last.getFullYear();
+
+    if (sameMonth && sameYear) {
+      return `${first.getDate()} – ${last.getDate()} ${first.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}`;
+    }
+    if (sameYear) {
+      return `${first.getDate()} ${first.toLocaleDateString('en-IN', { month: 'short' })} – ${last.getDate()} ${last.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}`;
+    }
+    return `${first.getDate()} ${first.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })} – ${last.getDate()} ${last.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}`;
+  }, [weekDays]);
 
   // Month days for Month View
   const monthDays = useMemo(() => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = today.getMonth();
+    const year = activeDate.getFullYear();
+    const month = activeDate.getMonth();
 
     const firstDayIndex = (new Date(year, month, 1).getDay() + 6) % 7; // Mon=0
     const totalDays = new Date(year, month + 1, 0).getDate();
@@ -142,7 +188,7 @@ function LawyerConsultationCalendarPage() {
 
     for (let day = 1; day <= totalDays; day++) {
       const d = new Date(year, month, day);
-      const key = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const key = formatDateKey(d);
       const dayCons = (calendarData.consultations || []).filter((c) => c.preferred_date === key);
       const dayBlocks = (calendarData.time_blocks || []).filter((b) => b.date === key);
 
@@ -154,7 +200,11 @@ function LawyerConsultationCalendarPage() {
       });
     }
     return cells;
-  }, [calendarData]);
+  }, [activeDate, calendarData]);
+
+  const monthLabel = useMemo(() => {
+    return activeDate.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+  }, [activeDate]);
 
   return (
     <DashboardLayout showContext={false} activeModule="consultation-calendar" fillHeight>
@@ -186,31 +236,61 @@ function LawyerConsultationCalendarPage() {
         </div>
 
         {/* CONTROLS HEADER */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '0.6rem 0 0.8rem', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem' }}>
-          <div style={{ display: 'flex', gap: '0.35rem' }}>
-            {['AGENDA', 'WEEK', 'MONTH'].map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                onClick={() => setViewMode(mode)}
-                style={{
-                  padding: '0.3rem 0.75rem',
-                  borderRadius: '4px',
-                  border: '1px solid var(--color-border)',
-                  background: viewMode === mode ? 'var(--color-primary)' : '#fff',
-                  color: viewMode === mode ? '#fff' : '#444',
-                  fontWeight: viewMode === mode ? 600 : 500,
-                  fontSize: '0.78rem',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                }}
-              >
-                {mode === 'AGENDA' ? 'Agenda' : mode === 'WEEK' ? 'Week View' : 'Month View'}
-              </button>
-            ))}
+        <div className="cal-controls-bar">
+          <div className="cal-controls-left">
+            <div className="cal-view-switcher">
+              {[
+                { id: 'AGENDA', label: 'Agenda' },
+                { id: 'WEEK', label: 'Week View' },
+                { id: 'MONTH', label: 'Month View' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setViewMode(tab.id)}
+                  className={`cal-view-btn ${viewMode === tab.id ? 'is-active' : ''}`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {viewMode !== 'AGENDA' && (
+              <div className="cal-nav-group">
+                <button
+                  type="button"
+                  className="cal-nav-btn cal-nav-btn--today"
+                  onClick={handleToday}
+                  title="Jump to current week / month"
+                >
+                  Today
+                </button>
+                <button
+                  type="button"
+                  className="cal-nav-btn"
+                  onClick={handlePrev}
+                  aria-label={viewMode === 'WEEK' ? 'Previous week' : 'Previous month'}
+                  title={viewMode === 'WEEK' ? 'Previous week' : 'Previous month'}
+                >
+                  ‹ {viewMode === 'WEEK' ? 'Prev Week' : 'Prev Month'}
+                </button>
+                <button
+                  type="button"
+                  className="cal-nav-btn"
+                  onClick={handleNext}
+                  aria-label={viewMode === 'WEEK' ? 'Next week' : 'Next month'}
+                  title={viewMode === 'WEEK' ? 'Next week' : 'Next month'}
+                >
+                  {viewMode === 'WEEK' ? 'Next Week' : 'Next Month'} ›
+                </button>
+                <span className="cal-nav-label">
+                  {viewMode === 'WEEK' ? weekLabel : monthLabel}
+                </span>
+              </div>
+            )}
           </div>
 
-          <div style={{ fontSize: '0.75rem', color: '#666' }}>
+          <div className="cal-controls-right">
             Duration: <strong style={{ color: 'var(--color-primary)' }}>{calendarData.consultation_duration || 30} mins</strong> · {calendarData.consultations?.length || 0} scheduled consultations
           </div>
         </div>
@@ -312,7 +392,7 @@ function LawyerConsultationCalendarPage() {
             {viewMode === 'WEEK' && (
               <div className="week-grid">
                 {weekDays.map((day) => {
-                  const todayKey = new Date().toISOString().split('T')[0];
+                  const todayKey = formatDateKey(new Date());
                   const isToday = day.key === todayKey;
                   return (
                     <div key={day.key} className="week-column">
@@ -364,7 +444,7 @@ function LawyerConsultationCalendarPage() {
                   <div key={d} className="month-header-cell">{d}</div>
                 ))}
                 {monthDays.map((cell, idx) => {
-                  const todayKey = new Date().toISOString().split('T')[0];
+                  const todayKey = formatDateKey(new Date());
                   const isToday = cell.key === todayKey;
                   if (cell.empty) {
                     return <div key={`empty-${idx}`} className="month-day-cell is-empty" />;

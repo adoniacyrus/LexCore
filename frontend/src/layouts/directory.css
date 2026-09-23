@@ -106,7 +106,7 @@
 .lw-directory__table-wrap {
   flex: 1;
   min-height: 0;
-  overflow: hidden;
+  overflow: auto;
   border: 1px solid var(--color-border);
   background: #fff;
   display: flex;
@@ -330,23 +330,11 @@
 .lw-directory .cli-table th:nth-child(7),
 .lw-directory .cli-table td:nth-child(7) { width: 7.5rem; }
 
-/* Consultations — consistent column widths */
-.lw-directory .cons-table th:nth-child(1),
-.lw-directory .cons-table td:nth-child(1) { width: 7rem; }
-.lw-directory .cons-table th:nth-child(2),
-.lw-directory .cons-table td:nth-child(2) { width: 12%; }
-.lw-directory .cons-table th:nth-child(3),
-.lw-directory .cons-table td:nth-child(3) { width: 11%; }
-.lw-directory .cons-table th:nth-child(4),
-.lw-directory .cons-table td:nth-child(4) { width: 8rem; }
-.lw-directory .cons-table th:nth-child(5),
-.lw-directory .cons-table td:nth-child(5) { width: 8rem; }
-.lw-directory .cons-table th:nth-child(6),
-.lw-directory .cons-table td:nth-child(6) { width: 7.5rem; }
-.lw-directory .cons-table th:nth-child(7),
-.lw-directory .cons-table td:nth-child(7) { width: 12%; }
-.lw-directory .cons-table th:nth-child(8),
-.lw-directory .cons-table td:nth-child(8) { width: 7rem; }
+/* Practice Areas table inside directory */
+.lw-directory .cons-table:not(.cons-queue-table) th:first-child,
+.lw-directory .cons-table:not(.cons-queue-table) td:first-child {
+  width: 14rem;
+}
 
 .lw-directory .cons-table .cons-table__action {
   display: inline-flex;

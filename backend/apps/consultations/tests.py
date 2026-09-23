@@ -636,3 +636,27 @@ class LawyerAvailabilityTests(APITestCase):
         }
         res_block = self.client.post("/api/consultations/availability/time-blocks/", block_payload, format="json")
         self.assertEqual(res_block.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_admin_update_status_on_past_consultation(self):
+        past_date = timezone.localdate() - datetime.timedelta(days=5)
+        consultation = Consultation.objects.create(
+            client=self.client_user,
+            practice_area=self.practice_area,
+            assigned_lawyer=self.lawyer_1,
+            consultation_mode=ConsultationMode.OFFICE,
+            preferred_date=past_date,
+            preferred_time=datetime.time(10, 0),
+            payment_status=ConsultationPaymentStatus.PAID,
+            status=ConsultationStatus.ACCEPTED,
+            subject="Past Consultation",
+        )
+        self.client.force_authenticate(user=self.admin_user)
+        res = self.client.patch(
+            f"/api/consultations/admin/{consultation.id}/",
+            {"status": ConsultationStatus.COMPLETED},
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        consultation.refresh_from_db()
+        self.assertEqual(consultation.status, ConsultationStatus.COMPLETED)
+

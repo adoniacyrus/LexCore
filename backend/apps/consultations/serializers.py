@@ -454,27 +454,33 @@ class AdminConsultationUpdateSerializer(serializers.Serializer):
         target_date = attrs.get("preferred_date", consultation.preferred_date if consultation else None)
         target_time = attrs.get("preferred_time", consultation.preferred_time if consultation else None)
 
+        lawyer_changed = (lawyer is not serializers.empty and (consultation is None or lawyer != consultation.assigned_lawyer))
+        date_changed = ("preferred_date" in attrs and (consultation is None or attrs["preferred_date"] != consultation.preferred_date))
+        time_changed = ("preferred_time" in attrs and (consultation is None or attrs["preferred_time"] != consultation.preferred_time))
+        status_terminal = attrs.get("status") in (ConsultationStatus.CANCELLED, ConsultationStatus.COMPLETED)
+
         if target_lawyer is not None and target_date and target_time:
             duration = AvailabilityService.get_lawyer_duration(target_lawyer)
             attrs["duration_minutes"] = duration
             attrs["end_time"] = _add_minutes_to_time(target_time, duration)
 
-            is_avail, reason = AvailabilityService.check_slot_available(
-                lawyer=target_lawyer,
-                target_date=target_date,
-                preferred_time=target_time,
-                duration_minutes=duration,
-                exclude_consultation_id=consultation.id if consultation else None,
-            )
-            if not is_avail:
-                raise serializers.ValidationError(
-                    {
-                        "assigned_lawyer": (
-                            f"{target_lawyer.full_name} is unavailable at "
-                            f"{target_date} {target_time}: {reason}"
-                        )
-                    }
+            if (lawyer_changed or date_changed or time_changed) and not status_terminal:
+                is_avail, reason = AvailabilityService.check_slot_available(
+                    lawyer=target_lawyer,
+                    target_date=target_date,
+                    preferred_time=target_time,
+                    duration_minutes=duration,
+                    exclude_consultation_id=consultation.id if consultation else None,
                 )
+                if not is_avail:
+                    raise serializers.ValidationError(
+                        {
+                            "assigned_lawyer": (
+                                f"{target_lawyer.full_name} is unavailable at "
+                                f"{target_date} {target_time}: {reason}"
+                            )
+                        }
+                    )
 
         return attrs
 

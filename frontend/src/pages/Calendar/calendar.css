@@ -493,3 +493,107 @@
   font-size: 0.8rem;
   color: #888280;
 }
+
+/* Calendar Navigation Toolbar & Controls */
+.cal-controls-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin: 0.6rem 0 0.8rem;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 0.55rem;
+}
+
+.cal-controls-left {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.cal-view-switcher {
+  display: inline-flex;
+  gap: 0.3rem;
+}
+
+.cal-view-btn {
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--border-radius-sm, 4px);
+  border: 1px solid var(--color-border);
+  background: #fff;
+  color: #444;
+  font-weight: 500;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cal-view-btn.is-active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+  font-weight: 600;
+}
+
+.cal-nav-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding-left: 0.55rem;
+  border-left: 1px solid var(--color-border);
+}
+
+.cal-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.28rem 0.65rem;
+  min-height: 1.85rem;
+  border-radius: var(--border-radius-sm, 4px);
+  border: 1px solid var(--color-border);
+  background: #fff;
+  color: var(--color-dark, #2b2b2b);
+  font-size: 0.76rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.cal-nav-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: rgba(107, 30, 43, 0.04);
+}
+
+.cal-nav-btn--today {
+  font-weight: 600;
+}
+
+.cal-nav-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-dark, #2b2b2b);
+  margin-left: 0.35rem;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+}
+
+.cal-controls-right {
+  font-size: 0.76rem;
+  color: #666;
+}
+
+.month-day-cell.is-today .month-day-number {
+  color: var(--color-primary);
+  background: rgba(107, 30, 43, 0.08);
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-weight: 700;
+}

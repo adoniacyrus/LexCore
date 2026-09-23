@@ -71,6 +71,11 @@ function AdminManageModal({ open, item, practiceAreas, accessToken, onClose, onS
     };
   }, [open, accessToken, practiceAreaId, preferredDate, preferredTime, item]);
 
+  const selectedLawyer = useMemo(() => {
+    if (!lawyerId) return null;
+    return lawyers.find((l) => String(l.id) === String(lawyerId)) || null;
+  }, [lawyerId, lawyers]);
+
   if (!open || !item) return null;
 
   const handleSave = async () => {
@@ -98,11 +103,6 @@ function AdminManageModal({ open, item, practiceAreas, accessToken, onClose, onS
       setSubmitting(false);
     }
   };
-
-  const selectedLawyer = useMemo(() => {
-    if (!lawyerId) return null;
-    return lawyers.find((l) => String(l.id) === String(lawyerId)) || null;
-  }, [lawyerId, lawyers]);
 
   return (
     <div className="cons-modal-overlay" role="presentation" onClick={onClose}>
@@ -305,7 +305,7 @@ function AdminConsultationQueuePage() {
     } finally {
       setLoading(false);
     }
-  }, [accessToken, q, statusFilter, areaFilter]);
+  }, [accessToken, q, statusFilter, paymentFilter, areaFilter]);
 
   useEffect(() => {
     load();
@@ -391,7 +391,7 @@ function AdminConsultationQueuePage() {
           </p>
         ) : null}
 
-        <div className="lw-directory__table-wrap">
+        <div className="lw-directory__table-wrap cons-queue-table-wrap">
           {loading ? (
             <div className="cons-empty">Loading consultations…</div>
           ) : items.length === 0 ? (
@@ -401,44 +401,48 @@ function AdminConsultationQueuePage() {
               description="New client requests will appear here for assignment and review."
             />
           ) : (
-            <table className="lw-directory__table cons-table">
+            <table className="lw-directory__table cons-table cons-queue-table">
               <thead>
                 <tr>
-                  <th>Reference</th>
-                  <th>Client</th>
-                  <th>Practice Area</th>
-                  <th>Status</th>
-                  <th>Payment</th>
-                  <th>Preferred Date</th>
-                  <th>Preferred Time</th>
-                  <th>Assigned Lawyer</th>
-                  <th>Created</th>
-                  <th className="lw-directory__actions-col">Actions</th>
+                  <th className="cons-col-ref">Reference</th>
+                  <th className="cons-col-client">Client</th>
+                  <th className="cons-col-area">Practice Area</th>
+                  <th className="cons-col-status">Status</th>
+                  <th className="cons-col-payment">Payment</th>
+                  <th className="cons-col-date">Preferred Date</th>
+                  <th className="cons-col-time">Preferred Time</th>
+                  <th className="cons-col-lawyer">Assigned Lawyer</th>
+                  <th className="cons-col-created">Created</th>
+                  <th className="cons-col-actions">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {pageItems.map((item) => (
                   <tr key={item.id}>
-                    <td className="cons-ref">
-                      <div>{item.consultation_id}</div>
+                    <td className="cons-col-ref cons-ref">
+                      <div className="cons-ref__id">{item.consultation_id}</div>
                       {item.consultation_type === 'EXISTING_CASE' ? (
-                        <span style={{ fontSize: '0.72rem', color: 'var(--color-primary)', fontWeight: 600, display: 'block' }}>
+                        <span className="cons-ref__sub cons-ref__case">
                           {item.case_appointment_ref ? `Case: ${item.case_appointment_ref}` : 'Case Appointment'}
                         </span>
                       ) : (
-                        <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', display: 'block' }}>
+                        <span className="cons-ref__sub cons-ref__matter">
                           New Matter
                         </span>
                       )}
                     </td>
-                    <td>{item.client?.full_name || '—'}</td>
-                    <td>{practiceAreaLabel(item)}</td>
-                    <td>
+                    <td className="cons-col-client" title={item.client?.full_name || ''}>
+                      {item.client?.full_name || '—'}
+                    </td>
+                    <td className="cons-col-area" title={practiceAreaLabel(item)}>
+                      {practiceAreaLabel(item)}
+                    </td>
+                    <td className="cons-col-status">
                       <span className={`cons-status is-${String(item.status).toLowerCase()}`}>
                         {item.status_label || STATUS_LABELS[item.status] || item.status}
                       </span>
                     </td>
-                    <td>
+                    <td className="cons-col-payment">
                       <span
                         className={`cons-status ${
                           item.payment_status === 'PAID'
@@ -451,11 +455,13 @@ function AdminConsultationQueuePage() {
                         {paymentStatusLabel(item)}
                       </span>
                     </td>
-                    <td>{formatPreferredDate(item.preferred_date)}</td>
-                    <td>{formatPreferredTime(item.preferred_time)}</td>
-                    <td>{assignedLawyerLabel(item)}</td>
-                    <td>{formatCreatedDate(item.created_at)}</td>
-                    <td className="lw-directory__actions-col">
+                    <td className="cons-col-date">{formatPreferredDate(item.preferred_date)}</td>
+                    <td className="cons-col-time">{formatPreferredTime(item.preferred_time)}</td>
+                    <td className="cons-col-lawyer" title={assignedLawyerLabel(item)}>
+                      {assignedLawyerLabel(item)}
+                    </td>
+                    <td className="cons-col-created">{formatCreatedDate(item.created_at)}</td>
+                    <td className="cons-col-actions">
                       <button
                         type="button"
                         className="btn btn-ghost-dark cons-table__action"
@@ -509,14 +515,16 @@ function AdminConsultationQueuePage() {
         ) : null}
       </div>
 
-      <AdminManageModal
-        open={Boolean(selected)}
-        item={selected}
-        practiceAreas={practiceAreas}
-        accessToken={accessToken}
-        onClose={() => setSelected(null)}
-        onSaved={() => load()}
-      />
+      {selected ? (
+        <AdminManageModal
+          open={Boolean(selected)}
+          item={selected}
+          practiceAreas={practiceAreas}
+          accessToken={accessToken}
+          onClose={() => setSelected(null)}
+          onSaved={() => load()}
+        />
+      ) : null}
     </DashboardLayout>
   );
 }
