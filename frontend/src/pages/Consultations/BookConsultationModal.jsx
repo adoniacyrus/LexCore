@@ -592,7 +592,45 @@ function BookConsultationModal({ open, onClose, onSubmitted, initialCase = null 
                   Select Your Case
                 </p>
 
-                {loadingCases ? (
+                {selectedCase ? (
+                  /* SELECTED CASE BANNER */
+                  <div style={{
+                    padding: '0.55rem 0.8rem',
+                    background: '#fcfaf6',
+                    border: '1px solid #ebdcc5',
+                    borderRadius: '6px',
+                    marginBottom: '0.35rem',
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                          <span style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--color-primary)' }}>
+                            {selectedCase.case_reference}
+                          </span>
+                          <span style={{ fontWeight: 600, fontSize: '0.88rem', color: '#222' }}>
+                            {selectedCase.title}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '0.8rem', color: '#555', marginBottom: '0.25rem' }}>
+                          Lead Counsel: <strong>{selectedCase.responsible_lawyer?.full_name || 'Assigned Counsel'}</strong>
+                        </div>
+                        <div style={{ fontSize: '0.8rem', color: '#555' }}>
+                          Appointment Fee: <strong style={{ color: 'var(--color-primary)' }}>₹{Number(selectedCase.appointment_fee).toLocaleString('en-IN')}</strong>
+                        </div>
+                      </div>
+                      {!initialCase && (
+                        <button
+                          type="button"
+                          className="btn btn-ghost-dark"
+                          style={{ fontSize: '0.72rem', padding: '0.2rem 0.55rem', height: 'auto', minHeight: 'auto' }}
+                          onClick={() => setSelectedCase(null)}
+                        >
+                          Change Case
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ) : loadingCases ? (
                   <p className="cons-hint" style={{ padding: '1rem', textAlign: 'center' }}>
                     Loading your cases…
                   </p>
@@ -602,7 +640,7 @@ function BookConsultationModal({ open, onClose, onSubmitted, initialCase = null 
                       No active cases found in your account. To open a new legal file, please book a New Legal Matter.
                     </p>
                   </div>
-                ) : !selectedCase ? (
+                ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', maxHeight: '220px', overflowY: 'auto', paddingRight: '0.25rem' }}>
                     {clientCases.map((c) => {
                       const isEligible = c.is_eligible;
@@ -666,44 +704,6 @@ function BookConsultationModal({ open, onClose, onSubmitted, initialCase = null 
                         </div>
                       );
                     })}
-                  </div>
-                ) : (
-                  /* SELECTED CASE BANNER */
-                  <div style={{
-                    padding: '0.55rem 0.8rem',
-                    background: '#fcfaf6',
-                    border: '1px solid #ebdcc5',
-                    borderRadius: '6px',
-                    marginBottom: '0.35rem',
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-                          <span style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--color-primary)' }}>
-                            {selectedCase.case_reference}
-                          </span>
-                          <span style={{ fontWeight: 600, fontSize: '0.88rem', color: '#222' }}>
-                            {selectedCase.title}
-                          </span>
-                        </div>
-                        <div style={{ fontSize: '0.8rem', color: '#555', marginBottom: '0.25rem' }}>
-                          Lead Counsel: <strong>{selectedCase.responsible_lawyer?.full_name || 'Assigned Counsel'}</strong>
-                        </div>
-                        <div style={{ fontSize: '0.8rem', color: '#555' }}>
-                          Appointment Fee: <strong style={{ color: 'var(--color-primary)' }}>₹{Number(selectedCase.appointment_fee).toLocaleString('en-IN')}</strong>
-                        </div>
-                      </div>
-                      {!initialCase && (
-                        <button
-                          type="button"
-                          className="btn btn-ghost-dark"
-                          style={{ fontSize: '0.72rem', padding: '0.2rem 0.55rem', height: 'auto', minHeight: 'auto' }}
-                          onClick={() => setSelectedCase(null)}
-                        >
-                          Change Case
-                        </button>
-                      )}
-                    </div>
                   </div>
                 )}
 

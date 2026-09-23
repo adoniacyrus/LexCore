@@ -1,0 +1,210 @@
+================================================================================
+LEXCORE END-TO-END AUTOMATED TESTING REPORT
+Terminal Execution Output by Test Suite
+================================================================================
+Project: LexCore Legal Practice Management Platform
+Testing Framework: Python 3.14.6 | pytest 9.1.1 | Selenium 4.49.0
+Browser Engine: Google Chrome 133+ (Windows 11 x64)
+Execution Date: September 23, 2026
+Overall Result: ALL 40 TEST CASES PASSED (100% PASS RATE, 0 FAILURES)
+HTML Report: tests/selenium/reports/test_report.html
+================================================================================
+
+--------------------------------------------------------------------------------
+SUITE 1: AUTHENTICATION & SESSION MANAGEMENT
+File: tests/selenium/test_auth.py
+Command: .\backend\venv\Scripts\python.exe -m pytest tests/selenium/test_auth.py -v
+--------------------------------------------------------------------------------
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\adoni\MCA\ResearchProject\LexCore
+collected 7 items
+
+tests/selenium/test_auth.py::TestAuthentication::test_tc_auth_01_valid_client_login PASSED         [ 14%]
+tests/selenium/test_auth.py::TestAuthentication::test_tc_auth_02_invalid_login PASSED              [ 28%]
+tests/selenium/test_auth.py::TestAuthentication::test_tc_auth_03_admin_login PASSED               [ 42%]
+tests/selenium/test_auth.py::TestAuthentication::test_tc_auth_04_lawyer_login PASSED              [ 57%]
+tests/selenium/test_auth.py::TestAuthentication::test_tc_auth_05_paralegal_login PASSED           [ 71%]
+tests/selenium/test_auth.py::TestAuthentication::test_tc_auth_06_protected_route_unauthenticated PASSED [ 85%]
+tests/selenium/test_auth.py::TestAuthentication::test_tc_auth_07_logout_flow PASSED               [100%]
+
+============================== 7 passed in 44.18s ==============================
+
+
+--------------------------------------------------------------------------------
+SUITE 2: EXISTING-CASE APPOINTMENTS & FEES
+File: tests/selenium/test_appointments.py
+Command: .\backend\venv\Scripts\python.exe -m pytest tests/selenium/test_appointments.py -v
+--------------------------------------------------------------------------------
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\adoni\MCA\ResearchProject\LexCore
+collected 6 items
+
+tests/selenium/test_appointments.py::TestAppointments::test_tc_app_01_client_opens_existing_case_and_verifies_appointment_action PASSED [ 16%]
+tests/selenium/test_appointments.py::TestAppointments::test_tc_app_02_appointment_modal_opens PASSED                            [ 33%]
+tests/selenium/test_appointments.py::TestAppointments::test_tc_app_03_verify_case_information PASSED                            [ 50%]
+tests/selenium/test_appointments.py::TestAppointments::test_tc_app_04_verify_responsible_lawyer_displayed PASSED               [ 66%]
+tests/selenium/test_appointments.py::TestAppointments::test_tc_app_05_verify_consultation_fee PASSED                             [ 83%]
+tests/selenium/test_appointments.py::TestAppointments::test_tc_app_06_appointment_form_submission_flow PASSED                  [100%]
+
+============================== 6 passed in 54.31s ==============================
+
+
+--------------------------------------------------------------------------------
+SUITE 3: CONSULTATION INTAKE & ADMIN TRIAGE
+File: tests/selenium/test_consultations.py
+Command: .\backend\venv\Scripts\python.exe -m pytest tests/selenium/test_consultations.py -v
+--------------------------------------------------------------------------------
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\adoni\MCA\ResearchProject\LexCore
+collected 7 items
+
+tests/selenium/test_consultations.py::TestConsultations::test_tc_cons_01_client_opens_book_consultation PASSED         [ 14%]
+tests/selenium/test_consultations.py::TestConsultations::test_tc_cons_02_required_field_validation PASSED              [ 28%]
+tests/selenium/test_consultations.py::TestConsultations::test_tc_cons_03_valid_consultation_form_reaches_review PASSED [ 42%]
+tests/selenium/test_consultations.py::TestConsultations::test_tc_cons_04_razorpay_checkout_launch PASSED              [ 57%]
+tests/selenium/test_consultations.py::TestConsultations::test_tc_admin_cons_01_admin_opens_consultation_list PASSED    [ 71%]
+tests/selenium/test_consultations.py::TestConsultations::test_tc_admin_cons_02_admin_opens_consultation_details PASSED [ 85%]
+tests/selenium/test_consultations.py::TestConsultations::test_tc_admin_cons_03_admin_assigns_lawyer PASSED            [100%]
+
+============================== 7 passed in 51.62s ==============================
+
+
+--------------------------------------------------------------------------------
+SUITE 4: CASE MANAGEMENT & TEAM ASSIGNMENT
+File: tests/selenium/test_cases.py
+Command: .\backend\venv\Scripts\python.exe -m pytest tests/selenium/test_cases.py -v
+--------------------------------------------------------------------------------
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\adoni\MCA\ResearchProject\LexCore
+collected 7 items
+
+tests/selenium/test_cases.py::TestCases::test_tc_case_01_lawyer_opens_assigned_consultations PASSED         [ 14%]
+tests/selenium/test_cases.py::TestCases::test_tc_case_02_conversion_workflow_navigation PASSED             [ 28%]
+tests/selenium/test_cases.py::TestCases::test_tc_case_03_my_cases_list PASSED                             [ 42%]
+tests/selenium/test_cases.py::TestCases::test_tc_case_04_case_details_open PASSED                         [ 57%]
+tests/selenium/test_cases.py::TestCases::test_tc_case_05_case_classification_update_accessible PASSED     [ 71%]
+tests/selenium/test_cases.py::TestCases::test_tc_case_06_assistant_lawyer_management PASSED              [ 85%]
+tests/selenium/test_cases.py::TestCases::test_tc_case_07_supporting_paralegal_assignment PASSED          [100%]
+
+============================== 7 passed in 58.74s ==============================
+
+
+--------------------------------------------------------------------------------
+SUITE 5: CASE DOCUMENT MANAGEMENT
+File: tests/selenium/test_documents.py
+Command: .\backend\venv\Scripts\python.exe -m pytest tests/selenium/test_documents.py -v
+--------------------------------------------------------------------------------
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\adoni\MCA\ResearchProject\LexCore
+collected 4 items
+
+tests/selenium/test_documents.py::TestDocuments::test_tc_doc_01_open_case_documents_section PASSED [ 25%]
+tests/selenium/test_documents.py::TestDocuments::test_tc_doc_02_upload_document_modal_opens PASSED [ 50%]
+tests/selenium/test_documents.py::TestDocuments::test_tc_doc_03_upload_document_submission PASSED  [ 75%]
+tests/selenium/test_documents.py::TestDocuments::test_tc_doc_04_view_documents_table PASSED       [100%]
+
+============================== 4 passed in 32.15s ==============================
+
+
+--------------------------------------------------------------------------------
+SUITE 6: TASKS & WORK TRACKING
+File: tests/selenium/test_tasks.py
+Command: .\backend\venv\Scripts\python.exe -m pytest tests/selenium/test_tasks.py -v
+--------------------------------------------------------------------------------
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\adoni\MCA\ResearchProject\LexCore
+collected 4 items
+
+tests/selenium/test_tasks.py::TestTasks::test_tc_task_01_create_task_modal_accessible PASSED   [ 25%]
+tests/selenium/test_tasks.py::TestTasks::test_tc_task_02_assign_task_form_filling PASSED       [ 50%]
+tests/selenium/test_tasks.py::TestTasks::test_tc_task_03_view_tasks_section PASSED             [ 75%]
+tests/selenium/test_tasks.py::TestTasks::test_tc_task_04_task_status_controls_present PASSED   [100%]
+
+============================== 4 passed in 34.82s ==============================
+
+
+--------------------------------------------------------------------------------
+SUITE 7: COURT CALENDAR & PROCEEDING FILTERS
+File: tests/selenium/test_calendar.py
+Command: .\backend\venv\Scripts\python.exe -m pytest tests/selenium/test_calendar.py -v
+--------------------------------------------------------------------------------
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\adoni\MCA\ResearchProject\LexCore
+collected 5 items
+
+tests/selenium/test_calendar.py::TestCourtCalendar::test_tc_cal_01_open_court_calendar PASSED         [ 20%]
+tests/selenium/test_calendar.py::TestCourtCalendar::test_tc_cal_02_filter_by_date_preset PASSED      [ 40%]
+tests/selenium/test_calendar.py::TestCourtCalendar::test_tc_cal_03_filter_by_court PASSED            [ 60%]
+tests/selenium/test_calendar.py::TestCourtCalendar::test_tc_cal_04_filter_by_practice_area PASSED   [ 80%]
+tests/selenium/test_calendar.py::TestCourtCalendar::test_tc_cal_05_switch_calendar_views PASSED      [100%]
+
+============================== 5 passed in 31.90s ==============================
+
+
+================================================================================
+FULL SUITE CONSOLIDATED EXECUTION (ALL 40 TESTS)
+Command: .\backend\venv\Scripts\python.exe -m pytest tests/selenium --html=tests/selenium/reports/test_report.html --self-contained-html -v
+================================================================================
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\adoni\MCA\ResearchProject\LexCore
+plugins: html-4.2.0, metadata-3.1.1
+collected 40 items
+
+tests/selenium/test_appointments.py::TestAppointments::test_tc_app_01_client_opens_existing_case_and_verifies_appointment_action PASSED [  2%]
+tests/selenium/test_appointments.py::TestAppointments::test_tc_app_02_appointment_modal_opens PASSED [  5%]
+tests/selenium/test_appointments.py::TestAppointments::test_tc_app_03_verify_case_information PASSED [  7%]
+tests/selenium/test_appointments.py::TestAppointments::test_tc_app_04_verify_responsible_lawyer_displayed PASSED [ 10%]
+tests/selenium/test_appointments.py::TestAppointments::test_tc_app_05_verify_consultation_fee PASSED [ 12%]
+tests/selenium/test_appointments.py::TestAppointments::test_tc_app_06_appointment_form_submission_flow PASSED [ 15%]
+tests/selenium/test_auth.py::TestAuthentication::test_tc_auth_01_valid_client_login PASSED [ 17%]
+tests/selenium/test_auth.py::TestAuthentication::test_tc_auth_02_invalid_login PASSED [ 20%]
+tests/selenium/test_auth.py::TestAuthentication::test_tc_auth_03_admin_login PASSED [ 22%]
+tests/selenium/test_auth.py::TestAuthentication::test_tc_auth_04_lawyer_login PASSED [ 25%]
+tests/selenium/test_auth.py::TestAuthentication::test_tc_auth_05_paralegal_login PASSED [ 27%]
+tests/selenium/test_auth.py::TestAuthentication::test_tc_auth_06_protected_route_unauthenticated PASSED [ 30%]
+tests/selenium/test_auth.py::TestAuthentication::test_tc_auth_07_logout_flow PASSED [ 32%]
+tests/selenium/test_calendar.py::TestCourtCalendar::test_tc_cal_01_open_court_calendar PASSED [ 35%]
+tests/selenium/test_calendar.py::TestCourtCalendar::test_tc_cal_02_filter_by_date_preset PASSED [ 37%]
+tests/selenium/test_calendar.py::TestCourtCalendar::test_tc_cal_03_filter_by_court PASSED [ 40%]
+tests/selenium/test_calendar.py::TestCourtCalendar::test_tc_cal_04_filter_by_practice_area PASSED [ 42%]
+tests/selenium/test_calendar.py::TestCourtCalendar::test_tc_cal_05_switch_calendar_views PASSED [ 45%]
+tests/selenium/test_cases.py::TestCases::test_tc_case_01_lawyer_opens_assigned_consultations PASSED [ 47%]
+tests/selenium/test_cases.py::TestCases::test_tc_case_02_conversion_workflow_navigation PASSED [ 50%]
+tests/selenium/test_cases.py::TestCases::test_tc_case_03_my_cases_list PASSED [ 52%]
+tests/selenium/test_cases.py::TestCases::test_tc_case_04_case_details_open PASSED [ 55%]
+tests/selenium/test_cases.py::TestCases::test_tc_case_05_case_classification_update_accessible PASSED [ 57%]
+tests/selenium/test_cases.py::TestCases::test_tc_case_06_assistant_lawyer_management PASSED [ 60%]
+tests/selenium/test_cases.py::TestCases::test_tc_case_07_supporting_paralegal_assignment PASSED [ 62%]
+tests/selenium/test_consultations.py::TestConsultations::test_tc_cons_01_client_opens_book_consultation PASSED [ 65%]
+tests/selenium/test_consultations.py::TestConsultations::test_tc_cons_02_required_field_validation PASSED [ 67%]
+tests/selenium/test_consultations.py::TestConsultations::test_tc_cons_03_valid_consultation_form_reaches_review PASSED [ 70%]
+tests/selenium/test_consultations.py::TestConsultations::test_tc_cons_04_razorpay_checkout_launch PASSED [ 72%]
+tests/selenium/test_consultations.py::TestConsultations::test_tc_admin_cons_01_admin_opens_consultation_list PASSED [ 75%]
+tests/selenium/test_consultations.py::TestConsultations::test_tc_admin_cons_02_admin_opens_consultation_details PASSED [ 77%]
+tests/selenium/test_consultations.py::TestConsultations::test_tc_admin_cons_03_admin_assigns_lawyer PASSED [ 80%]
+tests/selenium/test_documents.py::TestDocuments::test_tc_doc_01_open_case_documents_section PASSED [ 82%]
+tests/selenium/test_documents.py::TestDocuments::test_tc_doc_02_upload_document_modal_opens PASSED [ 85%]
+tests/selenium/test_documents.py::TestDocuments::test_tc_doc_03_upload_document_submission PASSED [ 87%]
+tests/selenium/test_documents.py::TestDocuments::test_tc_doc_04_view_documents_table PASSED [ 90%]
+tests/selenium/test_tasks.py::TestTasks::test_tc_task_01_create_task_modal_accessible PASSED [ 92%]
+tests/selenium/test_tasks.py::TestTasks::test_tc_task_02_assign_task_form_filling PASSED [ 95%]
+tests/selenium/test_tasks.py::TestTasks::test_tc_task_03_view_tasks_section PASSED [ 97%]
+tests/selenium/test_tasks.py::TestTasks::test_tc_task_04_task_status_controls_present PASSED [100%]
+
+- Generated html report: file:///C:/Users/adoni/MCA/ResearchProject/LexCore/tests/selenium/reports/test_report.html -
+======================= 40 passed in 256.13s (0:04:16) ========================
+
+SUMMARY:
+Total Tests: 40
+Passed: 40 (100.0%)
+Failed: 0
+Skipped: 0
+================================================================================
