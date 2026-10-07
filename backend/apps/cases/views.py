@@ -1,3 +1,4 @@
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -8,6 +9,7 @@ from apps.accounts.models import User, UserRole
 from apps.consultations.permissions import IsLawyerRole
 from .models import Case
 from .permissions import IsCaseParticipant, IsCaseResponsibleLawyerOrAdmin
+from .services.case_pdf_service import CasePDFService
 from .serializers import (
     CaseConvertSerializer,
     CaseSerializer,
@@ -576,4 +578,51 @@ class NotificationMarkReadView(APIView):
         notification.is_read = True
         notification.save()
         return Response({"status": "read"}, status=status.HTTP_200_OK)
+
+
+class CaseSummaryPDFView(APIView):
+    """
+    GET /api/cases/<pk>/summary-pdf/
+    Generates and returns an official Case Summary and Audit Dossier PDF document.
+    Access is restricted to:
+    - Admin
+    - Responsible Lawyer, Supervising Lawyer, and Assistant Lawyers assigned to this case
+    - Supporting Paralegal
+    - Client of this case
+    Supports direct in-browser rendering or attachment download (?download=true).
+    """
+
+    permission_classes = [IsCaseParticipant]
+
+    def get(self, request, pk):
+        queryset = Case.objects.select_related(
+            "client",
+            "practice_area",
+            "responsible_lawyer",
+            "supervising_lawyer",
+            "supporting_paralegal",
+            "originating_consultation",
+        ).prefetch_related(
+            "assistant_lawyers",
+            "activities__user",
+            "proceedings",
+            "tasks__assigned_to",
+            "tasks__created_by",
+            "documents__uploaded_by",
+            "case_appointments__payments",
+            "originating_consultation__payments",
+        )
+        case_obj = _get_case_or_404(queryset, pk)
+        self.check_object_permissions(request, case_obj)
+
+        pdf_bytes = CasePDFService.generate_case_pdf(case_obj, requesting_user=request.user)
+
+        response = HttpResponse(pdf_bytes, content_type="application/pdf")
+        filename = f"LexCore_Case_{case_obj.case_reference}_Summary.pdf"
+
+        is_download = request.query_params.get("download", "false").lower() in ("true", "1", "yes")
+        disposition = "attachment" if is_download else "inline"
+        response["Content-Disposition"] = f'{disposition}; filename="{filename}"'
+        response["Access-Control-Expose-Headers"] = "Content-Disposition"
+        return response
 

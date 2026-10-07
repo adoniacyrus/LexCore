@@ -88,5 +88,16 @@ export async function updateCaseAppointmentFee(access, caseId, fee) {
   return data;
 }
 
+export async function downloadCaseSummaryPDF(access, caseId, download = false) {
+  const response = await api.get(`/cases/${caseId}/summary-pdf/`, {
+    params: download ? { download: 'true' } : {},
+    headers: {
+      Authorization: `Bearer ${access}`,
+    },
+    responseType: 'blob',
+  });
+  return response.data;
+}
+
 export { getErrorMessage };
 

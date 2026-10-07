@@ -8,6 +8,7 @@ import {
   getErrorMessage,
   listCaseDocuments,
   downloadCaseDocument,
+  downloadCaseSummaryPDF,
 } from '../../services/caseService';
 import { listCaseTasks } from '../../services/taskService';
 import { getDashboardPath } from '../../utils/roleRoutes';
@@ -23,6 +24,7 @@ import TaskDetailModal from './TaskDetailModal';
 import AddCourtProceedingModal from './AddCourtProceedingModal';
 import EditAppointmentFeeModal from './EditAppointmentFeeModal';
 import BookConsultationModal from '../Consultations/BookConsultationModal';
+import CaseSummaryPDFModal from './CaseSummaryPDFModal';
 import './cases.css';
 
 function DetailField({ label, value, long = false }) {
@@ -54,7 +56,10 @@ function CaseDetailPage() {
   const [showFeeModal, setShowFeeModal] = useState(false);
   const [showBookAppointmentModal, setShowBookAppointmentModal] = useState(false);
   const [appointmentSuccessNotice, setAppointmentSuccessNotice] = useState('');
-  
+
+  // Case Summary PDF State & Modal
+  const [showPdfModal, setShowPdfModal] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
   // Tasks Modals & State
   const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
   const [showTaskDetailModal, setShowTaskDetailModal] = useState(false);
@@ -126,6 +131,27 @@ function CaseDetailPage() {
     }
   };
 
+  const handleDownloadPdf = async () => {
+    if (!item) return;
+    setDownloadingPdf(true);
+    try {
+      const targetId = item.case_reference || item.id;
+      const blob = await downloadCaseSummaryPDF(accessToken, targetId, true);
+      const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `LexCore_Case_${item.case_reference}_Summary.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+    } catch (err) {
+      alert(getErrorMessage(err, 'Failed to download case summary document.'));
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return '';
     return new Date(`${dateString}T00:00:00`).toLocaleDateString(undefined, {
@@ -174,6 +200,38 @@ function CaseDetailPage() {
               <Link to={listPath} className="btn btn-ghost-dark">
                 &larr; Back to list
               </Link>
+              {item && (
+                <>
+                  <button
+                    type="button"
+                    className="btn btn-ghost-dark"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+                    onClick={() => setShowPdfModal(true)}
+                    title="View complete Case Summary PDF"
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    View Case PDF
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-ghost-dark"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+                    onClick={handleDownloadPdf}
+                    disabled={downloadingPdf}
+                    title="Download complete Case Summary PDF"
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="7 10 12 15 17 10"></polyline>
+                      <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    {downloadingPdf ? 'Downloading…' : 'Download PDF'}
+                  </button>
+                </>
+              )}
               {item && (role === 'SENIOR_LAWYER' || role === 'JUNIOR_LAWYER') && item.responsible_lawyer?.id === user?.id && (
                 <button
                   type="button"
@@ -674,6 +732,66 @@ function CaseDetailPage() {
 
             {/* SIDEBAR */}
             <div className="case-detail-sidebar">
+              {/* CASE DOSSIER & SUMMARY PDF CARD */}
+              <section className="case-section" aria-labelledby="section-case-summary-doc" style={{ background: '#faf5f6', border: '1px solid rgba(107,30,43,0.18)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.45rem' }}>
+                  <h2 id="section-case-summary-doc" className="case-section__title" style={{ margin: 0, color: 'var(--color-primary)' }}>
+                    Case Summary Dossier
+                  </h2>
+                  <span style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--color-primary)', background: '#fff', border: '1px solid rgba(107,30,43,0.2)', padding: '0.15rem 0.45rem', borderRadius: '4px' }}>
+                    Official PDF
+                  </span>
+                </div>
+                <p style={{ fontSize: '0.78rem', color: '#64748b', lineHeight: 1.4, margin: '0 0 0.85rem' }}>
+                  Official case record containing complete matter details, all fee collections & payments, court proceedings, task history, and chronological activity audit trail.
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    style={{
+                      width: '100%',
+                      fontSize: '0.82rem',
+                      padding: '0.45rem 0.75rem',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.45rem',
+                    }}
+                    onClick={() => setShowPdfModal(true)}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    View Case Dossier (PDF)
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-ghost-dark"
+                    style={{
+                      width: '100%',
+                      fontSize: '0.82rem',
+                      padding: '0.45rem 0.75rem',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.45rem',
+                      background: '#fff',
+                    }}
+                    onClick={handleDownloadPdf}
+                    disabled={downloadingPdf}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="7 10 12 15 17 10"></polyline>
+                      <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    {downloadingPdf ? 'Downloading PDF…' : 'Download Summary PDF'}
+                  </button>
+                </div>
+              </section>
+
               <section className="case-section" aria-labelledby="section-client-info">
                 <h2 id="section-client-info" className="case-section__title">Client</h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -939,6 +1057,12 @@ function CaseDetailPage() {
           setAppointmentSuccessNotice('Appointment booked successfully! Our chambers will be in touch with you shortly.');
           load();
         }}
+      />
+
+      <CaseSummaryPDFModal
+        open={showPdfModal}
+        caseObj={item}
+        onClose={() => setShowPdfModal(false)}
       />
     </DashboardLayout>
   );

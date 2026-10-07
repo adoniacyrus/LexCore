@@ -906,8 +906,8 @@ class CaseTeamHierarchyTests(APITestCase):
 
 from datetime import timedelta
 from django.utils import timezone
-from .models import CourtProceeding, Notification
-from .alerts import generate_hearing_alerts
+from apps.cases.models import CourtProceeding, Notification
+from apps.cases.alerts import generate_hearing_alerts
 
 class HearingAndCalendarTests(APITestCase):
     def setUp(self):
@@ -1049,5 +1049,194 @@ class HearingAndCalendarTests(APITestCase):
         response = self.client.get(list_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 0)
+
+
+class CaseSummaryPDFTests(APITestCase):
+    def setUp(self):
+        from decimal import Decimal
+        self.admin = User.objects.create_user(
+            email="pdf_admin@lexcore.local",
+            full_name="PDF Admin",
+            password="password123",
+            role=UserRole.ADMIN,
+        )
+        self.responsible_lawyer = User.objects.create_user(
+            email="pdf_lawyer@lexcore.local",
+            full_name="Advocate Sharma",
+            password="password123",
+            role=UserRole.SENIOR_LAWYER,
+        )
+        self.supervising_lawyer = User.objects.create_user(
+            email="pdf_super@lexcore.local",
+            full_name="Advocate Verma",
+            password="password123",
+            role=UserRole.SENIOR_LAWYER,
+        )
+        self.assistant_lawyer = User.objects.create_user(
+            email="pdf_asst@lexcore.local",
+            full_name="Advocate Rao",
+            password="password123",
+            role=UserRole.JUNIOR_LAWYER,
+        )
+        self.unassigned_lawyer = User.objects.create_user(
+            email="pdf_stranger@lexcore.local",
+            full_name="Advocate Stranger",
+            password="password123",
+            role=UserRole.SENIOR_LAWYER,
+        )
+        self.paralegal = User.objects.create_user(
+            email="pdf_para@lexcore.local",
+            full_name="Paralegal Mehta",
+            password="password123",
+            role=UserRole.PARALEGAL,
+        )
+        self.client_user = User.objects.create_user(
+            email="pdf_client@lexcore.local",
+            full_name="Client Rajesh",
+            phone_number="+91 9876543210",
+            password="password123",
+            role=UserRole.CLIENT,
+        )
+        self.other_client = User.objects.create_user(
+            email="pdf_other_client@lexcore.local",
+            full_name="Other Client",
+            password="password123",
+            role=UserRole.CLIENT,
+        )
+
+        self.practice_area, _ = PracticeArea.objects.get_or_create(
+            name="Property Law",
+            defaults={"description": "Property and real estate legal services"}
+        )
+
+        self.consultation = Consultation.objects.create(
+            client=self.client_user,
+            practice_area=self.practice_area,
+            assigned_lawyer=self.responsible_lawyer,
+            consultation_mode="OFFICE",
+            preferred_date=timezone.localdate(),
+            preferred_time="10:00:00",
+            subject="Property Boundary Dispute",
+            issue_summary="Need legal resolution for property title.",
+            charged_fee=Decimal("1500.00"),
+            status=ConsultationStatus.COMPLETED,
+            payment_status="PAID",
+        )
+
+        # Payment for originating consultation
+        from apps.payments.models import Payment, PaymentStatus
+        self.orig_payment = Payment.objects.create(
+            consultation=self.consultation,
+            amount=150000,
+            currency="INR",
+            status=PaymentStatus.CAPTURED,
+            razorpay_payment_id="pay_test_orig123",
+            razorpay_order_id="order_test_orig123",
+            paid_at=timezone.now(),
+        )
+
+        self.case = Case.objects.create(
+            originating_consultation=self.consultation,
+            client=self.client_user,
+            practice_area=self.practice_area,
+            responsible_lawyer=self.responsible_lawyer,
+            supervising_lawyer=self.supervising_lawyer,
+            supporting_paralegal=self.paralegal,
+            title="Property Dispute Matter",
+            description="Boundary and registration dispute with neighbor.",
+            case_type=CaseType.PROPERTY,
+            start_date=timezone.localdate(),
+            appointment_fee=Decimal("2000.00"),
+            court="City Civil Court",
+            jurisdiction="Mumbai",
+            bench="Court Room 4",
+            cnr_number="MHCC010023452026",
+            filing_number="CC/102/2026",
+        )
+        self.case.assistant_lawyers.add(self.assistant_lawyer)
+
+        # Add court proceeding
+        self.proceeding = CourtProceeding.objects.create(
+            case=self.case,
+            event_date=timezone.localdate(),
+            event_type="First Hearing",
+            court_name="City Civil Court",
+            bench="Court Room 4",
+            next_hearing_date=timezone.localdate() + timedelta(days=14),
+            notes="Notice served to respondent; written statement required.",
+        )
+
+        # Add task
+        from apps.tasks.models import CaseTask, TaskStatus
+        self.task = CaseTask.objects.create(
+            case=self.case,
+            title="Draft Reply to Written Statement",
+            description="Prepare rejoinder affidavit",
+            assigned_to=self.assistant_lawyer,
+            created_by=self.responsible_lawyer,
+            due_date=timezone.localdate() + timedelta(days=7),
+            status=TaskStatus.IN_PROGRESS,
+        )
+
+        # Add case activity
+        from apps.cases.models import CaseActivity
+        self.activity = CaseActivity.objects.create(
+            case=self.case,
+            activity_type="PROCEEDING_RECORDED",
+            description="First hearing scheduled and logged.",
+            user=self.responsible_lawyer,
+        )
+
+    def test_admin_can_generate_and_download_pdf(self):
+        self.client.force_authenticate(user=self.admin)
+        url = reverse("case-summary-pdf", kwargs={"pk": self.case.case_reference})
+        response = self.client.get(url + "?download=true")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response["Content-Type"], "application/pdf")
+        self.assertIn("attachment;", response["Content-Disposition"])
+        self.assertTrue(response.content.startswith(b"%PDF-"))
+
+    def test_client_can_generate_and_view_inline_pdf(self):
+        self.client.force_authenticate(user=self.client_user)
+        url = reverse("case-summary-pdf", kwargs={"pk": self.case.case_reference})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response["Content-Type"], "application/pdf")
+        self.assertIn("inline;", response["Content-Disposition"])
+        self.assertTrue(response.content.startswith(b"%PDF-"))
+
+    def test_responsible_lawyer_can_download_pdf(self):
+        self.client.force_authenticate(user=self.responsible_lawyer)
+        url = reverse("case-summary-pdf", kwargs={"pk": self.case.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response["Content-Type"], "application/pdf")
+
+    def test_supervising_and_assistant_lawyers_can_access(self):
+        self.client.force_authenticate(user=self.supervising_lawyer)
+        url = reverse("case-summary-pdf", kwargs={"pk": self.case.case_reference})
+        res1 = self.client.get(url)
+        self.assertEqual(res1.status_code, status.HTTP_200_OK)
+
+        self.client.force_authenticate(user=self.assistant_lawyer)
+        res2 = self.client.get(url)
+        self.assertEqual(res2.status_code, status.HTTP_200_OK)
+
+    def test_unassigned_lawyer_forbidden(self):
+        self.client.force_authenticate(user=self.unassigned_lawyer)
+        url = reverse("case-summary-pdf", kwargs={"pk": self.case.case_reference})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_other_client_forbidden(self):
+        self.client.force_authenticate(user=self.other_client)
+        url = reverse("case-summary-pdf", kwargs={"pk": self.case.case_reference})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_unauthenticated_user_denied(self):
+        url = reverse("case-summary-pdf", kwargs={"pk": self.case.case_reference})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
