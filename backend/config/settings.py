@@ -40,6 +40,7 @@ ALLOWED_HOSTS = config(
 # Application definition
 
 INSTALLED_APPS = [
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -49,12 +50,14 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
+    "channels",
     "apps.accounts",
     "apps.consultations",
     "apps.cases",
     "apps.documents",
     "apps.tasks",
     "apps.payments",
+    "apps.chat",
 ]
 
 MIDDLEWARE = [
@@ -86,6 +89,29 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
+ASGI_APPLICATION = 'config.asgi.application'
+
+REDIS_URL = config("REDIS_URL", default="redis://127.0.0.1:6379/0")
+CHANNEL_LAYER_BACKEND = config(
+    "CHANNEL_LAYER_BACKEND",
+    default="channels_redis.core.RedisChannelLayer",
+)
+
+if "channels_redis" in CHANNEL_LAYER_BACKEND:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": CHANNEL_LAYER_BACKEND,
+            "CONFIG": {
+                "hosts": [REDIS_URL],
+            },
+        },
+    }
+else:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": CHANNEL_LAYER_BACKEND,
+        },
+    }
 
 
 # Database

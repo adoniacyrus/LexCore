@@ -99,5 +99,19 @@ export async function downloadCaseSummaryPDF(access, caseId, download = false) {
   return response.data;
 }
 
+export async function listCaseMessages(access, caseReference) {
+  const { data } = await api.get(`/cases/${caseReference}/messages/`, authHeaders(access));
+  return data;
+}
+
+export async function sendCaseMessage(access, caseReference, content) {
+  const { data } = await api.post(
+    `/cases/${caseReference}/messages/`,
+    { content },
+    authHeaders(access)
+  );
+  return data;
+}
+
 export { getErrorMessage };
 

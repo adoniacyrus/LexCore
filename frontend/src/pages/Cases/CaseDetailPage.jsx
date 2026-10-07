@@ -25,6 +25,7 @@ import AddCourtProceedingModal from './AddCourtProceedingModal';
 import EditAppointmentFeeModal from './EditAppointmentFeeModal';
 import BookConsultationModal from '../Consultations/BookConsultationModal';
 import CaseSummaryPDFModal from './CaseSummaryPDFModal';
+import CaseChatPanel from '../../components/chat/CaseChatPanel';
 import './cases.css';
 
 function DetailField({ label, value, long = false }) {
@@ -696,6 +697,13 @@ function CaseDetailPage() {
                   </div>
                 )}
               </section>
+
+              {/* CASE COMMUNICATIONS / REAL-TIME CHAT */}
+              <CaseChatPanel
+                caseReference={item.case_reference}
+                accessToken={accessToken}
+                currentUser={user}
+              />
             </div>
 
             {/* SIDEBAR */}

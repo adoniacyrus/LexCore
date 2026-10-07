@@ -2,6 +2,7 @@ from django.urls import path
 
 from apps.documents.views import CaseDocumentsView
 from apps.tasks.views import CaseTaskListCreateView
+from apps.chat.views import CaseMessagesView
 from .views import (
     ActiveParalegalsListView,
     ActiveLawyersListView,
@@ -28,4 +29,5 @@ urlpatterns = [
     path("<str:case_id>/documents/", CaseDocumentsView.as_view(), name="case-documents"),
     path("<str:case_id>/tasks/", CaseTaskListCreateView.as_view(), name="case-tasks"),
     path("<str:case_id>/proceedings/", CaseProceedingListCreateView.as_view(), name="case-proceedings"),
+    path("<str:case_reference>/messages/", CaseMessagesView.as_view(), name="case-messages"),
 ]
