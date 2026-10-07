@@ -104,7 +104,14 @@ function CaseSummaryPDFModal({ open, caseObj, onClose }) {
     >
       <div
         className="case-modal case-modal--large"
-        style={{ maxWidth: '960px', width: '95vw', maxHeight: '92vh', display: 'flex', flexDirection: 'column' }}
+        style={{
+          maxWidth: '1100px',
+          width: '95vw',
+          height: '92vh',
+          maxHeight: '92vh',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
         role="dialog"
         aria-modal="true"
         aria-labelledby="case-summary-pdf-title"
@@ -146,20 +153,6 @@ function CaseSummaryPDFModal({ open, caseObj, onClose }) {
                 New Tab
               </button>
             )}
-            <button
-              type="button"
-              className="btn btn-primary btn-sm"
-              onClick={handleDownload}
-              disabled={downloading || loading}
-              style={{ fontSize: '0.8rem', padding: '0.35rem 0.85rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7 10 12 15 17 10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-              </svg>
-              {downloading ? 'Downloading…' : 'Download PDF'}
-            </button>
           </div>
           <button
             type="button"
@@ -177,9 +170,10 @@ function CaseSummaryPDFModal({ open, caseObj, onClose }) {
             flex: 1,
             display: 'flex',
             flexDirection: 'column',
-            padding: '0.75rem 1.25rem',
+            padding: '0.5rem 0.85rem',
             overflow: 'hidden',
-            backgroundColor: '#f8fafc',
+            backgroundColor: '#f1f5f9',
+            minHeight: 0,
           }}
         >
           {loading && (
@@ -231,17 +225,28 @@ function CaseSummaryPDFModal({ open, caseObj, onClose }) {
           )}
 
           {pdfUrl && !loading && !error && (
-            <div style={{ flex: 1, minHeight: '520px', height: '68vh', width: '100%', position: 'relative' }}>
+            <div
+              style={{
+                flex: 1,
+                width: '100%',
+                height: '100%',
+                position: 'relative',
+                minHeight: 0,
+              }}
+            >
               <iframe
-                src={pdfUrl}
+                src={`${pdfUrl}#view=FitH`}
                 title={`Case Summary - ${caseObj.case_reference}`}
                 style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
                   width: '100%',
                   height: '100%',
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid #cbd5e1',
                   borderRadius: '6px',
                   boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                  backgroundColor: '#fff',
+                  backgroundColor: '#525659',
                 }}
               />
             </div>

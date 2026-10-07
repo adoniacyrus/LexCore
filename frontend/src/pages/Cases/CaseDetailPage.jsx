@@ -200,38 +200,6 @@ function CaseDetailPage() {
               <Link to={listPath} className="btn btn-ghost-dark">
                 &larr; Back to list
               </Link>
-              {item && (
-                <>
-                  <button
-                    type="button"
-                    className="btn btn-ghost-dark"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
-                    onClick={() => setShowPdfModal(true)}
-                    title="View complete Case Summary PDF"
-                  >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                      <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
-                    View Case PDF
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-ghost-dark"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
-                    onClick={handleDownloadPdf}
-                    disabled={downloadingPdf}
-                    title="Download complete Case Summary PDF"
-                  >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                      <polyline points="7 10 12 15 17 10"></polyline>
-                      <line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
-                    {downloadingPdf ? 'Downloading…' : 'Download PDF'}
-                  </button>
-                </>
-              )}
               {item && (role === 'SENIOR_LAWYER' || role === 'JUNIOR_LAWYER') && item.responsible_lawyer?.id === user?.id && (
                 <button
                   type="button"
