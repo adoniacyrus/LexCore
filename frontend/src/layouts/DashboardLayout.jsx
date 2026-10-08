@@ -13,8 +13,12 @@ function resolveActiveModule(pathname) {
   if (pathname.includes('/senior/consultations') || pathname.includes('/junior/consultations')) {
     return 'assigned-consultations';
   }
+  if (pathname.includes('/consultation-calendar')) return 'consultation-calendar';
+  if (pathname.includes('/availability')) return 'availability';
   if (pathname.includes('/consultations')) return 'consultations';
-  if (pathname.includes('/account')) return 'account';
+  if (pathname.includes('/revenue')) return 'revenue';
+  if (pathname.includes('/calendar')) return 'calendar';
+  if (pathname.includes('/account') || pathname.includes('/settings') || pathname.includes('/profile')) return 'account';
   if (pathname.includes('/matter-board')) return 'matter-board';
   if (pathname.includes('/cases')) return 'cases';
   return 'dashboard';

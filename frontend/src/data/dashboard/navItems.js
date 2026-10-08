@@ -81,129 +81,184 @@ export const PORTAL_NAV_BY_ROLE = {
     },
   ],
   CLIENT: [
-    { id: 'dashboard', label: 'Dashboard', icon: 'home' },
     {
-      id: 'consultations',
-      label: 'My Consultations',
-      icon: 'consultations',
-      route: '/dashboard/client/consultations',
+      group: 'PORTAL',
+      items: [
+        { id: 'dashboard', label: 'Dashboard', icon: 'home' },
+      ],
     },
     {
-      id: 'cases',
-      label: 'My Cases',
-      icon: 'cases',
-      route: '/dashboard/client/cases',
+      group: 'LEGAL MATTERS',
+      items: [
+        {
+          id: 'consultations',
+          label: 'My Consultations',
+          icon: 'consultations',
+          route: '/dashboard/client/consultations',
+        },
+        {
+          id: 'cases',
+          label: 'My Cases',
+          icon: 'cases',
+          route: '/dashboard/client/cases',
+        },
+        {
+          id: 'calendar',
+          label: 'Court Calendar',
+          icon: 'calendar',
+          route: '/dashboard/client/calendar',
+        },
+      ],
     },
     {
-      id: 'calendar',
-      label: 'Court Calendar',
-      icon: 'calendar',
-      route: '/dashboard/client/calendar',
-    },
-    {
-      id: 'account',
-      label: 'Account',
-      icon: 'clients',
-      route: '/dashboard/client/account',
+      group: 'PREFERENCES',
+      items: [
+        {
+          id: 'account',
+          label: 'Account',
+          icon: 'clients',
+          route: '/dashboard/client/account',
+        },
+      ],
     },
   ],
   SENIOR_LAWYER: [
-    { id: 'dashboard', label: 'Dashboard', icon: 'home' },
     {
-      id: 'matter-board',
-      label: 'Matter Board',
-      icon: 'reports',
-      route: '/dashboard/senior/matter-board',
+      group: 'WORKSPACE',
+      items: [
+        { id: 'dashboard', label: 'Dashboard', icon: 'home' },
+        {
+          id: 'matter-board',
+          label: 'Matter Board',
+          icon: 'reports',
+          route: '/dashboard/senior/matter-board',
+        },
+      ],
     },
     {
-      id: 'assigned-consultations',
-      label: 'Assigned Consultations',
-      icon: 'consultations',
-      route: '/dashboard/senior/consultations',
+      group: 'CONSULTATIONS',
+      items: [
+        {
+          id: 'assigned-consultations',
+          label: 'Assigned Consultations',
+          icon: 'consultations',
+          route: '/dashboard/senior/consultations',
+        },
+        {
+          id: 'consultation-calendar',
+          label: 'Consultation Calendar',
+          icon: 'calendar',
+          route: '/dashboard/senior/consultation-calendar',
+        },
+        {
+          id: 'availability',
+          label: 'Availability Settings',
+          icon: 'settings',
+          route: '/dashboard/senior/availability',
+        },
+      ],
     },
     {
-      id: 'consultation-calendar',
-      label: 'Consultation Calendar',
-      icon: 'calendar',
-      route: '/dashboard/senior/consultation-calendar',
-    },
-    {
-      id: 'availability',
-      label: 'Availability Settings',
-      icon: 'settings',
-      route: '/dashboard/senior/availability',
-    },
-    {
-      id: 'cases',
-      label: 'My Cases',
-      icon: 'cases',
-      route: '/dashboard/senior/cases',
-    },
-    {
-      id: 'calendar',
-      label: 'Court Calendar',
-      icon: 'calendar',
-      route: '/dashboard/senior/calendar',
+      group: 'ACTIVE MATTERS',
+      items: [
+        {
+          id: 'cases',
+          label: 'My Cases',
+          icon: 'cases',
+          route: '/dashboard/senior/cases',
+        },
+        {
+          id: 'calendar',
+          label: 'Court Calendar',
+          icon: 'calendar',
+          route: '/dashboard/senior/calendar',
+        },
+      ],
     },
   ],
   JUNIOR_LAWYER: [
-    { id: 'dashboard', label: 'Dashboard', icon: 'home' },
     {
-      id: 'matter-board',
-      label: 'Matter Board',
-      icon: 'reports',
-      route: '/dashboard/junior/matter-board',
+      group: 'WORKSPACE',
+      items: [
+        { id: 'dashboard', label: 'Dashboard', icon: 'home' },
+        {
+          id: 'matter-board',
+          label: 'Matter Board',
+          icon: 'reports',
+          route: '/dashboard/junior/matter-board',
+        },
+      ],
     },
     {
-      id: 'assigned-consultations',
-      label: 'Assigned Consultations',
-      icon: 'consultations',
-      route: '/dashboard/junior/consultations',
+      group: 'CONSULTATIONS',
+      items: [
+        {
+          id: 'assigned-consultations',
+          label: 'Assigned Consultations',
+          icon: 'consultations',
+          route: '/dashboard/junior/consultations',
+        },
+        {
+          id: 'consultation-calendar',
+          label: 'Consultation Calendar',
+          icon: 'calendar',
+          route: '/dashboard/junior/consultation-calendar',
+        },
+        {
+          id: 'availability',
+          label: 'Availability Settings',
+          icon: 'settings',
+          route: '/dashboard/junior/availability',
+        },
+      ],
     },
     {
-      id: 'consultation-calendar',
-      label: 'Consultation Calendar',
-      icon: 'calendar',
-      route: '/dashboard/junior/consultation-calendar',
-    },
-    {
-      id: 'availability',
-      label: 'Availability Settings',
-      icon: 'settings',
-      route: '/dashboard/junior/availability',
-    },
-    {
-      id: 'cases',
-      label: 'My Cases',
-      icon: 'cases',
-      route: '/dashboard/junior/cases',
-    },
-    {
-      id: 'calendar',
-      label: 'Court Calendar',
-      icon: 'calendar',
-      route: '/dashboard/junior/calendar',
+      group: 'ACTIVE MATTERS',
+      items: [
+        {
+          id: 'cases',
+          label: 'My Cases',
+          icon: 'cases',
+          route: '/dashboard/junior/cases',
+        },
+        {
+          id: 'calendar',
+          label: 'Court Calendar',
+          icon: 'calendar',
+          route: '/dashboard/junior/calendar',
+        },
+      ],
     },
   ],
   PARALEGAL: [
-    { id: 'dashboard', label: 'Dashboard', icon: 'home' },
     {
-      id: 'matter-board',
-      label: 'Matter Board',
-      icon: 'reports',
-      route: '/dashboard/paralegal/matter-board',
+      group: 'WORKSPACE',
+      items: [
+        { id: 'dashboard', label: 'Dashboard', icon: 'home' },
+        {
+          id: 'matter-board',
+          label: 'Matter Board',
+          icon: 'reports',
+          route: '/dashboard/paralegal/matter-board',
+        },
+      ],
     },
     {
-      id: 'cases',
-      label: 'Supporting Cases',
-      icon: 'cases',
-      route: '/dashboard/paralegal/cases',
-    },
-    {
-      id: 'calendar',
-      label: 'Court Calendar',
-      icon: 'calendar',
-      route: '/dashboard/paralegal/calendar',
+      group: 'CASE SUPPORT',
+      items: [
+        {
+          id: 'cases',
+          label: 'Supporting Cases',
+          icon: 'cases',
+          route: '/dashboard/paralegal/cases',
+        },
+        {
+          id: 'calendar',
+          label: 'Court Calendar',
+          icon: 'calendar',
+          route: '/dashboard/paralegal/calendar',
+        },
+      ],
     },
   ],
 };
@@ -226,7 +281,7 @@ export function getNavItemsForRole(role) {
 /** @deprecated Prefer getNavItemsForRole — kept for ModulePlaceholder meta. */
 export const PORTAL_NAV_ITEMS = [
   ...PORTAL_NAV_BY_ROLE.ADMIN,
-  ...PORTAL_NAV_BY_ROLE.CLIENT.filter((i) => i.id !== 'dashboard'),
+  ...PORTAL_NAV_BY_ROLE.CLIENT,
   ...FUTURE_NAV_REGISTRY,
 ];
 
