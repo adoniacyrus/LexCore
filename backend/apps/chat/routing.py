@@ -3,7 +3,7 @@ from .consumers import CaseChatConsumer
 
 websocket_urlpatterns = [
     re_path(
-        r"^ws/cases/(?P<case_reference>[\w-]+)/chat/?$",
+        r"^ws/cases/(?P<case_reference>[\w-]+)/chat/(?P<conversation_type>client|team)/?$",
         CaseChatConsumer.as_asgi(),
     ),
 ]

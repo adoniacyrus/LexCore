@@ -700,6 +700,7 @@ function CaseDetailPage() {
 
               {/* CASE COMMUNICATIONS / REAL-TIME CHAT */}
               <CaseChatPanel
+                caseData={item}
                 caseReference={item.case_reference}
                 accessToken={accessToken}
                 currentUser={user}

@@ -5,7 +5,7 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 
 from apps.cases.models import Case
 from .models import CaseConversation, CaseMessage
-from .permissions import is_case_participant
+from .permissions import can_access_case_conversation, normalize_conversation_type
 from .services import get_case_chat_group_name
 
 logger = logging.getLogger(__name__)
@@ -13,9 +13,9 @@ logger = logging.getLogger(__name__)
 
 class CaseChatConsumer(AsyncWebsocketConsumer):
     """
-    WebSocket consumer handling real-time chat for an authorized case conversation.
-    Enforces JWT authentication and case-participant authorization before accepting connections.
-    Persists messages in PostgreSQL and broadcasts them via the configured Channel layer.
+    WebSocket consumer handling real-time chat for an authorized case conversation channel.
+    Enforces JWT authentication and strict role-based conversation authorization before accepting connections.
+    Persists messages in PostgreSQL/database and broadcasts them via isolated channel groups (client or team).
     """
 
     async def connect(self):
@@ -32,16 +32,23 @@ class CaseChatConsumer(AsyncWebsocketConsumer):
             await self.close(code=4004)
             return
 
-        is_authorized = await self.check_case_authorization(self.user, self.case)
+        raw_conv_type = self.scope["url_route"]["kwargs"].get("conversation_type")
+        self.conversation_type = normalize_conversation_type(raw_conv_type)
+        if not self.conversation_type:
+            logger.warning(f"Rejecting WebSocket connection: Invalid conversation type '{raw_conv_type}'.")
+            await self.close(code=4003)
+            return
+
+        is_authorized = await self.check_conversation_authorization(self.user, self.case, self.conversation_type)
         if not is_authorized:
             logger.warning(
-                f"Rejecting WebSocket connection: User {self.user.id} not authorized for case {self.case_reference}."
+                f"Rejecting WebSocket connection: User {self.user.id} not authorized for {self.conversation_type} in case {self.case_reference}."
             )
             await self.close(code=4003)
             return
 
         # Determine deterministic and isolated group name
-        self.group_name = get_case_chat_group_name(self.case.case_reference)
+        self.group_name = get_case_chat_group_name(self.case.case_reference, self.conversation_type)
 
         # Join the channel group
         await self.channel_layer.group_add(self.group_name, self.channel_name)
@@ -72,9 +79,9 @@ class CaseChatConsumer(AsyncWebsocketConsumer):
             return
 
         # Sender is ALWAYS strictly the authenticated user from self.scope["user"]
-        message_payload = await self.persist_message(self.case, self.user, content)
+        message_payload = await self.persist_message(self.case, self.conversation_type, self.user, content)
 
-        # Broadcast the new message to all participants in this case group
+        # Broadcast the new message to all participants in this case conversation group
         await self.channel_layer.group_send(
             self.group_name,
             {
@@ -100,12 +107,15 @@ class CaseChatConsumer(AsyncWebsocketConsumer):
             return None
 
     @database_sync_to_async
-    def check_case_authorization(self, user, case):
-        return is_case_participant(user, case)
+    def check_conversation_authorization(self, user, case, conversation_type):
+        return can_access_case_conversation(user, case, conversation_type)
 
     @database_sync_to_async
-    def persist_message(self, case, user, content):
-        conversation, _ = CaseConversation.objects.get_or_create(case=case)
+    def persist_message(self, case, conversation_type, user, content):
+        conversation, _ = CaseConversation.objects.get_or_create(
+            case=case,
+            conversation_type=conversation_type,
+        )
         msg = CaseMessage.objects.create(
             conversation=conversation,
             sender=user,
@@ -116,6 +126,11 @@ class CaseChatConsumer(AsyncWebsocketConsumer):
             "sender_id": user.id,
             "sender_name": user.full_name or user.email,
             "sender_role": user.role,
+            "conversation_type": conversation.conversation_type,
             "content": msg.content,
+            "attachment_url": msg.attachment.url if msg.attachment else None,
+            "attachment_name": msg.attachment_name,
+            "attachment_size": msg.attachment_size,
+            "attachment_type": msg.attachment_type,
             "created_at": msg.created_at.isoformat(),
         }

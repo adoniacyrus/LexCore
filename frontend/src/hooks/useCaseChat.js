@@ -1,7 +1,9 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { listCaseMessages, sendCaseMessage, getErrorMessage } from '../services/caseService';
 
-export function useCaseChat(caseReference, accessToken) {
+export function useCaseChat(caseReference, accessToken, conversationType = 'client') {
+  const typeSlug = conversationType?.toLowerCase().includes('team') ? 'team' : 'client';
+
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -28,7 +30,7 @@ export function useCaseChat(caseReference, accessToken) {
     setLoading(true);
     setError(null);
     try {
-      const data = await listCaseMessages(accessToken, caseReference);
+      const data = await listCaseMessages(accessToken, caseReference, typeSlug);
       const list = Array.isArray(data) ? data : data.results || [];
       setMessages(list);
     } catch (err) {
@@ -36,9 +38,10 @@ export function useCaseChat(caseReference, accessToken) {
     } finally {
       setLoading(false);
     }
-  }, [caseReference, accessToken]);
+  }, [caseReference, accessToken, typeSlug]);
 
   useEffect(() => {
+    setMessages([]);
     fetchHistory();
   }, [fetchHistory]);
 
@@ -52,7 +55,7 @@ export function useCaseChat(caseReference, accessToken) {
       const host = window.location.host;
       const explicitWsBase = import.meta.env.VITE_WS_BASE_URL;
       const base = explicitWsBase || `${protocol}//${host}`;
-      return `${base}/ws/cases/${caseReference}/chat/?token=${encodeURIComponent(accessToken)}`;
+      return `${base}/ws/cases/${caseReference}/chat/${typeSlug}/?token=${encodeURIComponent(accessToken)}`;
     }
 
     function connectWebSocket() {
@@ -106,7 +109,7 @@ export function useCaseChat(caseReference, accessToken) {
           if (event.code === 4001 || event.code === 4003) {
             setError(
               event.code === 4003
-                ? 'Access forbidden: You are not authorized for this case chat.'
+                ? `Access forbidden: You are not authorized for ${typeSlug === 'client' ? 'Client' : 'Team'} chat.`
                 : 'Authentication required for case chat.'
             );
             return;
@@ -132,25 +135,25 @@ export function useCaseChat(caseReference, accessToken) {
         clearTimeout(reconnectTimeoutRef.current);
       }
       if (wsRef.current) {
-        wsRef.current.close(1000, 'Component unmounted');
+        wsRef.current.close(1000, 'Component unmounted or channel changed');
         wsRef.current = null;
       }
     };
-  }, [caseReference, accessToken, appendMessage]);
+  }, [caseReference, accessToken, typeSlug, appendMessage]);
 
   const sendMessage = useCallback(
-    async (content) => {
+    async (content, file = null) => {
       const trimmed = (content || '').trim();
-      if (!trimmed) return;
+      if (!trimmed && !file) return;
 
-      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      if (!file && wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
         wsRef.current.send(JSON.stringify({ content: trimmed }));
       } else {
-        const newMsg = await sendCaseMessage(accessToken, caseReference, trimmed);
+        const newMsg = await sendCaseMessage(accessToken, caseReference, trimmed, typeSlug, file);
         appendMessage(newMsg);
       }
     },
-    [accessToken, caseReference, appendMessage]
+    [accessToken, caseReference, typeSlug, appendMessage]
   );
 
   return {
@@ -158,6 +161,7 @@ export function useCaseChat(caseReference, accessToken) {
     loading,
     error,
     connectionStatus,
+    conversationType: typeSlug,
     sendMessage,
     refetchHistory: fetchHistory,
   };

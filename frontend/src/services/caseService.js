@@ -99,16 +99,39 @@ export async function downloadCaseSummaryPDF(access, caseId, download = false) {
   return response.data;
 }
 
-export async function listCaseMessages(access, caseReference) {
-  const { data } = await api.get(`/cases/${caseReference}/messages/`, authHeaders(access));
+export async function listCaseMessages(access, caseReference, conversationType = 'client') {
+  const conv = conversationType?.toLowerCase().includes('team') ? 'team' : 'client';
+  const { data } = await api.get(
+    `/cases/${caseReference}/messages/?conversation=${conv}`,
+    authHeaders(access)
+  );
   return data;
 }
 
-export async function sendCaseMessage(access, caseReference, content) {
+export async function sendCaseMessage(access, caseReference, content, conversationType = 'client', file = null) {
+  const conv = conversationType?.toLowerCase().includes('team') ? 'team' : 'client';
+  let payload;
+  const config = {
+    headers: {
+      Authorization: `Bearer ${access}`,
+    },
+  };
+
+  if (file) {
+    const formData = new FormData();
+    if (content) formData.append('content', content);
+    formData.append('conversation', conv);
+    formData.append('attachment', file);
+    payload = formData;
+    config.headers['Content-Type'] = 'multipart/form-data';
+  } else {
+    payload = { content, conversation: conv };
+  }
+
   const { data } = await api.post(
-    `/cases/${caseReference}/messages/`,
-    { content },
-    authHeaders(access)
+    `/cases/${caseReference}/messages/?conversation=${conv}`,
+    payload,
+    config
   );
   return data;
 }

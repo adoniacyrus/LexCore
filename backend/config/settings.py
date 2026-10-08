@@ -222,8 +222,9 @@ EMAIL_REPLY_TO = config("EMAIL_REPLY_TO", default=EMAIL_HOST_USER or "")
 FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:5173")
 
 # Media Files Settings
-MEDIA_URL = "media/"
+MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+X_FRAME_OPTIONS = "SAMEORIGIN"
 
 # Razorpay payment gateway
 RAZORPAY_KEY_ID = config("RAZORPAY_KEY_ID", default="")
