@@ -136,5 +136,11 @@ export async function sendCaseMessage(access, caseReference, content, conversati
   return data;
 }
 
+export async function getCaseTimeline(access, caseId) {
+  const { data } = await api.get(`/cases/${caseId}/timeline/`, authHeaders(access));
+  return data;
+}
+
 export { getErrorMessage };
+
 

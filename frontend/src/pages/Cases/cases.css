@@ -899,3 +899,59 @@
   border: 1px solid #d9edf7;
 }
 
+/* Case Detail Tab Bar */
+.case-detail-tabs-bar {
+  display: flex;
+  gap: 0.35rem;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+  overflow-x: auto;
+}
+
+.case-tab-btn {
+  background: #fff;
+  border: 1px solid var(--color-border);
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #64748b;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.case-tab-btn:hover {
+  background: #faf5f6;
+  color: var(--color-primary);
+  border-color: rgba(107, 30, 43, 0.2);
+}
+
+.case-tab-btn.is-active {
+  background: #f6eff1;
+  color: var(--color-primary);
+  border-color: rgba(107, 30, 43, 0.3);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(107, 30, 43, 0.05);
+}
+
+/* Case Progression Tracker & Timeline */
+.case-stage-tracker-card {
+  position: relative;
+}
+
+.timeline-event-item:hover {
+  border-color: rgba(107, 30, 43, 0.35) !important;
+}
+
+@media (max-width: 768px) {
+  .stage-stepper-wrap {
+    justify-content: flex-start;
+  }
+}
+
+

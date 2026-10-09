@@ -9,6 +9,7 @@ import {
   listCaseDocuments,
   downloadCaseDocument,
   downloadCaseSummaryPDF,
+  getCaseTimeline,
 } from '../../services/caseService';
 import { listCaseTasks } from '../../services/taskService';
 import { getDashboardPath } from '../../utils/roleRoutes';
@@ -29,6 +30,8 @@ import BookConsultationModal from '../Consultations/BookConsultationModal';
 import CaseSummaryPDFModal from './CaseSummaryPDFModal';
 import CaseChatPanel from '../../components/chat/CaseChatPanel';
 import { listCaseHearingRecords } from '../../services/hearingService';
+import CaseTimeline from './CaseTimeline';
+import CaseTimelineModal from './CaseTimelineModal';
 import './cases.css';
 
 function DetailField({ label, value, long = false }) {
@@ -92,12 +95,20 @@ function CaseDetailPage() {
   const [showProceedingModal, setShowProceedingModal] = useState(false);
   const proceedingsRef = useRef(null);
 
+  // Timeline & Progress Tracker State & Refs
+  const [timelineData, setTimelineData] = useState(null);
+  const [timelineLoading, setTimelineLoading] = useState(true);
+  const [showTimelineModal, setShowTimelineModal] = useState(false);
+  const [activeTab, setActiveTab] = useState('all');
+  const timelineRef = useRef(null);
+
   const load = useCallback(async () => {
     if (!accessToken || !targetRef) return;
     setLoading(true);
     setDocsLoading(true);
     setTasksLoading(true);
     setHearingsLoading(true);
+    setTimelineLoading(true);
     setError('');
     try {
       const data = await getCaseDetail(accessToken, targetRef);
@@ -114,6 +125,13 @@ function CaseDetailPage() {
         setHearingRecords(Array.isArray(data?.hearing_records) ? data.hearing_records : []);
       }
 
+      try {
+        const tlData = await getCaseTimeline(accessToken, targetRef);
+        setTimelineData(tlData);
+      } catch (tlErr) {
+        console.warn('Could not load case timeline data', tlErr);
+      }
+
       if (user?.role !== 'CLIENT') {
         const tasksData = await listCaseTasks(accessToken, targetRef);
         setTasks(Array.isArray(tasksData) ? tasksData : []);
@@ -125,8 +143,22 @@ function CaseDetailPage() {
       setDocsLoading(false);
       setTasksLoading(false);
       setHearingsLoading(false);
+      setTimelineLoading(false);
     }
   }, [accessToken, targetRef, user?.role]);
+
+  const handleRefreshTimeline = useCallback(async () => {
+    if (!accessToken || !targetRef) return;
+    setTimelineLoading(true);
+    try {
+      const tlData = await getCaseTimeline(accessToken, targetRef);
+      setTimelineData(tlData);
+    } catch (err) {
+      console.warn('Could not refresh timeline data', err);
+    } finally {
+      setTimelineLoading(false);
+    }
+  }, [accessToken, targetRef]);
 
   useEffect(() => {
     load();
@@ -134,7 +166,15 @@ function CaseDetailPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('scroll') === 'hearings' && hearingsRef.current) {
+    if (params.get('modal') === 'timeline') {
+      setShowTimelineModal(true);
+    }
+    if ((params.get('scroll') === 'timeline' || params.get('tab') === 'timeline') && timelineRef.current) {
+      setActiveTab('timeline');
+      setTimeout(() => {
+        timelineRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 500);
+    } else if (params.get('scroll') === 'hearings' && hearingsRef.current) {
       setTimeout(() => {
         hearingsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 500);
@@ -234,6 +274,16 @@ function CaseDetailPage() {
               <Link to={listPath} className="btn btn-ghost-dark">
                 &larr; Back to list
               </Link>
+              {item && (
+                <button
+                  type="button"
+                  className="btn btn-ghost-dark"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+                  onClick={() => setShowTimelineModal(true)}
+                >
+                  🕒 Detailed Timeline
+                </button>
+              )}
               {item && (role === 'SENIOR_LAWYER' || role === 'JUNIOR_LAWYER') && item.responsible_lawyer?.id === user?.id && (
                 <button
                   type="button"
@@ -332,74 +382,199 @@ function CaseDetailPage() {
                     {item.matter_stage_label || item.matter_stage}
                   </span>
                 </div>
-                {(role === 'ADMIN' || item.responsible_lawyer?.id === user?.id) && (
+                <div style={{ marginLeft: 'auto', alignSelf: 'center', display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
                   <button
                     type="button"
                     className="btn btn-ghost-dark btn-sm"
                     style={{
-                      marginLeft: 'auto',
-                      alignSelf: 'center'
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      borderColor: 'rgba(107, 30, 43, 0.25)',
+                      color: 'var(--color-primary)',
+                      backgroundColor: '#fff',
+                      fontWeight: 600,
                     }}
-                    onClick={() => setShowClassificationModal(true)}
+                    onClick={() => setShowTimelineModal(true)}
                   >
-                    Update Classification
+                    🕒 Detailed Timeline
                   </button>
-                )}
-              </div>
-
-              <section className="case-section" aria-labelledby="section-case-info">
-                <h2 id="section-case-info" className="case-section__title">Case Information</h2>
-                <div className="case-grid">
-                  <DetailField label="Reference" value={item.case_reference} />
-                  <DetailField label="Title" value={item.title} />
-                  <DetailField label="Case Type" value={item.case_type_label || item.case_type} />
-                  <DetailField label="Status" value={
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      <span className={`cases-status is-${String(item.status).toLowerCase()}`}>
-                        {item.status_label || item.status}
-                      </span>
-                      {role === 'ADMIN' && (
-                        <button
-                          type="button"
-                          className="btn btn-ghost-dark"
-                          style={{ fontSize: '0.72rem', padding: '0.2rem 0.5rem', height: 'auto', minHeight: 'auto' }}
-                          onClick={() => setShowStatusModal(true)}
-                        >
-                          Change Status
-                        </button>
-                      )}
-                    </div>
-                  } />
-                  <DetailField label="Start Date" value={formatDate(item.start_date)} />
-                  <DetailField label="Originating Consultation" value={item.originating_consultation_ref} />
-                  {item.description && (
-                    <div className="case-form-full-width">
-                      <DetailField label="Description" value={item.description} long />
-                    </div>
+                  {(role === 'ADMIN' || item.responsible_lawyer?.id === user?.id) && (
+                    <button
+                      type="button"
+                      className="btn btn-ghost-dark btn-sm"
+                      onClick={() => setShowClassificationModal(true)}
+                    >
+                      Update Classification
+                    </button>
                   )}
                 </div>
+              </div>
 
-                {hasCourtInfo && (
-                  <div style={{ marginTop: '1rem', paddingTop: '0.85rem', borderTop: '1px dashed var(--color-border)' }}>
-                    <span style={{ fontSize: '0.75rem', color: '#888280', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600, display: 'block', marginBottom: '0.65rem' }}>
-                      Official Court Filings
-                    </span>
-                    <div className="case-grid">
-                      <DetailField label="Court" value={item.court} />
-                      <DetailField label="Jurisdiction" value={item.jurisdiction} />
-                      <DetailField label="Bench" value={item.bench} />
-                      <DetailField label="Location" value={item.location} />
-                      <DetailField label="CNR Number" value={item.cnr_number} />
-                      <DetailField label="Filing Number" value={item.filing_number} />
-                      <DetailField label="Registration Number" value={item.registration_number} />
-                      <DetailField label="Court Reference" value={item.official_court_reference} />
-                    </div>
-                  </div>
+              {/* SECTION / TAB NAVIGATION */}
+              <div
+                className="case-detail-tabs-bar"
+                style={{
+                  display: 'flex',
+                  gap: '0.35rem',
+                  borderBottom: '1px solid var(--color-border)',
+                  paddingBottom: '0.5rem',
+                  marginBottom: '1rem',
+                  overflowX: 'auto',
+                }}
+              >
+                <button
+                  type="button"
+                  className={`case-tab-btn ${activeTab === 'all' ? 'is-active' : ''}`}
+                  onClick={() => setActiveTab('all')}
+                >
+                  All Details
+                </button>
+                <button
+                  type="button"
+                  className={`case-tab-btn ${activeTab === 'timeline' ? 'is-active' : ''}`}
+                  onClick={() => setActiveTab('timeline')}
+                >
+                  🕒 Timeline & Progress Tracker
+                </button>
+                <button
+                  type="button"
+                  className={`case-tab-btn ${activeTab === 'info' ? 'is-active' : ''}`}
+                  onClick={() => setActiveTab('info')}
+                >
+                  📋 Case Info
+                </button>
+                <button
+                  type="button"
+                  className={`case-tab-btn ${activeTab === 'hearings' ? 'is-active' : ''}`}
+                  onClick={() => setActiveTab('hearings')}
+                >
+                  🏛️ Hearings ({hearingRecords.length})
+                </button>
+                <button
+                  type="button"
+                  className={`case-tab-btn ${activeTab === 'documents' ? 'is-active' : ''}`}
+                  onClick={() => setActiveTab('documents')}
+                >
+                  📄 Documents ({documents.length})
+                </button>
+                {role !== 'CLIENT' && (
+                  <button
+                    type="button"
+                    className={`case-tab-btn ${activeTab === 'tasks' ? 'is-active' : ''}`}
+                    onClick={() => setActiveTab('tasks')}
+                  >
+                    ✓ Tasks ({tasks.length})
+                  </button>
                 )}
-              </section>
+                <button
+                  type="button"
+                  className={`case-tab-btn ${activeTab === 'proceedings' ? 'is-active' : ''}`}
+                  onClick={() => setActiveTab('proceedings')}
+                >
+                  ⚖️ Proceedings
+                </button>
+                <button
+                  type="button"
+                  className={`case-tab-btn ${activeTab === 'chat' ? 'is-active' : ''}`}
+                  onClick={() => setActiveTab('chat')}
+                >
+                  💬 Communications
+                </button>
+              </div>
+
+              {/* CASE TIMELINE & PROGRESS TRACKER */}
+              {(activeTab === 'all' || activeTab === 'timeline') && (
+                <section className="case-section" aria-labelledby="section-case-timeline" ref={timelineRef} id="timeline">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <h2 id="section-case-timeline" className="case-section__title" style={{ margin: 0 }}>
+                      Case Timeline & Progress Tracker
+                    </h2>
+                    <button
+                      type="button"
+                      className="btn btn-ghost-dark btn-sm"
+                      onClick={() => setShowTimelineModal(true)}
+                      style={{
+                        fontSize: '0.74rem',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
+                        fontWeight: 600,
+                        color: 'var(--color-primary)',
+                        borderColor: 'rgba(107, 30, 43, 0.25)',
+                        backgroundColor: '#fff',
+                      }}
+                    >
+                      ↗ Detailed Timeline
+                    </button>
+                  </div>
+                  <CaseTimeline
+                    timelineData={timelineData}
+                    loading={timelineLoading}
+                    onRefresh={handleRefreshTimeline}
+                    role={role}
+                    compact={true}
+                    onOpenDetailed={() => setShowTimelineModal(true)}
+                  />
+                </section>
+              )}
+
+              {/* CASE INFORMATION */}
+              {(activeTab === 'all' || activeTab === 'info') && (
+                <section className="case-section" aria-labelledby="section-case-info">
+                  <h2 id="section-case-info" className="case-section__title">Case Information</h2>
+                  <div className="case-grid">
+                    <DetailField label="Reference" value={item.case_reference} />
+                    <DetailField label="Title" value={item.title} />
+                    <DetailField label="Case Type" value={item.case_type_label || item.case_type} />
+                    <DetailField label="Status" value={
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <span className={`cases-status is-${String(item.status).toLowerCase()}`}>
+                          {item.status_label || item.status}
+                        </span>
+                        {role === 'ADMIN' && (
+                          <button
+                            type="button"
+                            className="btn btn-ghost-dark"
+                            style={{ fontSize: '0.72rem', padding: '0.2rem 0.5rem', height: 'auto', minHeight: 'auto' }}
+                            onClick={() => setShowStatusModal(true)}
+                          >
+                            Change Status
+                          </button>
+                        )}
+                      </div>
+                    } />
+                    <DetailField label="Start Date" value={formatDate(item.start_date)} />
+                    <DetailField label="Originating Consultation" value={item.originating_consultation_ref} />
+                    {item.description && (
+                      <div className="case-form-full-width">
+                        <DetailField label="Description" value={item.description} long />
+                      </div>
+                    )}
+                  </div>
+
+                  {hasCourtInfo && (
+                    <div style={{ marginTop: '1rem', paddingTop: '0.85rem', borderTop: '1px dashed var(--color-border)' }}>
+                      <span style={{ fontSize: '0.75rem', color: '#888280', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600, display: 'block', marginBottom: '0.65rem' }}>
+                        Official Court Filings
+                      </span>
+                      <div className="case-grid">
+                        <DetailField label="Court" value={item.court} />
+                        <DetailField label="Jurisdiction" value={item.jurisdiction} />
+                        <DetailField label="Bench" value={item.bench} />
+                        <DetailField label="Location" value={item.location} />
+                        <DetailField label="CNR Number" value={item.cnr_number} />
+                        <DetailField label="Filing Number" value={item.filing_number} />
+                        <DetailField label="Registration Number" value={item.registration_number} />
+                        <DetailField label="Court Reference" value={item.official_court_reference} />
+                      </div>
+                    </div>
+                  )}
+                </section>
+              )}
 
               {/* TASKS & WORK SECTION (Internal Legal Team Only) */}
-              {role !== 'CLIENT' && (
+              {role !== 'CLIENT' && (activeTab === 'all' || activeTab === 'tasks') && (
                 <section className="case-section" aria-labelledby="section-tasks-work">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
@@ -543,7 +718,8 @@ function CaseDetailPage() {
               )}
 
               {/* CASE DOCUMENTS SECTION (Common Repository) */}
-              <section className="case-section" aria-labelledby="section-case-documents">
+              {(activeTab === 'all' || activeTab === 'documents') && (
+                <section className="case-section" aria-labelledby="section-case-documents">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem', marginBottom: '0.75rem' }}>
                   <h2 id="section-case-documents" className="case-section__title" style={{ margin: 0, border: 'none', padding: 0 }}>Documents & Evidence</h2>
                   <button
@@ -660,8 +836,10 @@ function CaseDetailPage() {
                   </div>
                 )}
               </section>
+            )}
 
-              {/* COURT HEARINGS RECORD SECTION */}
+            {/* COURT HEARINGS RECORD SECTION */}
+            {(activeTab === 'all' || activeTab === 'hearings') && (
               <section className="case-section" aria-labelledby="section-hearings" ref={hearingsRef}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -846,8 +1024,10 @@ function CaseDetailPage() {
                   </div>
                 )}
               </section>
+            )}
 
-              {/* COURT PROCEEDINGS SECTION */}
+            {/* COURT PROCEEDINGS SECTION */}
+            {(activeTab === 'all' || activeTab === 'proceedings') && (
               <section className="case-section" aria-labelledby="section-proceedings" ref={proceedingsRef}>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
@@ -917,15 +1097,18 @@ function CaseDetailPage() {
                   </div>
                 )}
               </section>
+            )}
 
-              {/* CASE COMMUNICATIONS / REAL-TIME CHAT */}
+            {/* CASE COMMUNICATIONS / REAL-TIME CHAT */}
+            {(activeTab === 'all' || activeTab === 'chat') && (
               <CaseChatPanel
                 caseData={item}
                 caseReference={item.case_reference}
                 accessToken={accessToken}
                 currentUser={user}
               />
-            </div>
+            )}
+          </div>
 
             {/* SIDEBAR */}
             <div className="case-detail-sidebar">
@@ -1288,6 +1471,16 @@ function CaseDetailPage() {
         open={showPdfModal}
         caseObj={item}
         onClose={() => setShowPdfModal(false)}
+      />
+
+      <CaseTimelineModal
+        open={showTimelineModal}
+        onClose={() => setShowTimelineModal(false)}
+        caseObj={item}
+        timelineData={timelineData}
+        loading={timelineLoading}
+        onRefresh={handleRefreshTimeline}
+        role={role}
       />
     </DashboardLayout>
   );

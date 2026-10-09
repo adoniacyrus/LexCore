@@ -10,6 +10,7 @@ from apps.consultations.permissions import IsLawyerRole
 from .models import Case, CaseActivity
 from .permissions import IsCaseParticipant, IsCaseResponsibleLawyerOrAdmin
 from .services.case_pdf_service import CasePDFService
+from .services.case_timeline_service import CaseTimelineService
 from .serializers import (
     CaseConvertSerializer,
     CaseSerializer,
@@ -786,5 +787,36 @@ class CaseHearingRecordDetailView(APIView):
             {"detail": "Hearing record deleted successfully."},
             status=status.HTTP_204_NO_CONTENT,
         )
+
+
+class CaseTimelineView(APIView):
+    """
+    GET /api/cases/<case_id>/timeline/
+    Retrieves the chronological event timeline and stage progress pipeline for a case.
+    Permissions:
+    - Reuses existing IsCaseParticipant permission (Admin, Responsible/Supervising/Assistant Lawyer, Supporting Paralegal, Client).
+    - Unrelated users are denied with 403 Forbidden.
+    - Sanitizes events dynamically based on user role (clients do not see confidential internal notes, staff reassignments, or fee changes).
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, case_id):
+        case = _get_case_or_404(
+            Case.objects.select_related(
+                "client",
+                "practice_area",
+                "responsible_lawyer",
+                "supervising_lawyer",
+                "supporting_paralegal",
+                "originating_consultation",
+            ).prefetch_related("assistant_lawyers", "activities", "hearing_records", "proceedings"),
+            case_id,
+        )
+        if not IsCaseParticipant().has_object_permission(request, self, case):
+            self.permission_denied(request, message="You are not authorized to view the timeline for this case.")
+
+        data = CaseTimelineService.get_timeline(case, request.user)
+        return Response(data, status=status.HTTP_200_OK)
+
 
 
