@@ -14,6 +14,8 @@ from .views import (
     CaseMatterBoardView,
     CaseProceedingListCreateView,
     CaseSummaryPDFView,
+    CaseHearingRecordListCreateView,
+    CaseHearingRecordDetailView,
 )
 
 urlpatterns = [
@@ -29,5 +31,9 @@ urlpatterns = [
     path("<str:case_id>/documents/", CaseDocumentsView.as_view(), name="case-documents"),
     path("<str:case_id>/tasks/", CaseTaskListCreateView.as_view(), name="case-tasks"),
     path("<str:case_id>/proceedings/", CaseProceedingListCreateView.as_view(), name="case-proceedings"),
+    path("<str:case_id>/hearings/", CaseHearingRecordListCreateView.as_view(), name="case-hearings"),
+    path("<str:case_id>/hearings/<str:pk>/", CaseHearingRecordDetailView.as_view(), name="case-hearing-detail"),
+    path("hearings/<str:pk>/", CaseHearingRecordDetailView.as_view(), name="hearing-record-detail"),
     path("<str:case_reference>/messages/", CaseMessagesView.as_view(), name="case-messages"),
 ]
+

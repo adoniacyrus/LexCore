@@ -40,3 +40,29 @@ export async function markNotificationRead(token, notificationId) {
   const { data } = await api.post(`/notifications/${notificationId}/mark-read/`, {}, authHeaders(token));
   return data;
 }
+
+export async function listCaseHearingRecords(token, caseId) {
+  const { data } = await api.get(`/cases/${caseId}/hearings/`, authHeaders(token));
+  return data;
+}
+
+export async function createCaseHearingRecord(token, caseId, payload) {
+  const { data } = await api.post(`/cases/${caseId}/hearings/`, payload, authHeaders(token));
+  return data;
+}
+
+export async function getCaseHearingRecord(token, caseId, hearingId) {
+  const { data } = await api.get(`/cases/${caseId}/hearings/${hearingId}/`, authHeaders(token));
+  return data;
+}
+
+export async function updateCaseHearingRecord(token, caseId, hearingId, payload) {
+  const { data } = await api.patch(`/cases/${caseId}/hearings/${hearingId}/`, payload, authHeaders(token));
+  return data;
+}
+
+export async function deleteCaseHearingRecord(token, caseId, hearingId) {
+  const { data } = await api.delete(`/cases/${caseId}/hearings/${hearingId}/`, authHeaders(token));
+  return data;
+}
+

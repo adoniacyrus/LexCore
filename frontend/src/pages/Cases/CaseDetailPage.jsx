@@ -22,10 +22,13 @@ import DeleteDocumentConfirmModal from './DeleteDocumentConfirmModal';
 import CreateTaskModal from './CreateTaskModal';
 import TaskDetailModal from './TaskDetailModal';
 import AddCourtProceedingModal from './AddCourtProceedingModal';
+import HearingRecordModal from './HearingRecordModal';
+import DeleteHearingRecordModal from './DeleteHearingRecordModal';
 import EditAppointmentFeeModal from './EditAppointmentFeeModal';
 import BookConsultationModal from '../Consultations/BookConsultationModal';
 import CaseSummaryPDFModal from './CaseSummaryPDFModal';
 import CaseChatPanel from '../../components/chat/CaseChatPanel';
+import { listCaseHearingRecords } from '../../services/hearingService';
 import './cases.css';
 
 function DetailField({ label, value, long = false }) {
@@ -75,6 +78,16 @@ function CaseDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Hearing Records State & Modals
+  const [hearingRecords, setHearingRecords] = useState([]);
+  const [hearingsLoading, setHearingsLoading] = useState(true);
+  const [showHearingModal, setShowHearingModal] = useState(false);
+  const [hearingModalMode, setHearingModalMode] = useState('view');
+  const [selectedHearingRecord, setSelectedHearingRecord] = useState(null);
+  const [showDeleteHearingModal, setShowDeleteHearingModal] = useState(false);
+  const [selectedHearingToDelete, setSelectedHearingToDelete] = useState(null);
+  const hearingsRef = useRef(null);
+
   // Proceedings Modals & Refs
   const [showProceedingModal, setShowProceedingModal] = useState(false);
   const proceedingsRef = useRef(null);
@@ -84,6 +97,7 @@ function CaseDetailPage() {
     setLoading(true);
     setDocsLoading(true);
     setTasksLoading(true);
+    setHearingsLoading(true);
     setError('');
     try {
       const data = await getCaseDetail(accessToken, targetRef);
@@ -91,6 +105,14 @@ function CaseDetailPage() {
 
       const docs = await listCaseDocuments(accessToken, targetRef);
       setDocuments(Array.isArray(docs) ? docs : []);
+
+      try {
+        const hrData = await listCaseHearingRecords(accessToken, targetRef);
+        setHearingRecords(Array.isArray(hrData) ? hrData : (data?.hearing_records || []));
+      } catch (hrErr) {
+        console.warn('Could not load separate hearing records; falling back to case data', hrErr);
+        setHearingRecords(Array.isArray(data?.hearing_records) ? data.hearing_records : []);
+      }
 
       if (user?.role !== 'CLIENT') {
         const tasksData = await listCaseTasks(accessToken, targetRef);
@@ -102,6 +124,7 @@ function CaseDetailPage() {
       setLoading(false);
       setDocsLoading(false);
       setTasksLoading(false);
+      setHearingsLoading(false);
     }
   }, [accessToken, targetRef, user?.role]);
 
@@ -111,12 +134,17 @@ function CaseDetailPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('scroll') === 'proceedings' && proceedingsRef.current) {
+    if (params.get('scroll') === 'hearings' && hearingsRef.current) {
+      setTimeout(() => {
+        hearingsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 500);
+    } else if (params.get('scroll') === 'proceedings' && proceedingsRef.current) {
       setTimeout(() => {
         proceedingsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 500);
     }
   }, [item]);
+
 
   const role = user?.role || 'CLIENT';
   const dashboardPath = getDashboardPath(role);
@@ -188,6 +216,11 @@ function CaseDetailPage() {
 
   const canCreateTask = role === 'ADMIN' || item?.responsible_lawyer?.id === user?.id || item?.supervising_lawyer?.id === user?.id;
   const canEditFee = role === 'ADMIN' || item?.responsible_lawyer?.id === user?.id;
+  const canManageHearings =
+    role === 'ADMIN' ||
+    ((role === 'SENIOR_LAWYER' || role === 'JUNIOR_LAWYER') &&
+      (item?.responsible_lawyer?.id === user?.id || item?.supervising_lawyer?.id === user?.id));
+
 
   return (
     <DashboardLayout showContext={false} activeModule="cases">
@@ -628,8 +661,195 @@ function CaseDetailPage() {
                 )}
               </section>
 
+              {/* COURT HEARINGS RECORD SECTION */}
+              <section className="case-section" aria-labelledby="section-hearings" ref={hearingsRef}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <h2 id="section-hearings" className="case-section__title" style={{ margin: 0 }}>Hearing Records</h2>
+                    {hearingRecords.length > 0 && (
+                      <span
+                        className="case-tag-chip"
+                        style={{
+                          fontSize: '0.7rem',
+                          fontWeight: 600,
+                          backgroundColor: '#f5efe6',
+                          color: 'var(--color-primary)',
+                          border: '1px solid rgba(88, 28, 38, 0.2)',
+                          padding: '0.1rem 0.45rem',
+                          borderRadius: '8px',
+                        }}
+                      >
+                        {hearingRecords.length}
+                      </span>
+                    )}
+                  </div>
+                  {canManageHearings && (
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      onClick={() => {
+                        setHearingModalMode('create');
+                        setSelectedHearingRecord(null);
+                        setShowHearingModal(true);
+                      }}
+                    >
+                      + Record Hearing
+                    </button>
+                  )}
+                </div>
+
+                {hearingsLoading ? (
+                  <div style={{ padding: '1rem', textAlign: 'center', color: '#888', fontSize: '0.84rem' }}>
+                    Loading hearing records…
+                  </div>
+                ) : !hearingRecords || hearingRecords.length === 0 ? (
+                  <div style={{ padding: '1.25rem 1rem', textAlign: 'center', backgroundColor: '#faf9f6', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius-sm)' }}>
+                    <p style={{ fontSize: '0.85rem', color: '#888280', marginBottom: canManageHearings ? '0.65rem' : 0 }}>
+                      No hearing records have been recorded for this case yet.
+                    </p>
+                    {canManageHearings && (
+                      <button
+                        type="button"
+                        className="btn btn-ghost-dark btn-sm"
+                        onClick={() => {
+                          setHearingModalMode('create');
+                          setSelectedHearingRecord(null);
+                          setShowHearingModal(true);
+                        }}
+                      >
+                        Record Hearing
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="cases-table-wrap" style={{ border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius-sm)', background: '#fff' }}>
+                    <table className="cases-table" style={{ margin: 0 }}>
+                      <thead>
+                        <tr>
+                          <th>Hearing Date</th>
+                          <th>Court / Forum</th>
+                          <th>Stage / Type</th>
+                          <th>Proceedings & Outcome</th>
+                          <th>Next Hearing</th>
+                          <th style={{ textAlign: 'right' }}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {hearingRecords.map((hr) => (
+                          <tr key={hr.id || hr.hearing_id}>
+                            <td style={{ whiteSpace: 'nowrap' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-primary)' }}>
+                                  {formatDate(hr.hearing_date)}
+                                </span>
+                                <span style={{ fontSize: '0.7rem', color: '#888280' }}>
+                                  {hr.hearing_id}
+                                </span>
+                              </div>
+                            </td>
+                            <td style={{ whiteSpace: 'normal', minWidth: '130px' }}>
+                              <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>
+                                {hr.court || item.court || '—'}
+                              </span>
+                            </td>
+                            <td style={{ whiteSpace: 'nowrap' }}>
+                              <span
+                                className="case-tag-chip"
+                                style={{
+                                  fontSize: '0.72rem',
+                                  fontWeight: 600,
+                                  backgroundColor: '#f5efe6',
+                                  color: 'var(--color-primary)',
+                                  border: '1px solid rgba(88, 28, 38, 0.2)',
+                                  padding: '0.12rem 0.45rem',
+                                  borderRadius: '4px',
+                                }}
+                              >
+                                {hr.hearing_type || 'Regular Hearing'}
+                              </span>
+                            </td>
+                            <td style={{ whiteSpace: 'normal', minWidth: '180px' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                                {hr.outcome && (
+                                  <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#1e293b' }}>
+                                    {hr.outcome}
+                                  </span>
+                                )}
+                                <span
+                                  style={{
+                                    fontSize: '0.76rem',
+                                    color: '#555',
+                                    display: '-webkit-box',
+                                    WebkitLineClamp: 2,
+                                    WebkitBoxOrient: 'vertical',
+                                    overflow: 'hidden',
+                                    wordBreak: 'break-word',
+                                  }}
+                                  title={hr.proceedings || hr.orders_or_directions}
+                                >
+                                  {hr.proceedings || hr.orders_or_directions || '—'}
+                                </span>
+                              </div>
+                            </td>
+                            <td style={{ whiteSpace: 'nowrap' }}>
+                              <span style={{ fontSize: '0.8rem', fontWeight: hr.next_hearing_date ? 600 : 400, color: hr.next_hearing_date ? '#b45309' : '#888' }}>
+                                {formatDate(hr.next_hearing_date)}
+                              </span>
+                            </td>
+                            <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                              <div style={{ display: 'inline-flex', gap: '0.35rem', justifyContent: 'flex-end' }}>
+                                <button
+                                  type="button"
+                                  className="btn btn-ghost-dark"
+                                  style={{ fontSize: '0.72rem', padding: '0.25rem 0.5rem', height: 'auto', minHeight: 'auto' }}
+                                  onClick={() => {
+                                    setSelectedHearingRecord(hr);
+                                    setHearingModalMode('view');
+                                    setShowHearingModal(true);
+                                  }}
+                                >
+                                  View
+                                </button>
+                                {canManageHearings && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      className="btn btn-ghost-dark"
+                                      style={{ fontSize: '0.72rem', padding: '0.25rem 0.5rem', height: 'auto', minHeight: 'auto' }}
+                                      onClick={() => {
+                                        setSelectedHearingRecord(hr);
+                                        setHearingModalMode('edit');
+                                        setShowHearingModal(true);
+                                      }}
+                                    >
+                                      Edit
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="btn btn-ghost-dark"
+                                      style={{ fontSize: '0.72rem', padding: '0.25rem 0.5rem', height: 'auto', minHeight: 'auto', color: '#c0392b', borderColor: '#f8d7da' }}
+                                      onClick={() => {
+                                        setSelectedHearingToDelete(hr);
+                                        setShowDeleteHearingModal(true);
+                                      }}
+                                    >
+                                      Delete
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+
               {/* COURT PROCEEDINGS SECTION */}
               <section className="case-section" aria-labelledby="section-proceedings" ref={proceedingsRef}>
+
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                   <h2 id="section-proceedings" className="case-section__title" style={{ margin: 0 }}>Court Proceedings</h2>
                   {(role === 'ADMIN' || role === 'SENIOR_LAWYER' || role === 'JUNIOR_LAWYER') && (
@@ -1018,6 +1238,34 @@ function CaseDetailPage() {
         onClose={() => setShowProceedingModal(false)}
         onSuccess={() => load()}
       />
+
+      <HearingRecordModal
+        open={showHearingModal}
+        mode={hearingModalMode}
+        caseObj={item}
+        hearingRecord={selectedHearingRecord}
+        onClose={() => {
+          setShowHearingModal(false);
+          setSelectedHearingRecord(null);
+        }}
+        onSuccess={() => load()}
+        onSwitchToEdit={(hr) => {
+          setSelectedHearingRecord(hr);
+          setHearingModalMode('edit');
+        }}
+      />
+
+      <DeleteHearingRecordModal
+        open={showDeleteHearingModal}
+        hearingRecord={selectedHearingToDelete}
+        caseObj={item}
+        onClose={() => {
+          setShowDeleteHearingModal(false);
+          setSelectedHearingToDelete(null);
+        }}
+        onSuccess={() => load()}
+      />
+
 
       <EditAppointmentFeeModal
         open={showFeeModal}

@@ -299,3 +299,123 @@ class Notification(models.Model):
         return f"{self.user.email} - {self.title} - {self.created_at}"
 
 
+class HearingRecord(models.Model):
+    """
+    Hearing record documenting proceedings, outcomes, directions, and next dates
+    for court hearings associated with a Case.
+    """
+    hearing_id = models.CharField(
+        max_length=64,
+        unique=True,
+        db_index=True,
+        editable=False,
+        help_text="Auto-generated reference, e.g. HRNG-2026-0001.",
+    )
+    case = models.ForeignKey(
+        Case,
+        on_delete=models.CASCADE,
+        related_name="hearing_records",
+    )
+    hearing_date = models.DateField(db_index=True)
+    court = models.CharField(max_length=255, blank=True, default="")
+    hearing_type = models.CharField(
+        max_length=100,
+        blank=True,
+        default="Regular Hearing",
+        help_text="Hearing stage or type (e.g. Preliminary Hearing, Arguments, Evidence).",
+    )
+    proceedings = models.TextField(
+        blank=True,
+        default="",
+        help_text="Record of what happened/transpired during the court hearing.",
+    )
+    outcome = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        help_text="Outcome or status from this hearing (e.g. Adjourned, Orders Reserved).",
+    )
+    orders_or_directions = models.TextField(
+        blank=True,
+        default="",
+        help_text="Judicial orders, directions, or procedural requirements issued by the court.",
+    )
+    next_hearing_date = models.DateField(null=True, blank=True, db_index=True)
+    internal_notes = models.TextField(
+        blank=True,
+        default="",
+        help_text="Confidential notes for lawyers/firm staff only. Never exposed to clients.",
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_hearing_records",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-hearing_date", "-created_at"]
+        indexes = [
+            models.Index(fields=["case", "-hearing_date"]),
+        ]
+
+    def __str__(self):
+        return f"{self.hearing_id} ({self.case.case_reference}) - {self.hearing_date}"
+
+    @classmethod
+    def next_hearing_id(cls) -> str:
+        year = timezone.localdate().year
+        prefix = f"HRNG-{year}-"
+        last = (
+            cls.objects.select_for_update()
+            .filter(hearing_id__startswith=prefix)
+            .order_by("-hearing_id")
+            .first()
+        )
+        if last:
+            try:
+                seq = int(last.hearing_id.rsplit("-", 1)[-1]) + 1
+            except ValueError:
+                seq = 1
+        else:
+            seq = 1
+        return f"{prefix}{seq:04d}"
+
+    def save(self, *args, **kwargs):
+        if not self.court and self.case_id:
+            try:
+                if self.case and self.case.court:
+                    self.court = self.case.court
+            except Exception:
+                pass
+        if not self.hearing_id:
+            with transaction.atomic():
+                self.hearing_id = self.next_hearing_id()
+                saved = super().save(*args, **kwargs)
+        else:
+            saved = super().save(*args, **kwargs)
+
+        # Sync next hearing date with Court Calendar architecture if next_hearing_date is set
+        if self.next_hearing_date and self.case_id:
+            try:
+                CourtProceeding.objects.get_or_create(
+                    case=self.case,
+                    event_date=self.hearing_date,
+                    defaults={
+                        "event_type": self.hearing_type or "Court Hearing",
+                        "court_name": self.court or (self.case.court if self.case else "Court"),
+                        "bench": getattr(self.case, "bench", "") or "",
+                        "next_hearing_date": self.next_hearing_date,
+                        "notes": self.outcome or self.orders_or_directions or "",
+                    },
+                )
+            except Exception:
+                pass
+
+        return saved
+
+
+

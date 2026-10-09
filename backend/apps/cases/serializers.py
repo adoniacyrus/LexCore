@@ -3,7 +3,17 @@ from rest_framework import serializers
 
 from apps.accounts.models import UserRole
 from apps.consultations.models import Consultation, ConsultationStatus, PracticeArea
-from .models import Case, CaseStatus, CaseType, MatterCategory, MatterStage, CaseActivity, CourtProceeding, Notification
+from .models import (
+    Case,
+    CaseStatus,
+    CaseType,
+    MatterCategory,
+    MatterStage,
+    CaseActivity,
+    CourtProceeding,
+    Notification,
+    HearingRecord,
+)
 
 User = get_user_model()
 
@@ -31,7 +41,83 @@ class CaseActivitySerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class ClientHearingRecordSerializer(serializers.ModelSerializer):
+    """
+    Sanitized Hearing Record serializer for clients.
+    Excludes internal_notes and confidential lawyer notes completely.
+    """
+    case_reference = serializers.CharField(source="case.case_reference", read_only=True)
+    case_title = serializers.CharField(source="case.title", read_only=True)
+    created_by_name = serializers.CharField(source="created_by.full_name", read_only=True)
+    created_by_details = UserBriefSerializer(source="created_by", read_only=True)
+
+    class Meta:
+        model = HearingRecord
+        fields = (
+            "id",
+            "hearing_id",
+            "case",
+            "case_reference",
+            "case_title",
+            "hearing_date",
+            "court",
+            "hearing_type",
+            "proceedings",
+            "outcome",
+            "orders_or_directions",
+            "next_hearing_date",
+            "created_by_name",
+            "created_by_details",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = fields
+
+
+class HearingRecordSerializer(serializers.ModelSerializer):
+    """
+    Full Hearing Record serializer for internal firm members and admins.
+    Includes internal_notes. Strictly strips internal_notes if context user is Client.
+    """
+    case_reference = serializers.CharField(source="case.case_reference", read_only=True)
+    case_title = serializers.CharField(source="case.title", read_only=True)
+    created_by_name = serializers.CharField(source="created_by.full_name", read_only=True)
+    created_by_details = UserBriefSerializer(source="created_by", read_only=True)
+
+    class Meta:
+        model = HearingRecord
+        fields = (
+            "id",
+            "hearing_id",
+            "case",
+            "case_reference",
+            "case_title",
+            "hearing_date",
+            "court",
+            "hearing_type",
+            "proceedings",
+            "outcome",
+            "orders_or_directions",
+            "next_hearing_date",
+            "internal_notes",
+            "created_by",
+            "created_by_name",
+            "created_by_details",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = ("id", "hearing_id", "case", "created_by", "created_at", "updated_at")
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        request = self.context.get("request")
+        if request and getattr(request.user, "role", None) == UserRole.CLIENT:
+            data.pop("internal_notes", None)
+        return data
+
+
 class CourtProceedingSerializer(serializers.ModelSerializer):
+
     case_reference = serializers.CharField(source="case.case_reference", read_only=True)
     case_title = serializers.CharField(source="case.title", read_only=True)
     responsible_lawyer_name = serializers.CharField(source="case.responsible_lawyer.full_name", read_only=True)
@@ -78,7 +164,15 @@ class CaseSerializer(serializers.ModelSerializer):
     activities = CaseActivitySerializer(many=True, read_only=True)
     practice_area = PracticeAreaBriefSerializer(read_only=True)
     proceedings = CourtProceedingSerializer(many=True, read_only=True)
+    hearing_records = serializers.SerializerMethodField()
     upcoming_hearing = serializers.SerializerMethodField()
+
+    def get_hearing_records(self, obj):
+        request = self.context.get("request")
+        records = obj.hearing_records.all().order_by("-hearing_date", "-created_at")
+        if request and getattr(request.user, "role", None) == UserRole.CLIENT:
+            return ClientHearingRecordSerializer(records, many=True, context=self.context).data
+        return HearingRecordSerializer(records, many=True, context=self.context).data
 
     def get_upcoming_hearing(self, obj):
         from django.utils import timezone
@@ -130,7 +224,9 @@ class CaseSerializer(serializers.ModelSerializer):
             "assistant_lawyers",
             "activities",
             "proceedings",
+            "hearing_records",
         )
+
 
     def to_representation(self, instance):
         ret = super().to_representation(instance)
@@ -138,7 +234,15 @@ class CaseSerializer(serializers.ModelSerializer):
             ret["supporting_paralegal"] = UserBriefSerializer(instance.supporting_paralegal).data
         else:
             ret["supporting_paralegal"] = None
+
+        request = self.context.get("request")
+        if request and getattr(request.user, "role", None) == UserRole.CLIENT:
+            if "hearing_records" in ret and isinstance(ret["hearing_records"], list):
+                for hr in ret["hearing_records"]:
+                    if isinstance(hr, dict):
+                        hr.pop("internal_notes", None)
         return ret
+
 
 
 class CaseConvertSerializer(serializers.ModelSerializer):

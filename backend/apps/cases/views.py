@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 
 from apps.accounts.models import User, UserRole
 from apps.consultations.permissions import IsLawyerRole
-from .models import Case
+from .models import Case, CaseActivity
 from .permissions import IsCaseParticipant, IsCaseResponsibleLawyerOrAdmin
 from .services.case_pdf_service import CasePDFService
 from .serializers import (
@@ -95,7 +95,7 @@ class CaseListView(APIView):
             queryset = queryset.filter(matter_stage=matter_stage)
 
         queryset = queryset.order_by("-created_at")
-        serializer = CaseSerializer(queryset, many=True)
+        serializer = CaseSerializer(queryset, many=True, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -127,8 +127,9 @@ class CaseDetailView(APIView):
         case_obj = _get_case_or_404(queryset, pk)
         self.check_object_permissions(request, case_obj)
 
-        serializer = CaseSerializer(case_obj)
+        serializer = CaseSerializer(case_obj, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
+
 
     def patch(self, request, pk):
         queryset = Case.objects.select_related(
@@ -427,9 +428,17 @@ from rest_framework import generics
 from datetime import timedelta
 from django.utils import timezone
 from django.db.models import Q
-from .models import CourtProceeding, Notification
-from .serializers import CourtProceedingSerializer, NotificationSerializer
+from .models import CourtProceeding, Notification, HearingRecord
+
+from .serializers import (
+    CourtProceedingSerializer,
+    NotificationSerializer,
+    HearingRecordSerializer,
+    ClientHearingRecordSerializer,
+)
+from .permissions import IsHearingRecordAuthorized
 from .alerts import generate_hearing_alerts
+
 
 def get_user_accessible_proceedings(user):
     queryset = CourtProceeding.objects.all()
@@ -625,4 +634,157 @@ class CaseSummaryPDFView(APIView):
         response["Content-Disposition"] = f'{disposition}; filename="{filename}"'
         response["Access-Control-Expose-Headers"] = "Content-Disposition"
         return response
+
+
+def _get_hearing_record_or_404(queryset, pk_or_id):
+    """Lookup a HearingRecord by numeric PK or formatted hearing_id (e.g. HRNG-2026-0001)."""
+    if str(pk_or_id).isdigit():
+        return get_object_or_404(queryset, pk=int(pk_or_id))
+    return get_object_or_404(queryset, hearing_id=pk_or_id)
+
+
+class CaseHearingRecordListCreateView(APIView):
+    """
+    GET /api/cases/<case_id>/hearings/
+    Lists all hearing records for a specific case in chronological order.
+    Authorized case participants (Admin, Lawyers, Paralegal, Client) can view.
+    Clients receive sanitized data without internal_notes.
+
+    POST /api/cases/<case_id>/hearings/
+    Creates a new hearing record for the specified case.
+    Restricted to Admin, Responsible Lawyer, and Supervising Lawyer.
+    Case and creator identity are always derived by the backend from the request.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get_case(self, case_id):
+        return _get_case_or_404(Case.objects.all(), case_id)
+
+    def get(self, request, case_id):
+        case = self.get_case(case_id)
+        if not IsCaseParticipant().has_object_permission(request, self, case):
+            self.permission_denied(request, message="You are not authorized to view hearings for this case.")
+
+        records = case.hearing_records.all().order_by("-hearing_date", "-created_at")
+        if request.user.role == UserRole.CLIENT:
+            serializer = ClientHearingRecordSerializer(records, many=True, context={"request": request})
+        else:
+            serializer = HearingRecordSerializer(records, many=True, context={"request": request})
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, case_id):
+        case = self.get_case(case_id)
+        perm = IsHearingRecordAuthorized()
+        if not perm.has_object_permission(request, self, case):
+            self.permission_denied(request, message="You do not have permission to record hearings for this case.")
+
+        serializer = HearingRecordSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        record = serializer.save(case=case, created_by=request.user)
+
+        CaseActivity.objects.create(
+            case=case,
+            activity_type="HEARING_RECORDED",
+            description=f"Hearing recorded on {record.hearing_date} ({record.outcome or record.hearing_type}).",
+            user=request.user,
+        )
+
+        return Response(
+            HearingRecordSerializer(record, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class CaseHearingRecordDetailView(APIView):
+    """
+    GET /api/cases/<case_id>/hearings/<pk>/ or /api/cases/hearings/<pk>/
+    Retrieves a hearing record.
+    Authorized case participants can view. Clients do not receive internal_notes.
+
+    PATCH / PUT /api/cases/<case_id>/hearings/<pk>/ or /api/cases/hearings/<pk>/
+    Updates a hearing record.
+    Restricted to Admin, Responsible Lawyer, and Supervising Lawyer.
+
+    DELETE /api/cases/<case_id>/hearings/<pk>/ or /api/cases/hearings/<pk>/
+    Deletes a hearing record.
+    Restricted to Admin, Responsible Lawyer, and Supervising Lawyer.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get_record(self, request, pk, case_id=None):
+        if case_id:
+            case = _get_case_or_404(Case.objects.all(), case_id)
+            if not IsCaseParticipant().has_object_permission(request, self, case):
+                self.permission_denied(request, message="You are not authorized to access this case.")
+            record = _get_hearing_record_or_404(HearingRecord.objects.filter(case=case), pk)
+        else:
+            record = _get_hearing_record_or_404(HearingRecord.objects.all(), pk)
+            if not IsCaseParticipant().has_object_permission(request, self, record.case):
+                self.permission_denied(request, message="You are not authorized to access this hearing record.")
+        return record
+
+    def get(self, request, pk, case_id=None):
+        record = self.get_record(request, pk, case_id)
+        if request.user.role == UserRole.CLIENT:
+            serializer = ClientHearingRecordSerializer(record, context={"request": request})
+        else:
+            serializer = HearingRecordSerializer(record, context={"request": request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def patch(self, request, pk, case_id=None):
+        return self._update(request, pk, case_id, partial=True)
+
+    def put(self, request, pk, case_id=None):
+        return self._update(request, pk, case_id, partial=False)
+
+    def _update(self, request, pk, case_id=None, partial=True):
+        record = self.get_record(request, pk, case_id)
+        perm = IsHearingRecordAuthorized()
+        if not perm.has_object_permission(request, self, record):
+            self.permission_denied(request, message="You do not have permission to update this hearing record.")
+
+        serializer = HearingRecordSerializer(
+            record,
+            data=request.data,
+            partial=partial,
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        updated_record = serializer.save()
+
+        CaseActivity.objects.create(
+            case=record.case,
+            activity_type="HEARING_UPDATED",
+            description=f"Hearing record {updated_record.hearing_id} was updated.",
+            user=request.user,
+        )
+
+        return Response(
+            HearingRecordSerializer(updated_record, context={"request": request}).data,
+            status=status.HTTP_200_OK,
+        )
+
+    def delete(self, request, pk, case_id=None):
+        record = self.get_record(request, pk, case_id)
+        perm = IsHearingRecordAuthorized()
+        if not perm.has_object_permission(request, self, record):
+            self.permission_denied(request, message="You do not have permission to delete this hearing record.")
+
+        record_id = record.hearing_id
+        case = record.case
+        record.delete()
+
+        CaseActivity.objects.create(
+            case=case,
+            activity_type="HEARING_DELETED",
+            description=f"Hearing record {record_id} was deleted.",
+            user=request.user,
+        )
+
+        return Response(
+            {"detail": "Hearing record deleted successfully."},
+            status=status.HTTP_204_NO_CONTENT,
+        )
+
 
