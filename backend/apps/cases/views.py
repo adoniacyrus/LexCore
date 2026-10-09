@@ -11,6 +11,7 @@ from .models import Case, CaseActivity
 from .permissions import IsCaseParticipant, IsCaseResponsibleLawyerOrAdmin
 from .services.case_pdf_service import CasePDFService
 from .services.case_timeline_service import CaseTimelineService
+from .services.case_duration_service import CaseDurationService
 from .serializers import (
     CaseConvertSerializer,
     CaseSerializer,
@@ -173,9 +174,28 @@ class CaseDetailView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
+        old_status = case_obj.status
+        old_stage = case_obj.matter_stage
+
         serializer = CaseSerializer(case_obj, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        saved_case = serializer.save()
+
+        if "status" in data and saved_case.status != old_status:
+            CaseActivity.objects.create(
+                case=saved_case,
+                activity_type="STATUS_CHANGED",
+                description=f"Case status updated from {case_obj.get_status_display()} to {saved_case.get_status_display()}.",
+                user=request.user,
+            )
+
+        if "matter_stage" in data and saved_case.matter_stage != old_stage:
+            CaseActivity.objects.create(
+                case=saved_case,
+                activity_type="STAGE_CHANGED",
+                description=f"Matter stage transitioned from {case_obj.get_matter_stage_display()} to {saved_case.get_matter_stage_display()}.",
+                user=request.user,
+            )
 
         # Re-fetch with select_related for nested representation
         updated_case = Case.objects.select_related(
@@ -816,6 +836,36 @@ class CaseTimelineView(APIView):
             self.permission_denied(request, message="You are not authorized to view the timeline for this case.")
 
         data = CaseTimelineService.get_timeline(case, request.user)
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class CaseDurationAnalyticsView(APIView):
+    """
+    GET /api/cases/<case_id>/duration/
+    Retrieves factual case duration analytics calculated from database records.
+    Permissions:
+    - Reuses IsCaseParticipant (Admin, Assigned Lawyers, Supporting Paralegal, Client).
+    - Client view: high-level progress without internal notes or confidential metrics.
+    - Lawyer/Staff view: includes additional litigation tracking metrics.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, case_id):
+        case = _get_case_or_404(
+            Case.objects.select_related(
+                "client",
+                "practice_area",
+                "responsible_lawyer",
+                "supervising_lawyer",
+                "supporting_paralegal",
+                "originating_consultation",
+            ).prefetch_related("assistant_lawyers", "activities", "hearing_records", "proceedings"),
+            case_id,
+        )
+        if not IsCaseParticipant().has_object_permission(request, self, case):
+            self.permission_denied(request, message="You are not authorized to view duration analytics for this case.")
+
+        data = CaseDurationService.calculate_duration_metrics(case, request.user)
         return Response(data, status=status.HTTP_200_OK)
 
 

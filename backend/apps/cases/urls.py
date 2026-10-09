@@ -17,6 +17,7 @@ from .views import (
     CaseHearingRecordListCreateView,
     CaseHearingRecordDetailView,
     CaseTimelineView,
+    CaseDurationAnalyticsView,
 )
 
 urlpatterns = [
@@ -36,6 +37,7 @@ urlpatterns = [
     path("<str:case_id>/hearings/<str:pk>/", CaseHearingRecordDetailView.as_view(), name="case-hearing-detail"),
     path("hearings/<str:pk>/", CaseHearingRecordDetailView.as_view(), name="hearing-record-detail"),
     path("<str:case_id>/timeline/", CaseTimelineView.as_view(), name="case-timeline"),
+    path("<str:case_id>/duration/", CaseDurationAnalyticsView.as_view(), name="case-duration"),
     path("<str:case_reference>/messages/", CaseMessagesView.as_view(), name="case-messages"),
 ]
 

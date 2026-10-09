@@ -206,6 +206,16 @@ class CaseSerializer(serializers.ModelSerializer):
         source="get_matter_stage_display",
         read_only=True,
     )
+    duration_analytics = serializers.SerializerMethodField()
+
+    def get_duration_analytics(self, obj):
+        request = self.context.get("request")
+        view = self.context.get("view")
+        if view and getattr(view, "__class__", None).__name__ == "CaseListView":
+            return None
+        user = request.user if request else None
+        from apps.cases.services import CaseDurationService
+        return CaseDurationService.calculate_duration_metrics(obj, user)
 
     class Meta:
         model = Case
