@@ -954,4 +954,305 @@
   }
 }
 
+/* ==========================================================================
+   Case Duration Analytics Section Styles
+   ========================================================================== */
+
+.case-duration-container {
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm, 6px);
+  padding: 1rem 1.15rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.case-duration-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.95rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.case-duration-header__title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.case-duration-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.case-duration-title {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--color-dark, #1e293b);
+  letter-spacing: -0.01em;
+}
+
+.case-duration-subtitle {
+  margin: 0.1rem 0 0;
+  font-size: 0.74rem;
+  color: #64748b;
+}
+
+.case-duration-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.case-duration-status-pill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.18rem 0.55rem;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.case-duration-status-pill.is-active {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.case-duration-status-pill.is-closed {
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.case-duration-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.65rem;
+  margin-bottom: 0.95rem;
+}
+
+.case-duration-card {
+  background: #faf8f5;
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm, 6px);
+  padding: 0.65rem 0.8rem;
+  display: flex;
+  flex-direction: column;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.case-duration-card:hover {
+  border-color: rgba(107, 30, 43, 0.3);
+}
+
+.case-duration-card--highlight {
+  background: #fcf7f8;
+  border-color: rgba(107, 30, 43, 0.25);
+}
+
+.case-duration-card__label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  margin-bottom: 0.25rem;
+}
+
+.case-duration-card__value {
+  font-size: 0.94rem;
+  font-weight: 700;
+  color: var(--color-dark, #0f172a);
+  line-height: 1.25;
+  margin-bottom: 0.2rem;
+}
+
+.case-duration-card--highlight .case-duration-card__value {
+  color: var(--color-primary, #6b1e2b);
+}
+
+.case-duration-card__value--truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.case-duration-card__meta {
+  font-size: 0.68rem;
+  color: #64748b;
+  line-height: 1.2;
+}
+
+/* Stage Progression */
+.case-duration-stages-panel {
+  background: #f8fafc;
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm, 6px);
+  padding: 0.65rem 0.85rem;
+  margin-bottom: 0.85rem;
+}
+
+.case-duration-stages-panel__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.55rem;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.case-duration-stages-title {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.case-duration-stages-sub {
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+.case-duration-stages-list {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+
+.case-duration-stage-pill {
+  flex: 1;
+  min-width: 140px;
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 0.45rem 0.65rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.case-duration-stage-pill.is-current {
+  border-color: var(--color-primary, #6b1e2b);
+  background: #fdf6f7;
+}
+
+.case-duration-stage-pill__info {
+  display: flex;
+  flex-direction: column;
+}
+
+.case-duration-stage-pill__name {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--color-dark, #1e293b);
+  line-height: 1.2;
+}
+
+.case-duration-stage-pill.is-current .case-duration-stage-pill__name {
+  color: var(--color-primary, #6b1e2b);
+}
+
+.case-duration-stage-pill__dates {
+  font-size: 0.65rem;
+  color: #64748b;
+  margin-top: 0.15rem;
+}
+
+.case-duration-stage-pill__duration {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.case-duration-stage-pill__days {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.case-duration-stage-pill.is-current .case-duration-stage-pill__days {
+  color: var(--color-primary, #6b1e2b);
+}
+
+.case-duration-stage-pill__curr-tag {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--color-primary, #6b1e2b);
+  letter-spacing: 0.04em;
+}
+
+/* Staff Panel */
+.case-duration-staff-panel {
+  background: #ffffff;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--border-radius-sm, 6px);
+  padding: 0.65rem 0.85rem;
+  margin-bottom: 0.85rem;
+}
+
+.case-duration-staff-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.case-duration-staff-title {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.case-duration-staff-badge {
+  font-size: 0.65rem;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+}
+
+.case-duration-staff-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.5rem 1rem;
+}
+
+.case-duration-staff-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.case-duration-staff-item__label {
+  font-size: 0.66rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.case-duration-staff-item__value {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+/* Factual Notice */
+.case-duration-notice {
+  font-size: 0.7rem;
+  color: #64748b;
+  background: #f8fafc;
+  border-left: 2px solid #cbd5e1;
+  padding: 0.35rem 0.6rem;
+  border-radius: 0 4px 4px 0;
+  line-height: 1.35;
+}
+
 

@@ -10,6 +10,7 @@ import {
   downloadCaseDocument,
   downloadCaseSummaryPDF,
   getCaseTimeline,
+  getCaseDurationAnalytics,
 } from '../../services/caseService';
 import { listCaseTasks } from '../../services/taskService';
 import { getDashboardPath } from '../../utils/roleRoutes';
@@ -32,6 +33,7 @@ import CaseChatPanel from '../../components/chat/CaseChatPanel';
 import { listCaseHearingRecords } from '../../services/hearingService';
 import CaseTimeline from './CaseTimeline';
 import CaseTimelineModal from './CaseTimelineModal';
+import CaseDurationSection from './CaseDurationSection';
 import './cases.css';
 
 function DetailField({ label, value, long = false }) {
@@ -102,6 +104,10 @@ function CaseDetailPage() {
   const [activeTab, setActiveTab] = useState('all');
   const timelineRef = useRef(null);
 
+  // Case Duration Analytics State
+  const [durationData, setDurationData] = useState(null);
+  const [durationLoading, setDurationLoading] = useState(true);
+
   const load = useCallback(async () => {
     if (!accessToken || !targetRef) return;
     setLoading(true);
@@ -109,6 +115,7 @@ function CaseDetailPage() {
     setTasksLoading(true);
     setHearingsLoading(true);
     setTimelineLoading(true);
+    setDurationLoading(true);
     setError('');
     try {
       const data = await getCaseDetail(accessToken, targetRef);
@@ -132,6 +139,16 @@ function CaseDetailPage() {
         console.warn('Could not load case timeline data', tlErr);
       }
 
+      try {
+        const durData = await getCaseDurationAnalytics(accessToken, targetRef);
+        setDurationData(durData);
+      } catch (durErr) {
+        console.warn('Could not load case duration analytics; falling back to case data', durErr);
+        if (data?.duration_analytics) {
+          setDurationData(data.duration_analytics);
+        }
+      }
+
       if (user?.role !== 'CLIENT') {
         const tasksData = await listCaseTasks(accessToken, targetRef);
         setTasks(Array.isArray(tasksData) ? tasksData : []);
@@ -144,8 +161,22 @@ function CaseDetailPage() {
       setTasksLoading(false);
       setHearingsLoading(false);
       setTimelineLoading(false);
+      setDurationLoading(false);
     }
   }, [accessToken, targetRef, user?.role]);
+
+  const handleRefreshDuration = useCallback(async () => {
+    if (!accessToken || !targetRef) return;
+    setDurationLoading(true);
+    try {
+      const durData = await getCaseDurationAnalytics(accessToken, targetRef);
+      setDurationData(durData);
+    } catch (err) {
+      console.warn('Could not refresh duration analytics', err);
+    } finally {
+      setDurationLoading(false);
+    }
+  }, [accessToken, targetRef]);
 
   const handleRefreshTimeline = useCallback(async () => {
     if (!accessToken || !targetRef) return;
@@ -482,6 +513,18 @@ function CaseDetailPage() {
                   💬 Communications
                 </button>
               </div>
+
+              {/* CASE DURATION ANALYTICS */}
+              {(activeTab === 'all' || activeTab === 'timeline') && (
+                <section className="case-section" aria-labelledby="section-case-duration" id="duration" style={{ padding: 0, border: 'none', background: 'transparent' }}>
+                  <CaseDurationSection
+                    durationData={durationData}
+                    loading={durationLoading}
+                    role={role}
+                    onRefresh={handleRefreshDuration}
+                  />
+                </section>
+              )}
 
               {/* CASE TIMELINE & PROGRESS TRACKER */}
               {(activeTab === 'all' || activeTab === 'timeline') && (

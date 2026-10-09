@@ -141,6 +141,11 @@ export async function getCaseTimeline(access, caseId) {
   return data;
 }
 
+export async function getCaseDurationAnalytics(access, caseId) {
+  const { data } = await api.get(`/cases/${caseId}/duration/`, authHeaders(access));
+  return data;
+}
+
 export { getErrorMessage };
 
 
