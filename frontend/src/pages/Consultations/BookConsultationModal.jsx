@@ -30,7 +30,14 @@ const EMPTY = {
   issue_summary: '',
 };
 
-function BookConsultationModal({ open, onClose, onSubmitted, initialCase = null }) {
+function BookConsultationModal({
+  open,
+  onClose,
+  onSubmitted,
+  initialCase = null,
+  initialPracticeAreaId = null,
+  initialSubject = '',
+}) {
   const { accessToken, user } = useAuth();
   const [step, setStep] = useState('form'); // 'form' | 'review' | 'success' | 'failed'
   const [bookingType, setBookingType] = useState('NEW_MATTER'); // 'NEW_MATTER' | 'EXISTING_CASE'
@@ -83,7 +90,12 @@ function BookConsultationModal({ open, onClose, onSubmitted, initialCase = null 
       setBookingType('NEW_MATTER');
       setSelectedCase(null);
     }
-    setForm(EMPTY);
+    setForm({
+      ...EMPTY,
+      knowsPracticeArea: initialPracticeAreaId ? true : null,
+      practice_area: initialPracticeAreaId ? String(initialPracticeAreaId) : '',
+      subject: initialSubject || '',
+    });
     setFieldErrors({});
     setError('');
     setSubmitting(false);

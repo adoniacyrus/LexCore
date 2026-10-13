@@ -353,3 +353,103 @@ class LawyerTimeBlock(models.Model):
     def __str__(self):
         return f"Block: {self.lawyer.full_name} on {self.date} ({self.start_time.strftime('%H:%M')}–{self.end_time.strftime('%H:%M')}) [{self.get_reason_display()}]"
 
+
+class PetitionGuidance(models.Model):
+    """
+    Law firm-configured informational guidance for starting legal matters and filing petitions.
+    Designed to assist prospective clients in understanding matter categories, commonly needed
+    records, high-level legal process steps, and consultation preparation.
+    NOT an automated or AI legal advice engine.
+    """
+
+    DEFAULT_DISCLAIMER = (
+        "This guidance is provided for general informational purposes only and does not "
+        "constitute formal legal advice or create an advocate-client relationship. Legal "
+        "requirements, court procedures, and limitation periods vary based on specific facts "
+        "and jurisdiction. Please consult our legal counsel to evaluate your specific situation."
+    )
+
+    title = models.CharField(
+        max_length=150,
+        unique=True,
+        help_text="Broad legal matter or petition category, e.g. 'Civil Matters'.",
+    )
+    slug = models.SlugField(
+        max_length=150,
+        unique=True,
+        blank=True,
+        help_text="URL-friendly slug (auto-generated if blank).",
+    )
+    practice_area = models.ForeignKey(
+        PracticeArea,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="petition_guidances",
+        help_text="Linked firm practice area for direct consultation booking.",
+    )
+    overview = models.TextField(
+        help_text="Plain-language description of what this legal matter generally involves.",
+    )
+    common_petition_types = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of typical petitions, plaints, or applications in this category.",
+    )
+    documents_required = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of commonly required documents and information.",
+    )
+    process_overview = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="High-level roadmap of legal process stages (step number, title, description).",
+    )
+    what_to_prepare = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Checklist of details/questions the client should prepare for the lawyer.",
+    )
+    disclaimer = models.TextField(
+        blank=True,
+        default="",
+        help_text="Category-specific disclaimer. If omitted, default firm disclaimer is used.",
+    )
+    is_active = models.BooleanField(
+        default=True,
+        db_index=True,
+        help_text="Whether this guidance category is visible to prospective clients.",
+    )
+    display_order = models.PositiveIntegerField(
+        default=0,
+        db_index=True,
+        help_text="Display ordering sequence.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["display_order", "title"]
+        verbose_name = "petition filing guidance"
+        verbose_name_plural = "petition filing guidances"
+
+    def __str__(self) -> str:
+        return self.title
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            from django.utils.text import slugify
+            base_slug = slugify(self.title) or "guidance"
+            slug = base_slug
+            counter = 1
+            while PetitionGuidance.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
+
+    @property
+    def effective_disclaimer(self) -> str:
+        return self.disclaimer.strip() if self.disclaimer.strip() else self.DEFAULT_DISCLAIMER
+

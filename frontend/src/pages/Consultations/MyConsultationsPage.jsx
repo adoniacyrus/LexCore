@@ -82,6 +82,11 @@ function MyConsultationsPage() {
     load();
   };
 
+  const initialPracticeAreaId =
+    searchParams.get('practice_area') || location.state?.practice_area || null;
+  const initialSubject =
+    searchParams.get('subject') || location.state?.subject || '';
+
   return (
     <DashboardLayout showContext={false} activeModule="consultations" fillHeight>
       <div className="cons-page cons-page--fill lw-fade-in">
@@ -195,6 +200,8 @@ function MyConsultationsPage() {
         open={bookOpen}
         onClose={closeBook}
         onSubmitted={handleSubmitted}
+        initialPracticeAreaId={initialPracticeAreaId}
+        initialSubject={initialSubject}
       />
 
       <ConsultationDetailModal

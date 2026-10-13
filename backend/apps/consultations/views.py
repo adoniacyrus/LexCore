@@ -21,9 +21,11 @@ from .models import (
     LawyerTimeBlock,
     LawyerWeeklySchedule,
     PracticeArea,
+    PetitionGuidance,
 )
 from .permissions import (
     IsAdminRole,
+    IsAdminOrReadOnlyGuidance,
     IsAuthenticatedStaffOrClientReadPracticeAreas,
     IsClientRole,
     IsLawyerRole,
@@ -38,6 +40,8 @@ from .serializers import (
     LawyerStatusUpdateSerializer,
     LawyerTimeBlockSerializer,
     LawyerWeeklyScheduleSerializer,
+    PetitionGuidanceSerializer,
+    PetitionGuidanceWriteSerializer,
     PracticeAreaSerializer,
     PracticeAreaWriteSerializer,
     eligible_lawyers_queryset,
@@ -135,6 +139,152 @@ class PracticeAreaDetailView(APIView):
         area.delete()
         return Response(
             {"message": f'Practice area "{name}" deleted successfully.'},
+            status=status.HTTP_200_OK,
+        )
+
+
+# ---------------------------------------------------------------------------
+# Petition Filing Guidance
+# ---------------------------------------------------------------------------
+
+
+class FilingGuidanceListCreateView(APIView):
+    """
+    GET  /api/consultations/filing-guidance/
+         - Public / client: returns all active guidance items ordered by display_order, title.
+         - Admin: returns all items (including inactive), allows filter by is_active query param.
+    POST /api/consultations/filing-guidance/
+         - Admin only: creates a new petition filing guidance category.
+    """
+
+    permission_classes = [IsAdminOrReadOnlyGuidance]
+
+    def get(self, request):
+        qs = (
+            PetitionGuidance.objects.select_related("practice_area")
+            .all()
+            .order_by("display_order", "title")
+        )
+        is_admin = bool(
+            request.user
+            and request.user.is_authenticated
+            and getattr(request.user, "role", None) == "ADMIN"
+        )
+        if not is_admin:
+            qs = qs.filter(is_active=True)
+        else:
+            active_param = request.query_params.get("is_active")
+            if active_param is not None:
+                if active_param.lower() in ("true", "1"):
+                    qs = qs.filter(is_active=True)
+                elif active_param.lower() in ("false", "0"):
+                    qs = qs.filter(is_active=False)
+
+        serializer = PetitionGuidanceSerializer(qs, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        if not (
+            request.user
+            and request.user.is_authenticated
+            and getattr(request.user, "role", None) == "ADMIN"
+        ):
+            return Response(
+                {"detail": "Only administrators can manage filing guidance."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        serializer = PetitionGuidanceWriteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        guidance = serializer.save()
+        return Response(
+            PetitionGuidanceSerializer(guidance).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class FilingGuidanceDetailView(APIView):
+    """
+    GET    /api/consultations/filing-guidance/<pk_or_slug>/
+           - Public / client: retrieves guidance if active (or 404).
+           - Admin: retrieves guidance even if inactive.
+    PATCH  /api/consultations/filing-guidance/<pk_or_slug>/ (admin)
+    DELETE /api/consultations/filing-guidance/<pk_or_slug>/ (admin)
+    """
+
+    permission_classes = [IsAdminOrReadOnlyGuidance]
+
+    def _get_object(self, request, pk_or_slug):
+        is_admin = bool(
+            request.user
+            and request.user.is_authenticated
+            and getattr(request.user, "role", None) == "ADMIN"
+        )
+        qs = PetitionGuidance.objects.select_related("practice_area")
+        if not is_admin:
+            qs = qs.filter(is_active=True)
+
+        if str(pk_or_slug).isdigit():
+            return get_object_or_404(qs, pk=int(pk_or_slug))
+        return get_object_or_404(qs, slug=pk_or_slug)
+
+    def get(self, request, pk_or_slug):
+        guidance = self._get_object(request, pk_or_slug)
+        return Response(
+            PetitionGuidanceSerializer(guidance).data,
+            status=status.HTTP_200_OK,
+        )
+
+    def patch(self, request, pk_or_slug):
+        if not (
+            request.user
+            and request.user.is_authenticated
+            and getattr(request.user, "role", None) == "ADMIN"
+        ):
+            return Response(
+                {"detail": "Only administrators can update filing guidance."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        qs = PetitionGuidance.objects.all()
+        if str(pk_or_slug).isdigit():
+            guidance = get_object_or_404(qs, pk=int(pk_or_slug))
+        else:
+            guidance = get_object_or_404(qs, slug=pk_or_slug)
+
+        serializer = PetitionGuidanceWriteSerializer(
+            guidance,
+            data=request.data,
+            partial=True,
+        )
+        serializer.is_valid(raise_exception=True)
+        guidance = serializer.save()
+        return Response(
+            {
+                **PetitionGuidanceSerializer(guidance).data,
+                "message": "Filing guidance updated successfully.",
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    def delete(self, request, pk_or_slug):
+        if not (
+            request.user
+            and request.user.is_authenticated
+            and getattr(request.user, "role", None) == "ADMIN"
+        ):
+            return Response(
+                {"detail": "Only administrators can delete filing guidance."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        qs = PetitionGuidance.objects.all()
+        if str(pk_or_slug).isdigit():
+            guidance = get_object_or_404(qs, pk=int(pk_or_slug))
+        else:
+            guidance = get_object_or_404(qs, slug=pk_or_slug)
+
+        title = guidance.title
+        guidance.delete()
+        return Response(
+            {"message": f'Filing guidance "{title}" deleted successfully.'},
             status=status.HTTP_200_OK,
         )
 

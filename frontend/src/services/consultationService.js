@@ -204,5 +204,41 @@ export async function fetchLawyerConsultationCalendar(access, params = {}) {
   return data;
 }
 
+/* ---- Petition Filing Guidance ---- */
+
+export async function listFilingGuidances(access = null, params = {}) {
+  const config = access ? { ...authHeaders(access), params } : { params };
+  const { data } = await api.get('/consultations/filing-guidance/', config);
+  return data;
+}
+
+export async function getFilingGuidance(idOrSlug, access = null) {
+  const config = access ? authHeaders(access) : {};
+  const { data } = await api.get(`/consultations/filing-guidance/${idOrSlug}/`, config);
+  return data;
+}
+
+export async function createFilingGuidance(access, payload) {
+  const { data } = await api.post('/consultations/filing-guidance/', payload, authHeaders(access));
+  return data;
+}
+
+export async function updateFilingGuidance(access, idOrSlug, payload) {
+  const { data } = await api.patch(
+    `/consultations/filing-guidance/${idOrSlug}/`,
+    payload,
+    authHeaders(access)
+  );
+  return data;
+}
+
+export async function deleteFilingGuidance(access, idOrSlug) {
+  const { data } = await api.delete(
+    `/consultations/filing-guidance/${idOrSlug}/`,
+    authHeaders(access)
+  );
+  return data;
+}
+
 export { getErrorMessage };
 

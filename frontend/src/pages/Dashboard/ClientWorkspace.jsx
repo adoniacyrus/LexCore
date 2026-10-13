@@ -24,6 +24,13 @@ function formatDashboardDate(date = new Date()) {
 
 const QUICK_ACTIONS = [
   {
+    id: 'filing-guidance',
+    title: 'Filing Guidance',
+    description: 'Matter procedures & document checklists',
+    icon: 'documents',
+    to: '/dashboard/client/filing-guidance',
+  },
+  {
     id: 'book-consultation',
     title: 'Book Consultation',
     description: 'Schedule a legal consultation',
@@ -142,6 +149,15 @@ function ClientWorkspace() {
         actionTo: '/dashboard/client/cases',
       });
     }
+
+    items.push({
+      id: 'filing-guidance-tip',
+      priority: 'Info',
+      title: 'Starting a new legal matter?',
+      description: 'Review our step-by-step petition guidance, essential document checklists, and process roadmaps.',
+      actionLabel: 'View filing guides',
+      actionTo: '/dashboard/client/filing-guidance',
+    });
 
     return items;
   }, [consultations, cases]);

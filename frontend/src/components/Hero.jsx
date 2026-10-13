@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useModals } from '../context/ModalContext';
 
 function Hero() {
   const { openConsultation } = useModals();
+  const navigate = useNavigate();
   const [entered, setEntered] = useState(false);
 
   useEffect(() => {
@@ -46,6 +48,13 @@ function Hero() {
             <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
             </svg>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/filing-guidance')}
+            className="btn btn-secondary hero-btn-ghost"
+          >
+            Start a Matter / Guidance
           </button>
           <a href="#practices" onClick={handleScrollToPractices} className="btn btn-secondary hero-btn-ghost">
             Learn More

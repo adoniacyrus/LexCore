@@ -79,6 +79,19 @@ function Navbar() {
               </a>
             </li>
             <li>
+              <a
+                href="/filing-guidance"
+                className="nav-link-custom"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setIsMobileMenuOpen(false);
+                  navigate('/filing-guidance');
+                }}
+              >
+                Filing Guidance
+              </a>
+            </li>
+            <li>
               <a href="/#about" className="nav-link-custom" onClick={(e) => { e.preventDefault(); handleNav('about'); }}>
                 About
               </a>

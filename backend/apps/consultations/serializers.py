@@ -18,6 +18,7 @@ from .models import (
     LawyerTimeBlock,
     LawyerWeeklySchedule,
     PracticeArea,
+    PetitionGuidance,
     TimeBlockReason,
     Weekday,
 )
@@ -58,6 +59,102 @@ class PracticeAreaWriteSerializer(serializers.ModelSerializer):
                 "A practice area with this name already exists."
             )
         return name
+
+
+class PetitionGuidanceSerializer(serializers.ModelSerializer):
+    practice_area_detail = PracticeAreaSerializer(source="practice_area", read_only=True)
+    disclaimer_text = serializers.CharField(source="effective_disclaimer", read_only=True)
+
+    class Meta:
+        model = PetitionGuidance
+        fields = (
+            "id",
+            "title",
+            "slug",
+            "practice_area",
+            "practice_area_detail",
+            "overview",
+            "common_petition_types",
+            "documents_required",
+            "process_overview",
+            "what_to_prepare",
+            "disclaimer",
+            "disclaimer_text",
+            "is_active",
+            "display_order",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = ("id", "created_at", "updated_at", "disclaimer_text", "practice_area_detail")
+
+
+class PetitionGuidanceWriteSerializer(serializers.ModelSerializer):
+    practice_area = serializers.PrimaryKeyRelatedField(
+        queryset=PracticeArea.objects.all(),
+        required=False,
+        allow_null=True,
+    )
+
+    class Meta:
+        model = PetitionGuidance
+        fields = (
+            "title",
+            "slug",
+            "practice_area",
+            "overview",
+            "common_petition_types",
+            "documents_required",
+            "process_overview",
+            "what_to_prepare",
+            "disclaimer",
+            "is_active",
+            "display_order",
+        )
+
+    def validate_title(self, value: str) -> str:
+        title = value.strip()
+        if not title:
+            raise serializers.ValidationError("Title is required.")
+        qs = PetitionGuidance.objects.filter(title__iexact=title)
+        if self.instance is not None:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError("A filing guidance category with this title already exists.")
+        return title
+
+    def validate_overview(self, value: str) -> str:
+        overview = value.strip()
+        if not overview:
+            raise serializers.ValidationError("Overview is required.")
+        return overview
+
+    def validate_common_petition_types(self, value):
+        if value is None:
+            return []
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Common petition types must be a list.")
+        return value
+
+    def validate_documents_required(self, value):
+        if value is None:
+            return []
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Documents required must be a list.")
+        return value
+
+    def validate_process_overview(self, value):
+        if value is None:
+            return []
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Process overview must be a list.")
+        return value
+
+    def validate_what_to_prepare(self, value):
+        if value is None:
+            return []
+        if not isinstance(value, list):
+            raise serializers.ValidationError("What to prepare must be a list.")
+        return value
 
 
 class LawyerBriefSerializer(serializers.ModelSerializer):

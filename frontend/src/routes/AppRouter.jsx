@@ -33,6 +33,7 @@ import CaseEditPage from '../pages/Cases/CaseEditPage';
 import MatterBoardPage from '../pages/Cases/MatterBoardPage';
 import CourtCalendarPage from '../pages/Calendar/CourtCalendarPage';
 import RevenuePage from '../pages/Admin/RevenuePage';
+import FilingGuidancePage from '../pages/Guidance/FilingGuidancePage';
 
 function AppRouter() {
   return (
@@ -42,6 +43,8 @@ function AppRouter() {
           <Routes>
             <Route path="/" element={<MainLayout />}>
               <Route index element={<LandingPage />} />
+              <Route path="filing-guidance" element={<FilingGuidancePage />} />
+              <Route path="start-matter" element={<Navigate to="/filing-guidance" replace />} />
             </Route>
 
             <Route element={<AuthLayout />}>
@@ -360,6 +363,14 @@ function AppRouter() {
               element={
                 <RoleProtectedRoute roles={['CLIENT']}>
                   <BookConsultationPage />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/client/filing-guidance"
+              element={
+                <RoleProtectedRoute roles={['CLIENT']}>
+                  <FilingGuidancePage />
                 </RoleProtectedRoute>
               }
             />

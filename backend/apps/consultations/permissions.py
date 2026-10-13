@@ -54,3 +54,19 @@ class IsAuthenticatedStaffOrClientReadPracticeAreas(BasePermission):
         if request.method in SAFE_METHODS:
             return True
         return user.role == UserRole.ADMIN
+
+
+class IsAdminOrReadOnlyGuidance(BasePermission):
+    """
+    Public and clients can read petition filing guidance.
+    Only firm administrators can create, update, or delete guidance entries.
+    """
+
+    def has_permission(self, request, view):
+        if request.method in SAFE_METHODS:
+            return True
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and request.user.role == UserRole.ADMIN
+        )

@@ -15,6 +15,7 @@ function resolveActiveModule(pathname) {
   }
   if (pathname.includes('/consultation-calendar')) return 'consultation-calendar';
   if (pathname.includes('/availability')) return 'availability';
+  if (pathname.includes('/filing-guidance')) return 'filing-guidance';
   if (pathname.includes('/consultations')) return 'consultations';
   if (pathname.includes('/revenue')) return 'revenue';
   if (pathname.includes('/calendar')) return 'calendar';

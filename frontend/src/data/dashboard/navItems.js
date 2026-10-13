@@ -91,6 +91,12 @@ export const PORTAL_NAV_BY_ROLE = {
       group: 'LEGAL MATTERS',
       items: [
         {
+          id: 'filing-guidance',
+          label: 'Filing Guidance',
+          icon: 'documents',
+          route: '/dashboard/client/filing-guidance',
+        },
+        {
           id: 'consultations',
           label: 'My Consultations',
           icon: 'consultations',
@@ -289,6 +295,10 @@ export const MODULE_META = {
   users: { title: 'Staff', summary: 'Provision and manage internal staff accounts.' },
   clients: { title: 'Clients', summary: 'Register and review client portal accounts.' },
   consultations: { title: 'Consultations', summary: 'Track, assign, and manage consultation requests.' },
+  'filing-guidance': {
+    title: 'Petition Filing Guidance',
+    summary: 'Standard matter procedures, document requirements, and consultation preparation.',
+  },
   'practice-areas': { title: 'Practice Areas', summary: 'Firm practice area master list.' },
   'assigned-consultations': {
     title: 'Assigned Consultations',
