@@ -66,6 +66,10 @@ class TestTasks:
         # Look for existing task rows or cards
         task_items = case_page.find_all((By.CSS_SELECTOR, ".case-task-card, .cases-table tbody tr, .task-row"))
         if task_items:
-            task_items[0].click()
+            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", task_items[0])
+            try:
+                task_items[0].click()
+            except Exception:
+                driver.execute_script("arguments[0].click();", task_items[0])
             # Modal or detail drawer should be open
             assert case_page.is_visible((By.CSS_SELECTOR, ".cons-modal, [role='dialog']"), timeout=5)
