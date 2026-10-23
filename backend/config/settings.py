@@ -186,6 +186,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "https://lex-core.vercel.app",
+    "https://lex-core-2u78tn1pl-adoniacyrus-projects.vercel.app",
 ]
 
 # Custom user model — must be set before the first migration that creates auth tables.
