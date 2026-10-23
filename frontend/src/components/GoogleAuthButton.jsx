@@ -13,7 +13,10 @@ function loadGoogleIdentityServices() {
     const existing = document.querySelector(`script[src="${GIS_SRC}"]`);
     if (existing) {
       existing.addEventListener('load', () => resolve());
-      existing.addEventListener('error', () => reject(new Error('Failed to load Google Sign-In.')));
+      existing.addEventListener('error', () => {
+        gisLoadPromise = null;
+        reject(new Error('Failed to load Google Sign-In.'));
+      });
       return;
     }
     const script = document.createElement('script');
@@ -21,7 +24,10 @@ function loadGoogleIdentityServices() {
     script.async = true;
     script.defer = true;
     script.onload = () => resolve();
-    script.onerror = () => reject(new Error('Failed to load Google Sign-In.'));
+    script.onerror = () => {
+      gisLoadPromise = null;
+      reject(new Error('Failed to load Google Sign-In.'));
+    };
     document.head.appendChild(script);
   });
 
@@ -36,7 +42,7 @@ function GoogleAuthButton({ intent = 'login', onCredential, onError, disabled = 
   const hostRef = useRef(null);
   const [ready, setReady] = useState(false);
   const [unavailable, setUnavailable] = useState('');
-  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+  const clientId = (import.meta.env.VITE_GOOGLE_CLIENT_ID || '').trim().replace(/^["']|["']$/g, '');
   const callbackRef = useRef({ onCredential, onError });
 
   useEffect(() => {
@@ -91,6 +97,11 @@ function GoogleAuthButton({ intent = 'login', onCredential, onError, disabled = 
     setup();
     return () => {
       cancelled = true;
+      try {
+        window.google?.accounts?.id?.cancel();
+      } catch {
+        // Ignore GIS cancel error on unmount
+      }
     };
   }, [clientId, intent]);
 

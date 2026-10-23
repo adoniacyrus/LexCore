@@ -178,15 +178,24 @@ SIMPLE_JWT = {
 }
 
 # Allow any local Vite port during development (5173, 5174, 5176, …)
+# and any LexCore Vercel preview deployments for this project.
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^http://(localhost|127\.0\.0\.1):517\d$",
+    r"^https://lex-core(-[a-zA-Z0-9_-]+)?-adoniacyrus-projects\.vercel\.app$",
 ]
+
+# Configurable CORS origins via environment variable, preserving stable production and local origins.
+_extra_cors = config(
+    "CORS_ALLOWED_ORIGINS",
+    default="",
+    cast=lambda v: [h.strip() for h in v.split(",") if h.strip()],
+)
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "https://lex-core.vercel.app",
-    "https://lex-core-2u78tn1pl-adoniacyrus-projects.vercel.app",
+    *_extra_cors,
 ]
 
 # Custom user model — must be set before the first migration that creates auth tables.
