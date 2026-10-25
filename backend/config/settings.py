@@ -195,7 +195,12 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "https://lex-core.vercel.app",
+    "https://lexcore.adoniacyrus.com",
     *_extra_cors,
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    origin for origin in CORS_ALLOWED_ORIGINS if origin.startswith(("http://", "https://"))
 ]
 
 # Custom user model — must be set before the first migration that creates auth tables.
